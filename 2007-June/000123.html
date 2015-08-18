@@ -1,0 +1,180 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [at76c503a-develop] [PATCH 02/10] Add full support for &quot;auto&quot;	preamble
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/at76c503a-develop/2007-June/index.html" >
+   <LINK REL="made" HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%2002/10%5D%20Add%20full%20support%20for%20%22auto%22%0A%09preamble&In-Reply-To=%3C20070616073831.13212.30445.stgit%40dv.roinet.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000133.html">
+   <LINK REL="Next"  HREF="000134.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[at76c503a-develop] [PATCH 02/10] Add full support for &quot;auto&quot;	preamble</H1>
+    <B>Pavel Roskin</B> 
+    <A HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%2002/10%5D%20Add%20full%20support%20for%20%22auto%22%0A%09preamble&In-Reply-To=%3C20070616073831.13212.30445.stgit%40dv.roinet.com%3E"
+       TITLE="[at76c503a-develop] [PATCH 02/10] Add full support for &quot;auto&quot;	preamble">proski at gnu.org
+       </A><BR>
+    <I>Sat Jun 16 09:38:31 CEST 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000133.html">[at76c503a-develop] [PATCH 01/10] Implement &quot;get&quot; counterparts	for iwpriv calls
+</A></li>
+        <LI>Next message: <A HREF="000134.html">[at76c503a-develop] [PATCH 01/12] Fix recent breakage in	at76_set_listen_interval()
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#123">[ date ]</a>
+              <a href="thread.html#123">[ thread ]</a>
+              <a href="subject.html#123">[ subject ]</a>
+              <a href="author.html#123">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Don't assume that there are just two settings, &quot;long&quot; and &quot;short&quot;. 
+Provide textual description in the output of &quot;iwpriv get_preamble&quot; in
+the same format as in ipw2100 and ipw2200.
+
+Signed-off-by: Pavel Roskin &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">proski at gnu.org</A>&gt;
+---
+
+ at76_usb.c |   19 +++++++++----------
+ at76_usb.h |    7 ++++---
+ 2 files changed, 13 insertions(+), 13 deletions(-)
+
+diff --git a/at76_usb.c b/at76_usb.c
+index 8c28534..abdaf50 100644
+--- a/at76_usb.c
++++ b/at76_usb.c
+@@ -184,6 +184,8 @@ static const long channel_frequency[] = {
+ 	2447, 2452, 2457, 2462, 2467, 2472, 2484
+ };
+ 
++static const char *const preambles[] = { &quot;long&quot;, &quot;short&quot;, &quot;auto&quot; };
++
+ #define NUM_CHANNELS ARRAY_SIZE(channel_frequency)
+ 
+ /* Firmware download */
+@@ -1829,7 +1831,7 @@ static int at76_assoc_req(struct at76_priv *priv, struct bss_info *bss)
+ 	capa = bss-&gt;capa;
+ 	if (priv-&gt;wep_enabled)
+ 		capa |= WLAN_CAPABILITY_PRIVACY;
+-	if (priv-&gt;preamble_type == PREAMBLE_TYPE_SHORT)
++	if (priv-&gt;preamble_type != PREAMBLE_TYPE_LONG)
+ 		capa |= WLAN_CAPABILITY_SHORT_PREAMBLE;
+ 	req-&gt;capability = cpu_to_le16(capa);
+ 
+@@ -1909,7 +1911,7 @@ static int at76_reassoc_req(struct at76_priv *priv, struct bss_info *curr_bss,
+ 	capa = new_bss-&gt;capa;
+ 	if (priv-&gt;wep_enabled)
+ 		capa |= WLAN_CAPABILITY_PRIVACY;
+-	if (priv-&gt;preamble_type == PREAMBLE_TYPE_SHORT)
++	if (priv-&gt;preamble_type != PREAMBLE_TYPE_LONG)
+ 		capa |= WLAN_CAPABILITY_SHORT_PREAMBLE;
+ 	req-&gt;capability = cpu_to_le16(capa);
+ 
+@@ -3337,9 +3339,7 @@ static int at76_iw_set_short_preamble(struct net_device *netdev,
+ 	at76_dbg(DBG_IOCTL, &quot;%s: AT76_SET_SHORT_PREAMBLE, %d&quot;,
+ 		 netdev-&gt;name, val);
+ 
+-	if (val &lt; 0 || val &gt; 2) {
+-		/* allow value of 2 - in the win98 driver it stands
+-		   for &quot;auto preamble&quot; ...? */
++	if (val &lt; PREAMBLE_TYPE_LONG || val &gt; PREAMBLE_TYPE_AUTO) {
+ 		ret = -EINVAL;
+ 	} else {
+ 		priv-&gt;preamble_type = val;
+@@ -3353,9 +3353,9 @@ static int at76_iw_get_short_preamble(struct net_device *netdev,
+ 				      union iwreq_data *wrqu, char *extra)
+ {
+ 	struct at76_priv *priv = netdev_priv(netdev);
+-	int *param = (int *)extra;
+ 
+-	param[0] = priv-&gt;preamble_type;
++	snprintf(wrqu-&gt;name, sizeof(wrqu-&gt;name), &quot;%s (%d)&quot;,
++		 preambles[priv-&gt;preamble_type], priv-&gt;preamble_type);
+ 	return 0;
+ }
+ 
+@@ -3616,7 +3616,7 @@ static const struct iw_priv_args at76_priv_args[] = {
+ 	 IW_PRIV_TYPE_INT | IW_PRIV_SIZE_FIXED | 1, 0, &quot;set_preamble&quot;},
+ 
+ 	{AT76_GET_SHORT_PREAMBLE,
+-	 0, IW_PRIV_TYPE_INT | IW_PRIV_SIZE_FIXED | 1, &quot;get_preamble&quot;},
++	 0, IW_PRIV_TYPE_CHAR | IW_PRIV_SIZE_FIXED | 10, &quot;get_preamble&quot;},
+ 
+ 	/* we must pass the new debug mask as a string, because iwpriv cannot
+ 	 * parse hex numbers starting with 0x :-(  */
+@@ -4594,8 +4594,7 @@ static int at76_startup_device(struct at76_priv *priv)
+ 		    priv-&gt;wep_key_id, priv-&gt;wep_keys_len[priv-&gt;wep_key_id]);
+ 		dbg(&quot;%s param: preamble %s rts %d retry %d frag %d &quot;
+ 		    &quot;txrate %s auth_mode %d&quot;, priv-&gt;netdev-&gt;name,
+-		    priv-&gt;preamble_type ==
+-		    PREAMBLE_TYPE_SHORT ? &quot;short&quot; : &quot;long&quot;, priv-&gt;rts_threshold,
++		    preambles[priv-&gt;preamble_type], priv-&gt;rts_threshold,
+ 		    priv-&gt;short_retry_limit, priv-&gt;frag_threshold,
+ 		    priv-&gt;txrate == TX_RATE_1MBIT ? &quot;1MBit&quot; : priv-&gt;txrate ==
+ 		    TX_RATE_2MBIT ? &quot;2MBit&quot; : priv-&gt;txrate ==
+diff --git a/at76_usb.h b/at76_usb.h
+index 532b2f8..63d0c23 100644
+--- a/at76_usb.h
++++ b/at76_usb.h
+@@ -28,7 +28,7 @@
+ #define DRIVER_VERSION &quot;0.15dev&quot;
+ 
+ /* our private ioctl's */
+-/* preamble length (0 - long, 1 - short) */
++/* preamble length (0 - long, 1 - short, 2 - auto) */
+ #define AT76_SET_SHORT_PREAMBLE  (SIOCIWFIRSTPRIV + 0)
+ #define AT76_GET_SHORT_PREAMBLE  (SIOCIWFIRSTPRIV + 1)
+ /* which debug channels are enabled */
+@@ -93,8 +93,9 @@
+ #define INFRASTRUCTURE_MODE 2
+ 
+ /* values for struct mib_local, field preamble_type */
+-#define PREAMBLE_TYPE_SHORT 1
+ #define PREAMBLE_TYPE_LONG  0
++#define PREAMBLE_TYPE_SHORT 1
++#define PREAMBLE_TYPE_AUTO 2
+ 
+ /* values for tx_rate */
+ #define TX_RATE_1MBIT   0
+@@ -513,7 +514,7 @@ struct at76_priv {
+ 	int radio_on;
+ 	int promisc;
+ 
+-	int preamble_type;	/* 0 - long preamble, 1 - short preamble */
++	int preamble_type;	/* 0 - long, 1 - short, 2 - auto */
+ 	int auth_mode;		/* authentication type: 0 open, 1 shared key */
+ 	int txrate;		/* 0,1,2,3 = 1,2,5.5,11 MBit, 4 is auto-fallback */
+ 	int frag_threshold;	/* threshold for fragmentation of tx packets */
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000133.html">[at76c503a-develop] [PATCH 01/10] Implement &quot;get&quot; counterparts	for iwpriv calls
+</A></li>
+	<LI>Next message: <A HREF="000134.html">[at76c503a-develop] [PATCH 01/12] Fix recent breakage in	at76_set_listen_interval()
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#123">[ date ]</a>
+              <a href="thread.html#123">[ thread ]</a>
+              <a href="subject.html#123">[ subject ]</a>
+              <a href="author.html#123">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">More information about the at76c503a-develop
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,91 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [at76c503a-develop] mac80211-enabled at76_usb is in wireless-testing
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/at76c503a-develop/2008-February/index.html" >
+   <LINK REL="made" HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20mac80211-enabled%20at76_usb%20is%20in%20wireless-testing&In-Reply-To=%3C1203649713.16556.15.camel%40dv%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   
+   <LINK REL="Next"  HREF="000220.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[at76c503a-develop] mac80211-enabled at76_usb is in wireless-testing</H1>
+    <B>Pavel Roskin</B> 
+    <A HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20mac80211-enabled%20at76_usb%20is%20in%20wireless-testing&In-Reply-To=%3C1203649713.16556.15.camel%40dv%3E"
+       TITLE="[at76c503a-develop] mac80211-enabled at76_usb is in wireless-testing">proski at gnu.org
+       </A><BR>
+    <I>Fri Feb 22 04:08:33 CET 2008</I>
+    <P><UL>
+        
+        <LI>Next message: <A HREF="000220.html">[at76c503a-develop] mac80211-enabled at76_usb is in	wireless-testing
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#214">[ date ]</a>
+              <a href="thread.html#214">[ thread ]</a>
+              <a href="subject.html#214">[ subject ]</a>
+              <a href="author.html#214">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hello!
+
+The at76_usb driver converted to the mac80211 stack has appeared in the
+wireless-testing repository (master branch).  It doesn't guarantee is
+will appear in any particular version of the kernel, but if we make it
+functional before the 2.6.25 release, it may be in 2.6.26.
+
+This means that the wireless-testing repository becomes the official
+location of the driver.  It can be fetched by the following command:
+
+git-clone <A HREF="git://git.kernel.org/pub/scm/linux/kernel/git/linville/wireless-testing.git">git://git.kernel.org/pub/scm/linux/kernel/git/linville/wireless-testing.git</A>
+
+Please note that it will download about 410 megabytes of data because
+git clones the full history on Linux.
+
+All further patches should be done against wireless-testing.
+
+My repository is still available, but I'm going to abandon it soon.  It
+only include the at76_usb driver, so it's just a 3 Mb download:
+
+git-clone <A HREF="http://git.80211libre.org/at76_usb.git">http://git.80211libre.org/at76_usb.git</A>
+
+I'm going to ask at76_usb to be included into the compat-wireless
+package once we have a minimally functioning driver.  That would provide
+the driver with compatibility provisions for older kernels.
+
+Whoever wanted to port the driver to the WPA-enabled firmware, it may be
+time to start it now.
+
+-- 
+Regards,
+Pavel Roskin
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	
+	<LI>Next message: <A HREF="000220.html">[at76c503a-develop] mac80211-enabled at76_usb is in	wireless-testing
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#214">[ date ]</a>
+              <a href="thread.html#214">[ thread ]</a>
+              <a href="subject.html#214">[ subject ]</a>
+              <a href="author.html#214">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">More information about the at76c503a-develop
+mailing list</a><br>
+</body></html>

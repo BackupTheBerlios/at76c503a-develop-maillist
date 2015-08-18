@@ -1,0 +1,86 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [at76c503a-develop] [at76_usb] kernel panic in update_wstats()
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/at76c503a-develop/2007-April/index.html" >
+   <LINK REL="made" HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5Bat76_usb%5D%20kernel%20panic%20in%20update_wstats%28%29&In-Reply-To=%3C1176770966.9269.16.camel%40dv%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000034.html">
+   <LINK REL="Next"  HREF="000036.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[at76c503a-develop] [at76_usb] kernel panic in update_wstats()</H1>
+    <B>Pavel Roskin</B> 
+    <A HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5Bat76_usb%5D%20kernel%20panic%20in%20update_wstats%28%29&In-Reply-To=%3C1176770966.9269.16.camel%40dv%3E"
+       TITLE="[at76c503a-develop] [at76_usb] kernel panic in update_wstats()">proski at gnu.org
+       </A><BR>
+    <I>Tue Apr 17 02:49:26 CEST 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000034.html">[at76c503a-develop] [PATCH 1/6] Move union of struct hwcfg_* to	at76_usb.h, give it a name
+</A></li>
+        <LI>Next message: <A HREF="000036.html">[at76c503a-develop] [PATCH] Standardize on radiotap headers for	monitor mode
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#35">[ date ]</a>
+              <a href="thread.html#35">[ thread ]</a>
+              <a href="subject.html#35">[ subject ]</a>
+              <a href="author.html#35">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>On Tue, 2007-04-17 at 00:58 +0200, Stefano Brivio wrote:
+
+&gt;<i> I missed it, it works now. Thanks Pavel and sorry for the noise. BTW,
+</I>&gt;<i> stats are still bogus (link, signal, noise level == 0). But I don't think
+</I>&gt;<i> it makes sense to debug this now, as you will probably have to deal with
+</I>&gt;<i> mac80211 soon.
+</I>
+If you mean Ad-Hoc, I agree.  Quality of an Ad-Hoc connection is not
+well defined.  It's better implemented across the board than for every
+driver.
+
+Indeed, the driver is quite &quot;soft&quot;, and could be a good candidate for
+mac80211 conversion.  Although it wasn't a requirement for submission.
+
+&gt;<i> I had to make a little patch in order to build the driver on a kernel
+</I>&gt;<i> version &lt; 2.6.20. I don't think you want to merge this, as you are
+</I>&gt;<i> working
+</I>&gt;<i> for inclusion into mainline, but in case, here it is:
+</I>
+Correct, it's not what we want at this point, but thanks anyway.
+
+-- 
+Regards,
+Pavel Roskin
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000034.html">[at76c503a-develop] [PATCH 1/6] Move union of struct hwcfg_* to	at76_usb.h, give it a name
+</A></li>
+	<LI>Next message: <A HREF="000036.html">[at76c503a-develop] [PATCH] Standardize on radiotap headers for	monitor mode
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#35">[ date ]</a>
+              <a href="thread.html#35">[ thread ]</a>
+              <a href="subject.html#35">[ subject ]</a>
+              <a href="author.html#35">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">More information about the at76c503a-develop
+mailing list</a><br>
+</body></html>

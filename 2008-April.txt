@@ -1,0 +1,346 @@
+From milan.plzik at gmail.com  Tue Apr 22 23:22:20 2008
+From: milan.plzik at gmail.com (Milan Plzik)
+Date: Tue, 22 Apr 2008 23:22:20 +0200
+Subject: [at76c503a-develop] [PATCH] Update of at76_usb to be in sync with
+	mac80211 API.
+Message-ID: <20080422212220.12672.57437.stgit@localhost>
+
+There were some changes in the mac80211 stack, which made at76_usb driver
+uncompilable. This patch attempts to fix it. Resulting driver loads without
+apparent problems.
+
+Signed-off-by: Milan Plzik <milan.plzik at gmail.com>
+---
+
+ drivers/net/wireless/at76_usb.c |   65 +++++++++++++++++++++++----------------
+ 1 files changed, 39 insertions(+), 26 deletions(-)
+
+diff --git a/drivers/net/wireless/at76_usb.c b/drivers/net/wireless/at76_usb.c
+index 33fa026..075e421 100644
+--- a/drivers/net/wireless/at76_usb.c
++++ b/drivers/net/wireless/at76_usb.c
+@@ -1753,7 +1753,7 @@ static int at76_mac80211_tx(struct ieee80211_hw *hw, struct sk_buff *skb,
+ 	memset(tx_buffer, 0, sizeof(*tx_buffer));
+ 	tx_buffer->padding = padding;
+ 	tx_buffer->wlength = cpu_to_le16(skb->len);
+-	tx_buffer->tx_rate = control->tx_rate->hw_value;
++	tx_buffer->tx_rate = control->tx_rate;
+ 	memset(tx_buffer->reserved, 0, sizeof(tx_buffer->reserved));
+ 	memcpy(tx_buffer->packet, skb->data, skb->len);
+ 
+@@ -1971,13 +1971,13 @@ static int at76_config(struct ieee80211_hw *hw, struct ieee80211_conf *conf)
+ 	struct at76_priv *priv = hw->priv;
+ 
+ 	at76_dbg(DBG_MAC80211, "%s(): channel %d radio %d",
+-		 __func__, conf->channel->hw_value, conf->radio_enabled);
++		 __func__, conf->channel, conf->radio_enabled);
+ 	at76_dbg_dump(DBG_MAC80211, priv->essid, priv->essid_size, "ssid:");
+ 	at76_dbg_dump(DBG_MAC80211, priv->bssid, ETH_ALEN, "bssid:");
+ 
+ 	mutex_lock(&priv->mtx);
+ 
+-	priv->channel = conf->channel->hw_value;
++	priv->channel = conf->channel;
+ 
+ 	if (is_valid_ether_addr(priv->bssid))
+ 		at76_join(priv);
+@@ -2202,34 +2202,36 @@ static int at76_alloc_urbs(struct at76_priv *priv,
+ }
+ 
+ static struct ieee80211_rate at76_rates[] = {
+-	{ .bitrate = 10, .hw_value = TX_RATE_1MBIT, },
+-	{ .bitrate = 20, .hw_value = TX_RATE_2MBIT, },
+-	{ .bitrate = 55, .hw_value = TX_RATE_5_5MBIT, },
+-	{ .bitrate = 110, .hw_value = TX_RATE_11MBIT, },
++	{ .rate = 10, .val = TX_RATE_1MBIT, },
++	{ .rate = 20, .val = TX_RATE_2MBIT, },
++	{ .rate = 55, .val = TX_RATE_5_5MBIT, },
++	{ .rate = 110, .val = TX_RATE_11MBIT, },
+ };
+ 
+ static struct ieee80211_channel at76_channels[] = {
+-	{ .center_freq = 2412, .hw_value = 1 },
+-	{ .center_freq = 2417, .hw_value = 2 },
+-	{ .center_freq = 2422, .hw_value = 3 },
+-	{ .center_freq = 2427, .hw_value = 4 },
+-	{ .center_freq = 2432, .hw_value = 5 },
+-	{ .center_freq = 2437, .hw_value = 6 },
+-	{ .center_freq = 2442, .hw_value = 7 },
+-	{ .center_freq = 2447, .hw_value = 8 },
+-	{ .center_freq = 2452, .hw_value = 9 },
+-	{ .center_freq = 2457, .hw_value = 10 },
+-	{ .center_freq = 2462, .hw_value = 11 },
+-	{ .center_freq = 2467, .hw_value = 12 },
+-	{ .center_freq = 2472, .hw_value = 13 },
+-	{ .center_freq = 2484, .hw_value = 14 }
++	{ .freq = 2412, .val = 1 },
++	{ .freq = 2417, .val = 2 },
++	{ .freq = 2422, .val = 3 },
++	{ .freq = 2427, .val = 4 },
++	{ .freq = 2432, .val = 5 },
++	{ .freq = 2437, .val = 6 },
++	{ .freq = 2442, .val = 7 },
++	{ .freq = 2447, .val = 8 },
++	{ .freq = 2452, .val = 9 },
++	{ .freq = 2457, .val = 10 },
++	{ .freq = 2462, .val = 11 },
++	{ .freq = 2467, .val = 12 },
++	{ .freq = 2472, .val = 13 },
++	{ .freq = 2484, .val = 14 }
+ };
+ 
+-static struct ieee80211_supported_band at76_supported_band = {
++static struct ieee80211_hw_mode at76_supported_hw_mode = {
+ 	.channels = at76_channels,
+-	.n_channels = ARRAY_SIZE(at76_channels),
+-	.bitrates = at76_rates,
+-	.n_bitrates = ARRAY_SIZE(at76_rates),
++	.num_channels = ARRAY_SIZE(at76_channels),
++	.rates = at76_rates,
++	.num_rates = ARRAY_SIZE(at76_rates),
++	.mode = MODE_IEEE80211B,
++	.ht_info = { .ht_supported = 0 },
+ };
+ 
+ /* Register network device and initialize the hardware */
+@@ -2272,16 +2274,27 @@ static int at76_init_new_device(struct at76_priv *priv,
+ 	priv->scan_mode = SCAN_TYPE_ACTIVE;
+ 
+ 	/* mac80211 initialisation */
+-	priv->hw->wiphy->bands[IEEE80211_BAND_2GHZ] = &at76_supported_band;
++	priv->hw->conf.mode = &at76_supported_hw_mode; 
+ 	priv->hw->flags = IEEE80211_HW_RX_INCLUDES_FCS;
++	priv->hw->rate_control_algorithm = NULL;
+ 
+ 	SET_IEEE80211_DEV(priv->hw, &interface->dev);
+ 	SET_IEEE80211_PERM_ADDR(priv->hw, priv->mac_addr);
+ 
++	ret = ieee80211_register_hwmode(priv->hw, &at76_supported_hw_mode);
++	if (ret) {
++		printk(KERN_ERR 
++			"cannot register mac80211 hw_mode (status %d)!\n", 
++			ret);
++		goto exit;
++	}
++
+ 	ret = ieee80211_register_hw(priv->hw);
+ 	if (ret) {
+ 		printk(KERN_ERR "cannot register mac80211 hw (status %d)!\n",
+ 		       ret);
++		/* TODO: One would possibly want to unregister hwmode, but so
++		 * far there is no API to do this */
+ 		goto exit;
+ 	}
+ 
+
+
+
+From milan.plzik at gmail.com  Wed Apr 23 11:03:12 2008
+From: milan.plzik at gmail.com (Milan Plzik)
+Date: Wed, 23 Apr 2008 11:03:12 +0200
+Subject: [at76c503a-develop] [PATCH] Update of at76_usb to be in sync
+	with mac80211 API.
+In-Reply-To: <20080422212220.12672.57437.stgit@localhost>
+References: <20080422212220.12672.57437.stgit@localhost>
+Message-ID: <1208941392.6722.6.camel@localhost>
+
+  Hello,
+
+  sorry, this patch is probably not what was needed, as hw_mode support
+was already dropped from master branch, but unfortunately I was working
+on the at76 branch, which is not yet rebased.
+
+  So, here comes the question -- should any patches for at76_usb be
+based on at76 branch or rather on master?
+
+	Milan
+
+On Ut, 2008-04-22 at 23:22 +0200, Milan Plzik wrote:
+> There were some changes in the mac80211 stack, which made at76_usb driver
+> uncompilable. This patch attempts to fix it. Resulting driver loads without
+> apparent problems.
+> 
+> Signed-off-by: Milan Plzik <milan.plzik at gmail.com>
+> ---
+> 
+>  drivers/net/wireless/at76_usb.c |   65 +++++++++++++++++++++++----------------
+>  1 files changed, 39 insertions(+), 26 deletions(-)
+> 
+> diff --git a/drivers/net/wireless/at76_usb.c b/drivers/net/wireless/at76_usb.c
+> index 33fa026..075e421 100644
+> --- a/drivers/net/wireless/at76_usb.c
+> +++ b/drivers/net/wireless/at76_usb.c
+> @@ -1753,7 +1753,7 @@ static int at76_mac80211_tx(struct ieee80211_hw *hw, struct sk_buff *skb,
+>  	memset(tx_buffer, 0, sizeof(*tx_buffer));
+>  	tx_buffer->padding = padding;
+>  	tx_buffer->wlength = cpu_to_le16(skb->len);
+> -	tx_buffer->tx_rate = control->tx_rate->hw_value;
+> +	tx_buffer->tx_rate = control->tx_rate;
+>  	memset(tx_buffer->reserved, 0, sizeof(tx_buffer->reserved));
+>  	memcpy(tx_buffer->packet, skb->data, skb->len);
+>  
+> @@ -1971,13 +1971,13 @@ static int at76_config(struct ieee80211_hw *hw, struct ieee80211_conf *conf)
+>  	struct at76_priv *priv = hw->priv;
+>  
+>  	at76_dbg(DBG_MAC80211, "%s(): channel %d radio %d",
+> -		 __func__, conf->channel->hw_value, conf->radio_enabled);
+> +		 __func__, conf->channel, conf->radio_enabled);
+>  	at76_dbg_dump(DBG_MAC80211, priv->essid, priv->essid_size, "ssid:");
+>  	at76_dbg_dump(DBG_MAC80211, priv->bssid, ETH_ALEN, "bssid:");
+>  
+>  	mutex_lock(&priv->mtx);
+>  
+> -	priv->channel = conf->channel->hw_value;
+> +	priv->channel = conf->channel;
+>  
+>  	if (is_valid_ether_addr(priv->bssid))
+>  		at76_join(priv);
+> @@ -2202,34 +2202,36 @@ static int at76_alloc_urbs(struct at76_priv *priv,
+>  }
+>  
+>  static struct ieee80211_rate at76_rates[] = {
+> -	{ .bitrate = 10, .hw_value = TX_RATE_1MBIT, },
+> -	{ .bitrate = 20, .hw_value = TX_RATE_2MBIT, },
+> -	{ .bitrate = 55, .hw_value = TX_RATE_5_5MBIT, },
+> -	{ .bitrate = 110, .hw_value = TX_RATE_11MBIT, },
+> +	{ .rate = 10, .val = TX_RATE_1MBIT, },
+> +	{ .rate = 20, .val = TX_RATE_2MBIT, },
+> +	{ .rate = 55, .val = TX_RATE_5_5MBIT, },
+> +	{ .rate = 110, .val = TX_RATE_11MBIT, },
+>  };
+>  
+>  static struct ieee80211_channel at76_channels[] = {
+> -	{ .center_freq = 2412, .hw_value = 1 },
+> -	{ .center_freq = 2417, .hw_value = 2 },
+> -	{ .center_freq = 2422, .hw_value = 3 },
+> -	{ .center_freq = 2427, .hw_value = 4 },
+> -	{ .center_freq = 2432, .hw_value = 5 },
+> -	{ .center_freq = 2437, .hw_value = 6 },
+> -	{ .center_freq = 2442, .hw_value = 7 },
+> -	{ .center_freq = 2447, .hw_value = 8 },
+> -	{ .center_freq = 2452, .hw_value = 9 },
+> -	{ .center_freq = 2457, .hw_value = 10 },
+> -	{ .center_freq = 2462, .hw_value = 11 },
+> -	{ .center_freq = 2467, .hw_value = 12 },
+> -	{ .center_freq = 2472, .hw_value = 13 },
+> -	{ .center_freq = 2484, .hw_value = 14 }
+> +	{ .freq = 2412, .val = 1 },
+> +	{ .freq = 2417, .val = 2 },
+> +	{ .freq = 2422, .val = 3 },
+> +	{ .freq = 2427, .val = 4 },
+> +	{ .freq = 2432, .val = 5 },
+> +	{ .freq = 2437, .val = 6 },
+> +	{ .freq = 2442, .val = 7 },
+> +	{ .freq = 2447, .val = 8 },
+> +	{ .freq = 2452, .val = 9 },
+> +	{ .freq = 2457, .val = 10 },
+> +	{ .freq = 2462, .val = 11 },
+> +	{ .freq = 2467, .val = 12 },
+> +	{ .freq = 2472, .val = 13 },
+> +	{ .freq = 2484, .val = 14 }
+>  };
+>  
+> -static struct ieee80211_supported_band at76_supported_band = {
+> +static struct ieee80211_hw_mode at76_supported_hw_mode = {
+>  	.channels = at76_channels,
+> -	.n_channels = ARRAY_SIZE(at76_channels),
+> -	.bitrates = at76_rates,
+> -	.n_bitrates = ARRAY_SIZE(at76_rates),
+> +	.num_channels = ARRAY_SIZE(at76_channels),
+> +	.rates = at76_rates,
+> +	.num_rates = ARRAY_SIZE(at76_rates),
+> +	.mode = MODE_IEEE80211B,
+> +	.ht_info = { .ht_supported = 0 },
+>  };
+>  
+>  /* Register network device and initialize the hardware */
+> @@ -2272,16 +2274,27 @@ static int at76_init_new_device(struct at76_priv *priv,
+>  	priv->scan_mode = SCAN_TYPE_ACTIVE;
+>  
+>  	/* mac80211 initialisation */
+> -	priv->hw->wiphy->bands[IEEE80211_BAND_2GHZ] = &at76_supported_band;
+> +	priv->hw->conf.mode = &at76_supported_hw_mode; 
+>  	priv->hw->flags = IEEE80211_HW_RX_INCLUDES_FCS;
+> +	priv->hw->rate_control_algorithm = NULL;
+>  
+>  	SET_IEEE80211_DEV(priv->hw, &interface->dev);
+>  	SET_IEEE80211_PERM_ADDR(priv->hw, priv->mac_addr);
+>  
+> +	ret = ieee80211_register_hwmode(priv->hw, &at76_supported_hw_mode);
+> +	if (ret) {
+> +		printk(KERN_ERR 
+> +			"cannot register mac80211 hw_mode (status %d)!\n", 
+> +			ret);
+> +		goto exit;
+> +	}
+> +
+>  	ret = ieee80211_register_hw(priv->hw);
+>  	if (ret) {
+>  		printk(KERN_ERR "cannot register mac80211 hw (status %d)!\n",
+>  		       ret);
+> +		/* TODO: One would possibly want to unregister hwmode, but so
+> +		 * far there is no API to do this */
+>  		goto exit;
+>  	}
+>  
+> 
+
+
+
+From Kalle.Valo at iki.fi  Sun Apr 27 09:44:14 2008
+From: Kalle.Valo at iki.fi (Kalle Valo)
+Date: Sun, 27 Apr 2008 10:44:14 +0300
+Subject: [at76c503a-develop] [PATCH] Update of at76_usb to be in sync
+	with mac80211 API.
+In-Reply-To: <1208941392.6722.6.camel@localhost> (Milan Plzik's message of
+	"Wed\, 23 Apr 2008 11\:03\:12 +0200")
+References: <20080422212220.12672.57437.stgit@localhost>
+	<1208941392.6722.6.camel@localhost>
+Message-ID: <877iejwxm9.fsf@litku.valot.fi>
+
+Milan Plzik <milan.plzik at gmail.com> writes:
+
+>   Hello,
+>
+>   sorry, this patch is probably not what was needed, as hw_mode support
+> was already dropped from master branch, but unfortunately I was working
+> on the at76 branch, which is not yet rebased.
+>
+>   So, here comes the question -- should any patches for at76_usb be
+> based on at76 branch or rather on master?
+
+John Linville applied the at76_usb mac80211 port to his
+wireless-testing tree[1]. In my opinion it's best to base your patches
+on that tree.
+   
+[1] http://git.kernel.org/?p=linux/kernel/git/linville/wireless-testing.git;a=summary
+
+-- 
+Kalle Valo
+
+
+From proski at gnu.org  Tue Apr 29 04:09:29 2008
+From: proski at gnu.org (Pavel Roskin)
+Date: Mon, 28 Apr 2008 22:09:29 -0400
+Subject: [at76c503a-develop] [PATCH] Update of at76_usb to be in
+	sync	with mac80211 API.
+In-Reply-To: <877iejwxm9.fsf@litku.valot.fi>
+References: <20080422212220.12672.57437.stgit@localhost>
+	<1208941392.6722.6.camel@localhost> <877iejwxm9.fsf@litku.valot.fi>
+Message-ID: <20080428220929.eb4pxj66808oos44-cebfxv@fcnzpbc.arg@webmail.spamcop.net>
+
+Quoting Kalle Valo <Kalle.Valo at iki.fi>:
+
+> John Linville applied the at76_usb mac80211 port to his
+> wireless-testing tree[1]. In my opinion it's best to base your patches
+> on that tree.
+
+I agree.  The master branch is always maintained.  It there are any  
+merge conflicts, they should be easy to resolve.  It's not like there  
+is any active development of the driver going on now.
+
+-- 
+Regards,
+Pavel Roskin
+
+

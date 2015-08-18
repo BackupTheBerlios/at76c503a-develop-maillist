@@ -1,0 +1,287 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [at76c503a-develop] [PATCH] Ensure that all functions have at76	prefix
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/at76c503a-develop/2007-April/index.html" >
+   <LINK REL="made" HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%5D%20Ensure%20that%20all%20functions%20have%20at76%0A%09prefix&In-Reply-To=%3C20070427165428.15455.54116.stgit%40dv.roinet.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000042.html">
+   <LINK REL="Next"  HREF="000044.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[at76c503a-develop] [PATCH] Ensure that all functions have at76	prefix</H1>
+    <B>Pavel Roskin</B> 
+    <A HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%5D%20Ensure%20that%20all%20functions%20have%20at76%0A%09prefix&In-Reply-To=%3C20070427165428.15455.54116.stgit%40dv.roinet.com%3E"
+       TITLE="[at76c503a-develop] [PATCH] Ensure that all functions have at76	prefix">proski at gnu.org
+       </A><BR>
+    <I>Fri Apr 27 18:54:28 CEST 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000042.html">[at76c503a-develop] [PATCH 1/4] Split workqueues into separate	handlers
+</A></li>
+        <LI>Next message: <A HREF="000044.html">[at76c503a-develop] [PATCH] Ensure that all functions have at76	prefix
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#43">[ date ]</a>
+              <a href="thread.html#43">[ thread ]</a>
+              <a href="subject.html#43">[ subject ]</a>
+              <a href="author.html#43">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>This makes it easy to read the oopses and avoid potential namespace
+conflicts.  One function had two at76 prefixes - fix that too.  The only
+exception is hex2str(), which is used for debugging only.
+
+Signed-off-by: Pavel Roskin &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">proski at gnu.org</A>&gt;
+---
+
+ at76_usb.c |   65 ++++++++++++++++++++++++++++++------------------------------
+ 1 files changed, 32 insertions(+), 33 deletions(-)
+
+diff --git a/at76_usb.c b/at76_usb.c
+index fc43456..5b3b235 100644
+--- a/at76_usb.c
++++ b/at76_usb.c
+@@ -272,8 +272,7 @@ int dfu_download_block(struct dfu_ctx *ctx, u8 * buffer, int bytes, int block)
+ 	return result;
+ }
+ 
+-static
+-int dfu_get_status(struct dfu_ctx *ctx, struct dfu_status *status)
++static int at76_dfu_get_status(struct dfu_ctx *ctx, struct dfu_status *status)
+ {
+ 	int result;
+ 	struct usb_device *udev = ctx-&gt;udev;
+@@ -371,13 +370,13 @@ static int at76_usbdfu_download(struct usb_device *udev, u8 *dfu_buffer,
+ 		switch (dfu_state) {
+ 		case STATE_DFU_DOWNLOAD_SYNC:
+ 			at76_dbg(DBG_DFU, &quot;STATE_DFU_DOWNLOAD_SYNC&quot;);
+-			status = dfu_get_status(ctx, dfu_stat_buf);
++			status = at76_dfu_get_status(ctx, dfu_stat_buf);
+ 			if (DFU_USB_SUCCESS(status)) {
+ 				dfu_state = dfu_stat_buf-&gt;bState;
+ 				dfu_timeout = __at76_get_timeout(dfu_stat_buf);
+ 				need_dfu_state = 0;
+ 			} else
+-				err(&quot;dfu_get_status failed with %d&quot;, status);
++				err(&quot;at76_dfu_get_status failed with %d&quot;, status);
+ 			break;
+ 
+ 		case STATE_DFU_DOWNLOAD_BUSY:
+@@ -421,7 +420,7 @@ static int at76_usbdfu_download(struct usb_device *udev, u8 *dfu_buffer,
+ 		case STATE_DFU_MANIFEST_SYNC:
+ 			at76_dbg(DBG_DFU, &quot;STATE_DFU_MANIFEST_SYNC&quot;);
+ 
+-			status = dfu_get_status(ctx, dfu_stat_buf);
++			status = at76_dfu_get_status(ctx, dfu_stat_buf);
+ 
+ 			if (DFU_USB_SUCCESS(status)) {
+ 				dfu_state = dfu_stat_buf-&gt;bState;
+@@ -1370,7 +1369,7 @@ static int at76_dump_mib_local(struct at76_priv *dev)
+ 	return ret;
+ }
+ 
+-static int at76_at76_get_mib_mdomain(struct at76_priv *dev, struct mib_mdomain *val)
++static int at76_get_mib_mdomain(struct at76_priv *dev, struct mib_mdomain *val)
+ {
+ 	int ret = 0;
+ 	struct mib_mdomain *mdomain =
+@@ -1403,7 +1402,7 @@ static void at76_dump_mib_mdomain(struct at76_priv *dev)
+ 	int ret;
+ 	struct mib_mdomain mdomain;
+ 
+-	if ((ret=at76_at76_get_mib_mdomain(dev, &amp;mdomain)) &lt; 0) {
++	if ((ret=at76_get_mib_mdomain(dev, &amp;mdomain)) &lt; 0) {
+ 		err(&quot;%s: at76_get_mib_mdomain returned %d&quot;, __FUNCTION__, ret);
+ 		return;
+ 	}
+@@ -1614,7 +1613,7 @@ static void at76_mgmt_timeout(unsigned long par)
+ }
+ 
+ /*
+- * at76_handle_mgmt_timeout_scan - expiry of management timer in istate SCANNING
++ * at76_work_mgmt_timeout_scan - expiry of management timer in istate SCANNING
+  */
+ static void at76_handle_mgmt_timeout_scan(struct at76_priv *dev)
+ {
+@@ -1640,7 +1639,7 @@ static void at76_handle_mgmt_timeout_scan(struct at76_priv *dev)
+ 
+ 			case 1:
+ 				at76_assert(dev-&gt;international_roaming);
+-				if ((ret=at76_at76_get_mib_mdomain(dev, &amp;mdomain)) &lt; 0) {
++				if ((ret=at76_get_mib_mdomain(dev, &amp;mdomain)) &lt; 0) {
+ 					err(&quot;at76_get_mib_mdomain returned %d&quot;, ret);
+ 				} else {
+ 					char obuf1[2*14+1], obuf2[2*14+1];
+@@ -2167,7 +2166,7 @@ static int at76_reassoc_req(struct at76_priv *dev, struct bss_info *curr_bss,
+ }
+ 
+ /* Called after successful association */
+-static void handle_assoc_done(struct work_struct *work)
++static void at76_work_assoc_done(struct work_struct *work)
+ {
+ 	struct at76_priv *dev = container_of(work, struct at76_priv,
+ 					     work_assoc_done);
+@@ -2211,7 +2210,7 @@ static void handle_assoc_done(struct work_struct *work)
+ }
+ 
+ /* Download external firmware */
+-static void handle_external_fw(struct work_struct *work)
++static void at76_work_external_fw(struct work_struct *work)
+ {
+ 	struct at76_priv *dev = container_of(work, struct at76_priv,
+ 					     work_external_fw);
+@@ -2251,7 +2250,7 @@ static void handle_external_fw(struct work_struct *work)
+ }
+ 
+ /* Download internal firmware */
+-static void handle_internal_fw(struct work_struct *work)
++static void at76_work_internal_fw(struct work_struct *work)
+ {
+ 	struct at76_priv *dev = container_of(work, struct at76_priv,
+ 					     work_internal_fw);
+@@ -2287,7 +2286,7 @@ static void handle_internal_fw(struct work_struct *work)
+ }
+ 
+ /* Try joining a BSS */
+-static void handle_join(struct work_struct *work)
++static void at76_work_join(struct work_struct *work)
+ {
+ 	struct at76_priv *dev = container_of(work, struct at76_priv,
+ 					     work_join);
+@@ -2369,7 +2368,7 @@ static void handle_join(struct work_struct *work)
+ 	up(&amp;dev-&gt;sem);
+ }
+ 
+-static void handle_mgmt_timeout(struct work_struct *work)
++static void at76_work_mgmt_timeout(struct work_struct *work)
+ {
+ 	struct at76_priv *dev = container_of(work, struct at76_priv,
+ 					     work_mgmt_timeout);
+@@ -2379,7 +2378,7 @@ static void handle_mgmt_timeout(struct work_struct *work)
+ 	up(&amp;dev-&gt;sem);
+ }
+ 
+-static void handle_new_bss(struct work_struct *work)
++static void at76_work_new_bss(struct work_struct *work)
+ {
+ 	struct at76_priv *dev = container_of(work, struct at76_priv,
+ 					     work_new_bss);
+@@ -2414,7 +2413,7 @@ static void handle_new_bss(struct work_struct *work)
+ 	up(&amp;dev-&gt;sem);
+ }
+ 
+-static void handle_reset_device(struct work_struct *work)
++static void at76_work_reset_device(struct work_struct *work)
+ {
+ 	struct at76_priv *dev = container_of(work, struct at76_priv,
+ 					     work_reset_device);
+@@ -2425,7 +2424,7 @@ static void handle_reset_device(struct work_struct *work)
+ 	up(&amp;dev-&gt;sem);
+ }
+ 
+-static void handle_restart(struct work_struct *work)
++static void at76_work_restart(struct work_struct *work)
+ {
+ 	struct at76_priv *dev = container_of(work, struct at76_priv,
+ 					     work_restart);
+@@ -2453,7 +2452,7 @@ static void handle_restart(struct work_struct *work)
+ 	up(&amp;dev-&gt;sem);
+ }
+ 
+-static void handle_scan(struct work_struct *work)
++static void at76_work_scan(struct work_struct *work)
+ {
+ 	struct at76_priv *dev = container_of(work, struct at76_priv,
+ 					     work_scan);
+@@ -2480,7 +2479,7 @@ static void handle_scan(struct work_struct *work)
+ 	up(&amp;dev-&gt;sem);
+ }
+ 
+-static void handle_set_promisc(struct work_struct *work)
++static void at76_work_set_promisc(struct work_struct *work)
+ {
+ 	struct at76_priv *dev = container_of(work, struct at76_priv,
+ 					     work_set_promisc);
+@@ -2490,7 +2489,7 @@ static void handle_set_promisc(struct work_struct *work)
+ 	up(&amp;dev-&gt;sem);
+ }
+ 
+-static void handle_start_ibss(struct work_struct *work)
++static void at76_work_start_ibss(struct work_struct *work)
+ {
+ 	struct at76_priv *dev = container_of(work, struct at76_priv,
+ 					     work_start_ibss);
+@@ -2538,7 +2537,7 @@ static void handle_start_ibss(struct work_struct *work)
+ 	up(&amp;dev-&gt;sem);
+ }
+ 
+-static void handle_submit_rx(struct work_struct *work)
++static void at76_work_submit_rx(struct work_struct *work)
+ {
+ 	struct at76_priv *dev = container_of(work, struct at76_priv,
+ 					     work_submit_rx);
+@@ -5859,18 +5858,18 @@ static struct at76_priv *alloc_new_device(struct usb_device *udev,
+ 	dev-&gt;netdev = netdev;
+ 
+ 	init_MUTEX(&amp;dev-&gt;sem);
+-	INIT_WORK(&amp;dev-&gt;work_assoc_done, handle_assoc_done);
+-	INIT_WORK(&amp;dev-&gt;work_external_fw, handle_external_fw);
+-	INIT_WORK(&amp;dev-&gt;work_internal_fw, handle_internal_fw);
+-	INIT_WORK(&amp;dev-&gt;work_join, handle_join);
+-	INIT_WORK(&amp;dev-&gt;work_mgmt_timeout, handle_mgmt_timeout);
+-	INIT_WORK(&amp;dev-&gt;work_new_bss, handle_new_bss);
+-	INIT_WORK(&amp;dev-&gt;work_reset_device, handle_reset_device);
+-	INIT_WORK(&amp;dev-&gt;work_restart, handle_restart);
+-	INIT_WORK(&amp;dev-&gt;work_scan, handle_scan);
+-	INIT_WORK(&amp;dev-&gt;work_set_promisc, handle_set_promisc);
+-	INIT_WORK(&amp;dev-&gt;work_start_ibss, handle_start_ibss);
+-	INIT_WORK(&amp;dev-&gt;work_submit_rx, handle_submit_rx);
++	INIT_WORK(&amp;dev-&gt;work_assoc_done, at76_work_assoc_done);
++	INIT_WORK(&amp;dev-&gt;work_external_fw, at76_work_external_fw);
++	INIT_WORK(&amp;dev-&gt;work_internal_fw, at76_work_internal_fw);
++	INIT_WORK(&amp;dev-&gt;work_join, at76_work_join);
++	INIT_WORK(&amp;dev-&gt;work_mgmt_timeout, at76_work_mgmt_timeout);
++	INIT_WORK(&amp;dev-&gt;work_new_bss, at76_work_new_bss);
++	INIT_WORK(&amp;dev-&gt;work_reset_device, at76_work_reset_device);
++	INIT_WORK(&amp;dev-&gt;work_restart, at76_work_restart);
++	INIT_WORK(&amp;dev-&gt;work_scan, at76_work_scan);
++	INIT_WORK(&amp;dev-&gt;work_set_promisc, at76_work_set_promisc);
++	INIT_WORK(&amp;dev-&gt;work_start_ibss, at76_work_start_ibss);
++	INIT_WORK(&amp;dev-&gt;work_submit_rx, at76_work_submit_rx);
+ 
+ 	dev-&gt;open_count = 0;
+ 
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000042.html">[at76c503a-develop] [PATCH 1/4] Split workqueues into separate	handlers
+</A></li>
+	<LI>Next message: <A HREF="000044.html">[at76c503a-develop] [PATCH] Ensure that all functions have at76	prefix
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#43">[ date ]</a>
+              <a href="thread.html#43">[ thread ]</a>
+              <a href="subject.html#43">[ subject ]</a>
+              <a href="author.html#43">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">More information about the at76c503a-develop
+mailing list</a><br>
+</body></html>

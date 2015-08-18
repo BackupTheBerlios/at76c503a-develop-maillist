@@ -1,0 +1,150 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [at76c503a-develop] [PATCH 06/12] Convert wireless handler	initialization to use a macro
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/at76c503a-develop/2007-June/index.html" >
+   <LINK REL="made" HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%2006/12%5D%20Convert%20wireless%20handler%0A%09initialization%20to%20use%20a%20macro&In-Reply-To=%3C20070614011122.25709.89028.stgit%40dv.roinet.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000113.html">
+   <LINK REL="Next"  HREF="000115.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[at76c503a-develop] [PATCH 06/12] Convert wireless handler	initialization to use a macro</H1>
+    <B>Pavel Roskin</B> 
+    <A HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%2006/12%5D%20Convert%20wireless%20handler%0A%09initialization%20to%20use%20a%20macro&In-Reply-To=%3C20070614011122.25709.89028.stgit%40dv.roinet.com%3E"
+       TITLE="[at76c503a-develop] [PATCH 06/12] Convert wireless handler	initialization to use a macro">proski at gnu.org
+       </A><BR>
+    <I>Thu Jun 14 03:11:22 CEST 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000113.html">[at76c503a-develop] [PATCH 05/12] Don't use double newline to	separate functions
+</A></li>
+        <LI>Next message: <A HREF="000115.html">[at76c503a-develop] [PATCH 07/12] Simplify capability setting in	(re)accociation requests
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#114">[ date ]</a>
+              <a href="thread.html#114">[ thread ]</a>
+              <a href="subject.html#114">[ subject ]</a>
+              <a href="author.html#114">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>This avoids extra long lines and makes the code survive Lindent without
+getting ugly.
+
+Signed-off-by: Pavel Roskin &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">proski at gnu.org</A>&gt;
+---
+
+ at76_usb.c |   62 +++++++++++++++++++++++++++++++-----------------------------
+ 1 files changed, 32 insertions(+), 30 deletions(-)
+
+diff --git a/at76_usb.c b/at76_usb.c
+index f369c5f..a37bdde 100644
+--- a/at76_usb.c
++++ b/at76_usb.c
+@@ -3455,41 +3455,43 @@ static int at76_iw_set_intl_roaming(struct net_device *netdev,
+ 	return ret;
+ }
+ 
++#define AT76_SET_HANDLER(h, f) [h - SIOCIWFIRST] = (iw_handler) f
++
+ /*******************************************************************************
+  * structure that advertises the iw handlers of this driver
+  */
+ static const iw_handler	at76_handlers[] =
+ {
+-	[SIOCSIWCOMMIT-SIOCIWFIRST] = (iw_handler) at76_iw_handler_commit,
+-	[SIOCGIWNAME  -SIOCIWFIRST] = (iw_handler) at76_iw_handler_get_name,
+-	[SIOCSIWFREQ  -SIOCIWFIRST] = (iw_handler) at76_iw_handler_set_freq,
+-	[SIOCGIWFREQ  -SIOCIWFIRST] = (iw_handler) at76_iw_handler_get_freq,
+-	[SIOCSIWMODE  -SIOCIWFIRST] = (iw_handler) at76_iw_handler_set_mode,
+-	[SIOCGIWMODE  -SIOCIWFIRST] = (iw_handler) at76_iw_handler_get_mode,
+-	[SIOCGIWRANGE -SIOCIWFIRST] = (iw_handler) at76_iw_handler_get_range,
+-	[SIOCSIWSPY   -SIOCIWFIRST] = (iw_handler) at76_iw_handler_set_spy,
+-	[SIOCGIWSPY   -SIOCIWFIRST] = (iw_handler) at76_iw_handler_get_spy,
+-	[SIOCSIWTHRSPY-SIOCIWFIRST] = (iw_handler) at76_iw_handler_set_thrspy,
+-	[SIOCGIWTHRSPY-SIOCIWFIRST] = (iw_handler) at76_iw_handler_get_thrspy,
+-	[SIOCSIWAP    -SIOCIWFIRST] = (iw_handler) at76_iw_handler_set_wap,
+-	[SIOCGIWAP    -SIOCIWFIRST] = (iw_handler) at76_iw_handler_get_wap,
+-	[SIOCSIWSCAN  -SIOCIWFIRST] = (iw_handler) at76_iw_handler_set_scan,
+-	[SIOCGIWSCAN  -SIOCIWFIRST] = (iw_handler) at76_iw_handler_get_scan,
+-	[SIOCSIWESSID -SIOCIWFIRST] = (iw_handler) at76_iw_handler_set_essid,
+-	[SIOCGIWESSID -SIOCIWFIRST] = (iw_handler) at76_iw_handler_get_essid,
+-	[SIOCSIWRATE  -SIOCIWFIRST] = (iw_handler) at76_iw_handler_set_rate,
+-	[SIOCGIWRATE  -SIOCIWFIRST] = (iw_handler) at76_iw_handler_get_rate,
+-	[SIOCSIWRTS   -SIOCIWFIRST] = (iw_handler) at76_iw_handler_set_rts,
+-	[SIOCGIWRTS   -SIOCIWFIRST] = (iw_handler) at76_iw_handler_get_rts,
+-	[SIOCSIWFRAG  -SIOCIWFIRST] = (iw_handler) at76_iw_handler_set_frag,
+-	[SIOCGIWFRAG  -SIOCIWFIRST] = (iw_handler) at76_iw_handler_get_frag,
+-	[SIOCGIWTXPOW -SIOCIWFIRST] = (iw_handler) at76_iw_handler_get_txpow,
+-	[SIOCSIWRETRY -SIOCIWFIRST] = (iw_handler) at76_iw_handler_set_retry,
+-	[SIOCGIWRETRY -SIOCIWFIRST] = (iw_handler) at76_iw_handler_get_retry,
+-	[SIOCSIWENCODE-SIOCIWFIRST] = (iw_handler) at76_iw_handler_set_encode,
+-	[SIOCGIWENCODE-SIOCIWFIRST] = (iw_handler) at76_iw_handler_get_encode,
+-	[SIOCSIWPOWER -SIOCIWFIRST] = (iw_handler) at76_iw_handler_set_power,
+-	[SIOCGIWPOWER -SIOCIWFIRST] = (iw_handler) at76_iw_handler_get_power,
++	AT76_SET_HANDLER(SIOCSIWCOMMIT, at76_iw_handler_commit),
++	AT76_SET_HANDLER(SIOCGIWNAME, at76_iw_handler_get_name),
++	AT76_SET_HANDLER(SIOCSIWFREQ, at76_iw_handler_set_freq),
++	AT76_SET_HANDLER(SIOCGIWFREQ, at76_iw_handler_get_freq),
++	AT76_SET_HANDLER(SIOCSIWMODE, at76_iw_handler_set_mode),
++	AT76_SET_HANDLER(SIOCGIWMODE, at76_iw_handler_get_mode),
++	AT76_SET_HANDLER(SIOCGIWRANGE, at76_iw_handler_get_range),
++	AT76_SET_HANDLER(SIOCSIWSPY, at76_iw_handler_set_spy),
++	AT76_SET_HANDLER(SIOCGIWSPY, at76_iw_handler_get_spy),
++	AT76_SET_HANDLER(SIOCSIWTHRSPY, at76_iw_handler_set_thrspy),
++	AT76_SET_HANDLER(SIOCGIWTHRSPY, at76_iw_handler_get_thrspy),
++	AT76_SET_HANDLER(SIOCSIWAP, at76_iw_handler_set_wap),
++	AT76_SET_HANDLER(SIOCGIWAP, at76_iw_handler_get_wap),
++	AT76_SET_HANDLER(SIOCSIWSCAN, at76_iw_handler_set_scan),
++	AT76_SET_HANDLER(SIOCGIWSCAN, at76_iw_handler_get_scan),
++	AT76_SET_HANDLER(SIOCSIWESSID, at76_iw_handler_set_essid),
++	AT76_SET_HANDLER(SIOCGIWESSID, at76_iw_handler_get_essid),
++	AT76_SET_HANDLER(SIOCSIWRATE, at76_iw_handler_set_rate),
++	AT76_SET_HANDLER(SIOCGIWRATE, at76_iw_handler_get_rate),
++	AT76_SET_HANDLER(SIOCSIWRTS, at76_iw_handler_set_rts),
++	AT76_SET_HANDLER(SIOCGIWRTS, at76_iw_handler_get_rts),
++	AT76_SET_HANDLER(SIOCSIWFRAG, at76_iw_handler_set_frag),
++	AT76_SET_HANDLER(SIOCGIWFRAG, at76_iw_handler_get_frag),
++	AT76_SET_HANDLER(SIOCGIWTXPOW, at76_iw_handler_get_txpow),
++	AT76_SET_HANDLER(SIOCSIWRETRY, at76_iw_handler_set_retry),
++	AT76_SET_HANDLER(SIOCGIWRETRY, at76_iw_handler_get_retry),
++	AT76_SET_HANDLER(SIOCSIWENCODE, at76_iw_handler_set_encode),
++	AT76_SET_HANDLER(SIOCGIWENCODE, at76_iw_handler_get_encode),
++	AT76_SET_HANDLER(SIOCSIWPOWER, at76_iw_handler_set_power),
++	AT76_SET_HANDLER(SIOCGIWPOWER, at76_iw_handler_get_power)
+ };
+ 
+ #define AT76_SET_PRIV(h, f) [h - SIOCIWFIRSTPRIV] = (iw_handler) f
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000113.html">[at76c503a-develop] [PATCH 05/12] Don't use double newline to	separate functions
+</A></li>
+	<LI>Next message: <A HREF="000115.html">[at76c503a-develop] [PATCH 07/12] Simplify capability setting in	(re)accociation requests
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#114">[ date ]</a>
+              <a href="thread.html#114">[ thread ]</a>
+              <a href="subject.html#114">[ subject ]</a>
+              <a href="author.html#114">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">More information about the at76c503a-develop
+mailing list</a><br>
+</body></html>

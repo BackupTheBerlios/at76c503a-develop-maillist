@@ -1,0 +1,589 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [at76c503a-develop] [PATCH 4/6] Trim all spaces at the line ends
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/at76c503a-develop/2007-April/index.html" >
+   <LINK REL="made" HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%204/6%5D%20Trim%20all%20spaces%20at%20the%20line%20ends&In-Reply-To=%3C20070428060323.22208.3333.stgit%40dv.roinet.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000047.html">
+   <LINK REL="Next"  HREF="000049.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[at76c503a-develop] [PATCH 4/6] Trim all spaces at the line ends</H1>
+    <B>Pavel Roskin</B> 
+    <A HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%204/6%5D%20Trim%20all%20spaces%20at%20the%20line%20ends&In-Reply-To=%3C20070428060323.22208.3333.stgit%40dv.roinet.com%3E"
+       TITLE="[at76c503a-develop] [PATCH 4/6] Trim all spaces at the line ends">proski at gnu.org
+       </A><BR>
+    <I>Sat Apr 28 08:03:23 CEST 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000047.html">[at76c503a-develop] [PATCH 3/6] Fix remaining prefixes,	remove comments after functions and switches
+</A></li>
+        <LI>Next message: <A HREF="000049.html">[at76c503a-develop] [PATCH 5/6] Fix a warning about useless	comparison
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#48">[ date ]</a>
+              <a href="thread.html#48">[ thread ]</a>
+              <a href="subject.html#48">[ subject ]</a>
+              <a href="author.html#48">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Signed-off-by: Pavel Roskin &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">proski at gnu.org</A>&gt;
+---
+
+ at76_usb.c |  150 ++++++++++++++++++++++++++++++------------------------------
+ 1 files changed, 75 insertions(+), 75 deletions(-)
+
+diff --git a/at76_usb.c b/at76_usb.c
+index 864e3ee..ef1c2b8 100644
+--- a/at76_usb.c
++++ b/at76_usb.c
+@@ -696,7 +696,7 @@ static struct reg_domain const *at76_get_reg_domain(u16 code)
+ 	for (i = 0; i &lt; tab_len; i++)
+ 		if (code == fd_tab[i].code)
+ 			break;
+-  
++
+ 	return (i &gt;= tab_len) ? &amp;unknown : &amp;fd_tab[i];
+ }
+ 
+@@ -892,7 +892,7 @@ static int at76_set_radio(struct at76_priv *dev, int on_off)
+ 	return ret;
+ }
+ 
+-/** 
++/**
+  * set_pm_mode - set current power save mode
+  * (AT76_PM_OFF/AT76_PM_ON/AT76_PM_SMART)
+  */
+@@ -1092,7 +1092,7 @@ static int at76_dump_mib_mac_addr(struct at76_priv *dev)
+ 		goto err;
+ 	}
+ 
+-	dbg(&quot;%s: MIB MAC_ADDR: mac_addr %s res 0x%x 0x%x group_addr %s status %d %d %d %d&quot;, 
++	dbg(&quot;%s: MIB MAC_ADDR: mac_addr %s res 0x%x 0x%x group_addr %s status %d %d %d %d&quot;,
+ 	       dev-&gt;netdev-&gt;name, mac2str(mac_addr-&gt;mac_addr),
+ 		   mac_addr-&gt;res[0], mac_addr-&gt;res[1],
+ 	       hex2str(dev-&gt;obuf, mac_addr-&gt;group_addr,
+@@ -1215,7 +1215,7 @@ static int at76_dump_mib_mac(struct at76_priv *dev)
+ 		ret = -ENOMEM;
+ 		goto exit;
+ 	}
+-	
++
+ 	ret = at76_get_mib(dev-&gt;udev, MIB_MAC, mac, sizeof(struct mib_mac));
+ 	if (ret &lt; 0) {
+ 		err(&quot;%s: at76_get_mib failed: %d&quot;, dev-&gt;netdev-&gt;name, ret);
+@@ -1349,7 +1349,7 @@ static int at76_get_mib_mdomain(struct at76_priv *dev, struct mib_mdomain *val)
+ 
+ static void at76_dump_mib_mdomain(struct at76_priv *dev)
+ {
+-	char obuf1[2*14+1], obuf2[2*14+1]; /* to hexdump tx_powerlevel, 
++	char obuf1[2*14+1], obuf2[2*14+1]; /* to hexdump tx_powerlevel,
+ 					      channel_list */
+ 	int ret;
+ 	struct mib_mdomain mdomain;
+@@ -1414,7 +1414,7 @@ static int at76_get_current_channel(struct at76_priv *dev)
+ 	return ret;
+ }
+ 
+-/** 
++/**
+  * start_scan - start a scan
+  *
+  * @use_essid - use the configured ESSID in non passive mode
+@@ -1445,7 +1445,7 @@ static int at76_start_scan(struct at76_priv *dev, int use_essid, int ir_step)
+ 	else
+ 		scan.scan_type = dev-&gt;scan_mode;
+ 
+-	/* INFO: For probe_delay, not multiplying by 1024 as this will be 
++	/* INFO: For probe_delay, not multiplying by 1024 as this will be
+ 	   slightly less than min_channel_time
+ 	   (per spec: probe delay &lt; min. channel time) */
+ 	if (dev-&gt;istate == MONITORING) {
+@@ -1576,7 +1576,7 @@ static void at76_handle_mgmt_timeout_scan(struct at76_priv *dev)
+ 		err(&quot;%s: %s: at76_get_cmd_status failed with %d&quot;,
+ 		    dev-&gt;netdev-&gt;name, __FUNCTION__, status);
+ 		status = CMD_STATUS_IN_PROGRESS;
+-		/* INFO: Hope it was a one off error - if not, scanning 
++		/* INFO: Hope it was a one off error - if not, scanning
+ 		   further down the line and stop this cycle */
+ 	}
+ 	at76_dbg(DBG_PROGRESS, &quot;%s %s:%d got cmd_status %d (istate %d, &quot;
+@@ -1595,7 +1595,7 @@ static void at76_handle_mgmt_timeout_scan(struct at76_priv *dev)
+ 					err(&quot;at76_get_mib_mdomain returned %d&quot;, ret);
+ 				} else {
+ 					char obuf1[2*14+1], obuf2[2*14+1];
+-					
++
+ 					at76_dbg(DBG_MIB, &quot;%s: MIB MDOMAIN: channel_list %s &quot;
+ 					         &quot;tx_powerlevel %s&quot;,
+ 					         dev-&gt;netdev-&gt;name,
+@@ -1605,7 +1605,7 @@ static void at76_handle_mgmt_timeout_scan(struct at76_priv *dev)
+ 						    (sizeof(obuf2)-1)/2,'\0'));
+ 				}
+ 				if ((ret = at76_start_scan(dev, 0, 1)) &lt; 0) {
+-					err(&quot;%s: %s: start_scan (ANY) failed with %d&quot;, 
++					err(&quot;%s: %s: start_scan (ANY) failed with %d&quot;,
+ 					    dev-&gt;netdev-&gt;name, __FUNCTION__, ret);
+ 				}
+ 				at76_dbg(DBG_MGMT_TIMER, &quot;%s:%d: starting mgmt_timer for %d ticks&quot;,
+@@ -1615,7 +1615,7 @@ static void at76_handle_mgmt_timeout_scan(struct at76_priv *dev)
+ 
+ 			case 2:
+ 				if ((ret = at76_start_scan(dev, 1, 1)) &lt; 0) {
+-					err(&quot;%s: %s: start_scan (SSID) failed with %d&quot;, 
++					err(&quot;%s: %s: start_scan (SSID) failed with %d&quot;,
+ 					    dev-&gt;netdev-&gt;name, __FUNCTION__, ret);
+ 				}
+ 				at76_dbg(DBG_MGMT_TIMER, &quot;%s:%d: starting mgmt_timer for %d ticks&quot;,
+@@ -1638,7 +1638,7 @@ static void at76_handle_mgmt_timeout_scan(struct at76_priv *dev)
+ 			}
+ 			dev-&gt;scan_runs++;
+ 		} else {
+-			
++
+ 			at76_assert(dev-&gt;istate == MONITORING);
+ 			at76_dbg(DBG_MONITOR_MODE, &quot;%s: MONITOR MODE: restart scan&quot;,
+ 			         dev-&gt;netdev-&gt;name);
+@@ -1683,11 +1683,11 @@ static void at76_handle_mgmt_timeout(struct at76_priv *dev)
+ 		at76_assert(0);
+ 		break;
+ 
+-	case CONNECTED:	/* we haven't received the beacon of this BSS for 
++	case CONNECTED:	/* we haven't received the beacon of this BSS for
+ 				   BEACON_TIMEOUT seconds */
+ 		info(&quot;%s: lost beacon bssid %s&quot;,
+ 		     dev-&gt;netdev-&gt;name, mac2str(dev-&gt;curr_bss-&gt;bssid));
+-		/* jal: starting mgmt_timer in ad-hoc mode is questionable, 
++		/* jal: starting mgmt_timer in ad-hoc mode is questionable,
+ 		   but I'll leave it here to track down another lockup problem */
+ 		if (dev-&gt;iw_mode != IW_MODE_ADHOC) {
+ 			netif_carrier_off(dev-&gt;netdev);
+@@ -1764,7 +1764,7 @@ static void at76_handle_mgmt_timeout(struct at76_priv *dev)
+ 	}
+ }
+ 
+-/* calc. the padding from txbuf-&gt;wlength (which excludes the USB TX header) 
++/* calc. the padding from txbuf-&gt;wlength (which excludes the USB TX header)
+    guess this is needed to compensate a flaw in the AT76C503A USB part ... */
+ static inline int at76_calc_padding(int wlen)
+ {
+@@ -1901,7 +1901,7 @@ static int at76_disassoc_req(struct at76_priv *dev, struct bss_info *bss)
+ 
+ }
+ 
+-/* challenge is the challenge string (in TLV format) 
++/* challenge is the challenge string (in TLV format)
+    we got with seq_nr 2 for shared secret authentication only and
+    send in seq_nr 3 WEP encrypted to prove we have the correct WEP key;
+    otherwise it is NULL */
+@@ -2070,7 +2070,7 @@ static int at76_reassoc_req(struct at76_priv *dev, struct bss_info *curr_bss,
+ 	   Agere-based AP with optional WEP transmits encrypted frames
+ 	   to us.  AP only set the Privacy bit in their capabilities
+ 	   if WEP is mandatory in the BSS! */
+-	req-&gt;capability = cpu_to_le16(new_bss-&gt;capa | 
++	req-&gt;capability = cpu_to_le16(new_bss-&gt;capa |
+ 				      (dev-&gt;wep_enabled ? WLAN_CAPABILITY_PRIVACY : 0) |
+ 				      (dev-&gt;preamble_type == PREAMBLE_TYPE_SHORT ?
+ 				       WLAN_CAPABILITY_SHORT_PREAMBLE : 0));
+@@ -2093,7 +2093,7 @@ static int at76_reassoc_req(struct at76_priv *dev, struct bss_info *curr_bss,
+ 
+ 	/* init. at76_priv tx header */
+ 	tx_buffer-&gt;wlength = cpu_to_le16((u8 *)tlv-(u8 *)mgmt);
+-	
++
+ 	{
+ 		/* output buffer for rates and bssid */
+ 		char orates[4*2+1];
+@@ -2628,7 +2628,7 @@ static void at76_dump_bss_table(struct at76_priv *dev)
+  * at76_match_bss - try to find a matching bss in dev-&gt;bss
+  *
+  * last - last bss tried
+- * 
++ *
+  * last == NULL signals a new round starting with dev-&gt;bss_list.next
+  * this function must be called inside an acquired dev-&gt;bss_list_spinlock
+  * otherwise the timeout on bss may remove the newly chosen entry
+@@ -2998,18 +2998,18 @@ static void at76_rx_mgmt_beacon(struct at76_priv *dev, struct at76_rx_buffer *bu
+ 
+ 	tlv = bdata-&gt;info_element;
+ 
+-	/* This routine steps through the bdata-&gt;data array to tries to get 
++	/* This routine steps through the bdata-&gt;data array to tries to get
+ 	 * some useful information about the access point.
+-	 * Currently, this implementation supports receipt of: SSID, 
+-	 * supported transfer rates and channel, in any order, with some 
+-	 * tolerance for intermittent unknown codes (although this 
+-	 * functionality may not be necessary as the useful information will 
+-	 * usually arrive in consecutively, but there have been some 
+-	 * reports of some of the useful information fields arriving in a 
++	 * Currently, this implementation supports receipt of: SSID,
++	 * supported transfer rates and channel, in any order, with some
++	 * tolerance for intermittent unknown codes (although this
++	 * functionality may not be necessary as the useful information will
++	 * usually arrive in consecutively, but there have been some
++	 * reports of some of the useful information fields arriving in a
+ 	 * different order).
+-	 * It does not support any more IE types although MFIE_TYPE_TIM may 
++	 * It does not support any more IE types although MFIE_TYPE_TIM may
+ 	 * be supported (on my AP at least).
+-	 * The bdata-&gt;data array is about 1500 bytes long but only ~36 of those 
++	 * The bdata-&gt;data array is about 1500 bytes long but only ~36 of those
+ 	 * bytes are useful, hence the have_ssid etc optimizations. */
+ 
+ 	while (keep_going &amp;&amp;
+@@ -3022,15 +3022,15 @@ static void at76_rx_mgmt_beacon(struct at76_priv *dev, struct at76_rx_buffer *bu
+ 			if (!have_ssid &amp;&amp; ((new_entry) ||
+ 					   !at76_is_cloaked_ssid(tlv-&gt;data, len))) {
+ 				/* we copy only if this is a new entry,
+-				   or the incoming SSID is not a cloaked SSID. This 
+-				   will protect us from overwriting a real SSID read 
+-				   in a ProbeResponse with a cloaked one from a 
++				   or the incoming SSID is not a cloaked SSID. This
++				   will protect us from overwriting a real SSID read
++				   in a ProbeResponse with a cloaked one from a
+ 				   following beacon. */
+ 
+ 				match-&gt;ssid_len = len;
+ 				memcpy(match-&gt;ssid, tlv-&gt;data, len);
+-				match-&gt;ssid[len] = '\0';	/* terminate the 
+-								   string for 
++				match-&gt;ssid[len] = '\0';	/* terminate the
++								   string for
+ 								   printing */
+ 				at76_dbg(DBG_RX_BEACON, &quot;%s: SSID - %s&quot;,
+ 				         dev-&gt;netdev-&gt;name, match-&gt;ssid);
+@@ -3074,22 +3074,22 @@ static void at76_rx_mgmt_beacon(struct at76_priv *dev, struct at76_rx_buffer *bu
+ 					  tlv-&gt;len), '\0'));
+ 			break;
+ 		}
+-		
++
+ 		/*  advance to the next informational element */
+ 		next_ie(&amp;tlv);
+ 
+-		/* Optimization: after all, the bdata-&gt;data array is  
+-		 * varpar_len bytes long, whereas we get all of the useful 
+-		 * information after only ~36 bytes, this saves us a lot of 
+-		 * time (and trouble as the remaining portion of the array 
++		/* Optimization: after all, the bdata-&gt;data array is
++		 * varpar_len bytes long, whereas we get all of the useful
++		 * information after only ~36 bytes, this saves us a lot of
++		 * time (and trouble as the remaining portion of the array
+ 		 * could be full of junk)
+ 		 * Comment this out if you want to see what other information
+ 		 * comes from the AP - although little of it may be useful */
+ 	}
+ 
+-	at76_dbg(DBG_RX_BEACON, &quot;%s: Finished processing beacon data&quot;, 
++	at76_dbg(DBG_RX_BEACON, &quot;%s: Finished processing beacon data&quot;,
+ 	         dev-&gt;netdev-&gt;name);
+-	
++
+ 	match-&gt;last_rx = jiffies; /* record last rx of beacon */
+ 
+ rx_mgmt_beacon_end:
+@@ -3244,7 +3244,7 @@ Ethernet Frame Formats:
+ Ethernet (a.k.a. Ethernet II)
+ 
+         +---------+---------+---------+----------
+-        |   Dst   |   Src   |  Type   |  Data... 
++        |   Dst   |   Src   |  Type   |  Data...
+         +---------+---------+---------+----------
+ 
+          &lt;-- 6 --&gt; &lt;-- 6 --&gt; &lt;-- 2 --&gt; &lt;-46-1500-&gt;
+@@ -3252,12 +3252,12 @@ Ethernet (a.k.a. Ethernet II)
+          Type 0x80 0x00 = TCP/IP
+          Type 0x06 0x00 = XNS
+          Type 0x81 0x37 = Novell NetWare
+-         
++
+ 
+ 802.3
+ 
+         +---------+---------+---------+----------
+-        |   Dst   |   Src   | Length  | Data...  
++        |   Dst   |   Src   | Length  | Data...
+         +---------+---------+---------+----------
+ 
+          &lt;-- 6 --&gt; &lt;-- 6 --&gt; &lt;-- 2 --&gt; &lt;-46-1500-&gt;
+@@ -3265,15 +3265,15 @@ Ethernet (a.k.a. Ethernet II)
+ 802.2 (802.3 with 802.2 header)
+ 
+         +---------+---------+---------+-------+-------+-------+----------
+-        |   Dst   |   Src   | Length  | DSAP  | SSAP  |Control| Data...  
++        |   Dst   |   Src   | Length  | DSAP  | SSAP  |Control| Data...
+         +---------+---------+---------+-------+-------+-------+----------
+ 
+                                        &lt;- 1 -&gt; &lt;- 1 -&gt; &lt;- 1 -&gt; &lt;-43-1497-&gt;
+ 
+-SNAP (802.3 with 802.2 and SNAP headers) 
++SNAP (802.3 with 802.2 and SNAP headers)
+ 
+         +---------+---------+---------+-------+-------+-------+-----------+---------+-----------
+-        |   Dst   |   Src   | Length  | 0xAA  | 0xAA  | 0x03  |  Org Code |   Type  | Data...   
++        |   Dst   |   Src   | Length  | 0xAA  | 0xAA  | 0x03  |  Org Code |   Type  | Data...
+         +---------+---------+---------+-------+-------+-------+-----------+---------+-----------
+ 
+                                                                &lt;--  3  --&gt; &lt;-- 2 --&gt; &lt;-38-1492-&gt;
+@@ -3369,7 +3369,7 @@ static void at76_ieee80211_to_eth(struct sk_buff *skb, int iw_mode)
+ 	    hex2str(da, eth_hdr(skb)-&gt;h_dest, ETH_ALEN, ':'),
+ 	    hex2str(sa, eth_hdr(skb)-&gt;h_source, ETH_ALEN, ':'),
+ 	    ntohs(skb-&gt;protocol), skb-&gt;len,
+-	    hex2str(dev-&gt;obuf, skb-&gt;data, 
++	    hex2str(dev-&gt;obuf, skb-&gt;data,
+ 		    min((int)sizeof(dev-&gt;obuf)/3,64), ' '));
+ 
+ }
+@@ -3627,7 +3627,7 @@ static struct sk_buff *at76_check_for_rx_frags(struct at76_priv *dev)
+ 
+ 			at76_dbg(DBG_RX_FRAGS, &quot;%s: free old contents: sender %s seq/frag %d/%d&quot;,
+ 			         dev-&gt;netdev-&gt;name, mac2str(optr-&gt;sender),
+-			         optr-&gt;seqnr, optr-&gt;fragnr); 
++			         optr-&gt;seqnr, optr-&gt;fragnr);
+ 
+ 		} else {
+ 			/* take the skb from dev-&gt;rx_skb */
+@@ -3640,7 +3640,7 @@ static struct sk_buff *at76_check_for_rx_frags(struct at76_priv *dev)
+ 		optr-&gt;seqnr = seqnr;
+ 		optr-&gt;fragnr = 0;
+ 		optr-&gt;last_rx = jiffies;
+-		
++
+ 		return NULL;
+ 	}
+ }
+@@ -4009,7 +4009,7 @@ static int at76_tx(struct sk_buff *skb, struct net_device *netdev)
+ 
+ 	/* we can get rid of memcpy, if we set netdev-&gt;hard_header_len
+ 	   to 8 + sizeof(struct ieee80211_hdr_3addr), because then we have
+-	   enough space 
++	   enough space
+ 	   at76_dbg(DBG_TX, &quot;skb-&gt;data - skb-&gt;head = %d&quot;, skb-&gt;data - skb-&gt;head); */
+ 
+ 	if (ntohs(*(__be16 *) (skb-&gt;data + 2 * ETH_ALEN)) &lt;= 1518) {
+@@ -4034,7 +4034,7 @@ static int at76_tx(struct sk_buff *skb, struct net_device *netdev)
+ 		memcpy(payload, rfc1042sig, sizeof(rfc1042sig));
+ 		memcpy(payload + sizeof(rfc1042sig),
+ 		       skb-&gt;data + 2*ETH_ALEN, skb-&gt;len - 2*ETH_ALEN);
+-		wlen = sizeof(struct ieee80211_hdr_3addr) + sizeof(rfc1042sig) + 
++		wlen = sizeof(struct ieee80211_hdr_3addr) + sizeof(rfc1042sig) +
+ 			skb-&gt;len - 2*ETH_ALEN;
+ 	}
+ 
+@@ -4061,7 +4061,7 @@ static int at76_tx(struct sk_buff *skb, struct net_device *netdev)
+ 	/* setup 'Atmel' header */
+ 	tx_buffer-&gt;wlength = cpu_to_le16(wlen);
+ 	tx_buffer-&gt;tx_rate = dev-&gt;txrate;
+-	/* for broadcast destination addresses, the firmware 0.100.x 
++	/* for broadcast destination addresses, the firmware 0.100.x
+ 	   seems to choose the highest rate set with CMD_STARTUP in
+ 	   basic_rate_set replacing this value */
+ 
+@@ -4141,7 +4141,7 @@ static int at76_startup_device(struct at76_priv *dev)
+ 		ossid[dev-&gt;essid_size] = '\0';
+ 
+ 		dbg(&quot;%s param: ssid %s (%s) mode %s ch %d wep %s key %d keylen %d&quot;,
+-		       dev-&gt;netdev-&gt;name, ossid, 
++		       dev-&gt;netdev-&gt;name, ossid,
+ 		       hex2str(dev-&gt;obuf, dev-&gt;essid,
+ 			       min((int)(sizeof(dev-&gt;obuf)-1)/2,
+ 				   IW_ESSID_MAX_SIZE), '\0'),
+@@ -4151,9 +4151,9 @@ static int at76_startup_device(struct at76_priv *dev)
+ 		       dev-&gt;wep_key_id, dev-&gt;wep_keys_len[dev-&gt;wep_key_id]);
+ 		dbg(&quot;%s param: preamble %s rts %d retry %d frag %d &quot;
+ 		       &quot;txrate %s auth_mode %d&quot;,
+-		       dev-&gt;netdev-&gt;name,		       
++		       dev-&gt;netdev-&gt;name,
+ 		       dev-&gt;preamble_type == PREAMBLE_TYPE_SHORT ? &quot;short&quot; : &quot;long&quot;,
+-		       dev-&gt;rts_threshold, dev-&gt;short_retry_limit, 
++		       dev-&gt;rts_threshold, dev-&gt;short_retry_limit,
+ 		       dev-&gt;frag_threshold,
+ 		       dev-&gt;txrate == TX_RATE_1MBIT ? &quot;1MBit&quot; :
+ 		       dev-&gt;txrate == TX_RATE_2MBIT ? &quot;2MBit&quot; :
+@@ -4163,7 +4163,7 @@ static int at76_startup_device(struct at76_priv *dev)
+ 		       dev-&gt;auth_mode);
+ 		dbg(&quot;%s param: pm_mode %d pm_period %d auth_mode %s &quot;
+ 		       &quot;scan_times %d %d scan_mode %s international_roaming %d&quot;,
+-		       dev-&gt;netdev-&gt;name,		       
++		       dev-&gt;netdev-&gt;name,
+ 		       dev-&gt;pm_mode, dev-&gt;pm_period,
+ 		       dev-&gt;auth_mode == WLAN_AUTH_OPEN ?
+ 		       &quot;open&quot; : &quot;shared_secret&quot;,
+@@ -4378,7 +4378,7 @@ static int at76_set_mac_address(struct net_device *netdev, void *addr)
+ 	return 1;
+ }
+ 
+-/** 
++/**
+  * at76_iwspy_update - check if we spy on the sender address of buf and update stats
+  */
+ static void at76_iwspy_update(struct at76_priv *dev, struct at76_rx_buffer *buf)
+@@ -4512,7 +4512,7 @@ static int at76_iw_handler_set_freq(struct net_device *netdev,
+ 	if (chan &lt; 1 || !dev-&gt;domain) {
+ 		/* non-positive channels are invalid
+ 		 * we need a domain info to set the channel
+-		 * either that or an invalid frequency was 
++		 * either that or an invalid frequency was
+ 		 * provided by the user */
+ 		ret = -EINVAL;
+ 	} else if (!dev-&gt;international_roaming) {
+@@ -4752,7 +4752,7 @@ static int at76_iw_handler_set_wap(struct net_device *netdev,
+ 	at76_dbg(DBG_IOCTL, &quot;%s: SIOCSIWAP - wap/bssid %s&quot;, netdev-&gt;name,
+ 	         mac2str(ap_addr-&gt;sa_data));
+ 
+-	/* if the incoming address == ff:ff:ff:ff:ff:ff, the user has 
++	/* if the incoming address == ff:ff:ff:ff:ff:ff, the user has
+ 	   chosen any or auto AP preference */
+ 	if (is_broadcast_ether_addr(ap_addr-&gt;sa_data)
+ 	    || is_zero_ether_addr(ap_addr-&gt;sa_data)) {
+@@ -4897,7 +4897,7 @@ static int at76_iw_handler_get_scan(struct net_device *netdev,
+ 		iwe-&gt;cmd = SIOCGIWESSID;
+ 		iwe-&gt;u.data.flags = 1;
+ 
+-		curr_pos = iwe_stream_add_point(curr_pos, 
++		curr_pos = iwe_stream_add_point(curr_pos,
+ 			extra + IW_SCAN_MAX_DATA, iwe, curr_bss-&gt;ssid);
+ 
+ 		iwe-&gt;cmd = SIOCGIWMODE;
+@@ -4905,7 +4905,7 @@ static int at76_iw_handler_get_scan(struct net_device *netdev,
+ 		    IW_MODE_ADHOC :
+ 		    (curr_bss-&gt;capa &amp; WLAN_CAPABILITY_ESS) ?
+ 		    IW_MODE_MASTER : IW_MODE_AUTO;
+-		/* IW_MODE_AUTO = 0 which I thought is 
++		/* IW_MODE_AUTO = 0 which I thought is
+ 		 * the most logical value to return in this case */
+ 		curr_pos = iwe_stream_add_event(curr_pos,
+ 						extra + IW_SCAN_MAX_DATA, iwe,
+@@ -5101,7 +5101,7 @@ static int at76_iw_handler_get_rate(struct net_device *netdev,
+ 	bitrate-&gt;fixed = (dev-&gt;txrate != TX_RATE_AUTO);
+ 	bitrate-&gt;disabled = 0;
+ 
+-	at76_dbg(DBG_IOCTL, &quot;%s: SIOCGIWRATE - %d&quot;, netdev-&gt;name, 
++	at76_dbg(DBG_IOCTL, &quot;%s: SIOCGIWRATE - %d&quot;, netdev-&gt;name,
+ 	         bitrate-&gt;value);
+ 
+ 	return ret;
+@@ -5320,13 +5320,13 @@ static int at76_iw_handler_get_encode(struct net_device *netdev,
+ 	}
+ 
+ 	at76_dbg(DBG_IOCTL, &quot;%s: SIOCGIWENCODE - enc.flags %08x &quot;
+-		&quot;pointer %p len %d&quot;, netdev-&gt;name, encoding-&gt;flags, 
++		&quot;pointer %p len %d&quot;, netdev-&gt;name, encoding-&gt;flags,
+ 		encoding-&gt;pointer, encoding-&gt;length);
+ 	at76_dbg(DBG_IOCTL, &quot;%s: SIOCGIWENCODE - wepstate: enabled %s key_id %d &quot;
+ 		&quot;key_len %d auth_mode %s&quot;,
+-		netdev-&gt;name, (dev-&gt;wep_enabled) ? &quot;true&quot; : &quot;false&quot;, 
++		netdev-&gt;name, (dev-&gt;wep_enabled) ? &quot;true&quot; : &quot;false&quot;,
+ 		dev-&gt;wep_key_id + 1, dev-&gt;wep_keys_len[dev-&gt;wep_key_id],
+-		(dev-&gt;auth_mode == WLAN_AUTH_SHARED_KEY) ? 
++		(dev-&gt;auth_mode == WLAN_AUTH_SHARED_KEY) ?
+ 			&quot;restricted&quot; : &quot;open&quot;);
+ 
+ 	return 0;
+@@ -5505,7 +5505,7 @@ static int at76_iw_set_scan_mode(struct net_device *netdev,
+ 	int ret = -EIWCOMMIT;
+ 
+ 	at76_dbg(DBG_IOCTL, &quot;%s: AT76_SET_SCAN_MODE - mode %s&quot;,
+-		 netdev-&gt;name, (val = SCAN_TYPE_ACTIVE) ? &quot;active&quot; : 
++		 netdev-&gt;name, (val = SCAN_TYPE_ACTIVE) ? &quot;active&quot; :
+ 		 (val = SCAN_TYPE_PASSIVE) ? &quot;passive&quot; : &quot;&lt;invalid&gt;&quot;);
+ 
+ 	if (val != SCAN_TYPE_ACTIVE &amp;&amp; val != SCAN_TYPE_PASSIVE) {
+@@ -5558,7 +5558,7 @@ static int at76_iw_set_intl_roaming(struct net_device *netdev,
+ 	return ret;
+ }
+ 
+-/** 
++/**
+  * set_monitor_mode - sets dev-&gt;netdev-&gt;type
+  */
+ static void at76_set_monitor_mode(struct at76_priv *dev)
+@@ -5723,7 +5723,7 @@ static void at76_delete_device(struct at76_priv *dev)
+ 			dev-&gt;rx_data[i].skb = NULL;
+ 		}
+ 	at76_dbg(DBG_PROC_ENTRY, &quot;%s: before freeing dev/netdev&quot;, __FUNCTION__);
+-	free_netdev(dev-&gt;netdev); /* dev is in net_dev */ 
++	free_netdev(dev-&gt;netdev); /* dev is in net_dev */
+ 
+ 	at76_dbg(DBG_PROC_ENTRY, &quot;%s: EXIT&quot;, __FUNCTION__);
+ }
+@@ -5880,7 +5880,7 @@ static struct at76_priv *at76_alloc_new_device(struct usb_device *udev,
+ }
+ 
+ 
+-/** 
++/**
+  * at76_init_new_device - continue device intialization after firmware download
+  *
+  * FIXME: We may have to move the register_netdev into at76_alloc_new_device,
+@@ -5906,9 +5906,9 @@ static int at76_init_new_device(struct at76_priv *dev)
+ 	/* get firmware version */
+ 	ret = at76_get_mib(dev-&gt;udev, MIB_FW_VERSION, &amp;dev-&gt;fw_version,
+ 			   sizeof(dev-&gt;fw_version));
+-	if ((ret &lt; 0) || ((dev-&gt;fw_version.major == 0) &amp;&amp; 
+-			  (dev-&gt;fw_version.minor == 0) &amp;&amp; 
+-			  (dev-&gt;fw_version.patch == 0) &amp;&amp; 
++	if ((ret &lt; 0) || ((dev-&gt;fw_version.major == 0) &amp;&amp;
++			  (dev-&gt;fw_version.minor == 0) &amp;&amp;
++			  (dev-&gt;fw_version.patch == 0) &amp;&amp;
+ 			  (dev-&gt;fw_version.build == 0))) {
+ 		err(&quot;getting firmware failed with %d, or version is 0&quot;, ret);
+ 		err(&quot;this probably means that the ext. fw was not loaded correctly&quot;);
+@@ -5996,11 +5996,11 @@ static int at76_init_new_device(struct at76_priv *dev)
+ }
+ 
+ 
+-/**  
++/**
+  * at76_get_fw_info - disassembles the firmware image
+  *
+  * get version, str, internal and external fw part.
+- * returns 0 on success, &lt; 0 on error 
++ * returns 0 on success, &lt; 0 on error
+  */
+ static int at76_get_fw_info(u8 *fw_data, int fw_size,
+ 				u32 *board, u32 *version, char **str,
+@@ -6052,7 +6052,7 @@ static int at76_get_fw_info(u8 *fw_data, int fw_size,
+ 	return 0;
+ }
+ 
+-/** 
++/**
+  * at76_do_probe - have a look at the firmware
+  */
+ static int at76_do_probe(struct usb_device *udev, u8 *fw_data, int fw_size,
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000047.html">[at76c503a-develop] [PATCH 3/6] Fix remaining prefixes,	remove comments after functions and switches
+</A></li>
+	<LI>Next message: <A HREF="000049.html">[at76c503a-develop] [PATCH 5/6] Fix a warning about useless	comparison
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#48">[ date ]</a>
+              <a href="thread.html#48">[ thread ]</a>
+              <a href="subject.html#48">[ subject ]</a>
+              <a href="author.html#48">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">More information about the at76c503a-develop
+mailing list</a><br>
+</body></html>

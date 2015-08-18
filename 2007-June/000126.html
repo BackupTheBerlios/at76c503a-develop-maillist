@@ -1,0 +1,130 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [at76c503a-develop] [PATCH 05/10] Remove unneeded parentheses and	operators when	accessing &quot;packet&quot; field
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/at76c503a-develop/2007-June/index.html" >
+   <LINK REL="made" HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%2005/10%5D%20Remove%20unneeded%20parentheses%20and%0A%09operators%20when%09accessing%20%22packet%22%20field&In-Reply-To=%3C20070616073846.13212.42177.stgit%40dv.roinet.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000127.html">
+   <LINK REL="Next"  HREF="000129.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[at76c503a-develop] [PATCH 05/10] Remove unneeded parentheses and	operators when	accessing &quot;packet&quot; field</H1>
+    <B>Pavel Roskin</B> 
+    <A HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%2005/10%5D%20Remove%20unneeded%20parentheses%20and%0A%09operators%20when%09accessing%20%22packet%22%20field&In-Reply-To=%3C20070616073846.13212.42177.stgit%40dv.roinet.com%3E"
+       TITLE="[at76c503a-develop] [PATCH 05/10] Remove unneeded parentheses and	operators when	accessing &quot;packet&quot; field">proski at gnu.org
+       </A><BR>
+    <I>Sat Jun 16 09:38:46 CEST 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000127.html">[at76c503a-develop] [PATCH 04/10] Always use cpu_to_le16 to	populate priv-&gt;mib_buf.data	with 16-bit data
+</A></li>
+        <LI>Next message: <A HREF="000129.html">[at76c503a-develop] [PATCH 06/10] Use consistent timeout in	usb_control_msg()
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#126">[ date ]</a>
+              <a href="thread.html#126">[ thread ]</a>
+              <a href="subject.html#126">[ subject ]</a>
+              <a href="author.html#126">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Use AT76_TX_HDRLEN in one place where it wasn't used.
+
+Signed-off-by: Pavel Roskin &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">proski at gnu.org</A>&gt;
+---
+
+ at76_usb.c |   13 ++++++-------
+ 1 files changed, 6 insertions(+), 7 deletions(-)
+
+diff --git a/at76_usb.c b/at76_usb.c
+index c8312b0..2d17558 100644
+--- a/at76_usb.c
++++ b/at76_usb.c
+@@ -1646,8 +1646,7 @@ static void at76_write_bulk_callback(struct urb *urb)
+ 		/* we don't copy the padding bytes, but add them
+ 		   to the length */
+ 		memcpy(priv-&gt;bulk_out_buffer, mgmt_buf,
+-		       le16_to_cpu(mgmt_buf-&gt;wlength) +
+-		       offsetof(struct at76_tx_buffer, packet));
++		       le16_to_cpu(mgmt_buf-&gt;wlength) + AT76_TX_HDRLEN);
+ 		usb_fill_bulk_urb(priv-&gt;write_urb, priv-&gt;udev,
+ 				  priv-&gt;tx_bulk_pipe, priv-&gt;bulk_out_buffer,
+ 				  le16_to_cpu(mgmt_buf-&gt;wlength) +
+@@ -1755,7 +1754,7 @@ static int at76_auth_req(struct at76_priv *priv, struct bss_info *bss,
+ 	if (!tx_buffer)
+ 		return -ENOMEM;
+ 
+-	req = (struct ieee80211_auth *)(&amp;tx_buffer-&gt;packet);
++	req = (struct ieee80211_auth *)tx_buffer-&gt;packet;
+ 	mgmt = &amp;req-&gt;header;
+ 
+ 	/* make wireless header */
+@@ -1808,7 +1807,7 @@ static int at76_assoc_req(struct at76_priv *priv, struct bss_info *bss)
+ 	if (!tx_buffer)
+ 		return -ENOMEM;
+ 
+-	req = (struct ieee80211_assoc_request *)(&amp;tx_buffer-&gt;packet);
++	req = (struct ieee80211_assoc_request *)tx_buffer-&gt;packet;
+ 	mgmt = &amp;req-&gt;header;
+ 	tlv = req-&gt;info_element;
+ 
+@@ -1888,7 +1887,7 @@ static int at76_reassoc_req(struct at76_priv *priv, struct bss_info *curr_bss,
+ 	if (!tx_buffer)
+ 		return -ENOMEM;
+ 
+-	req = (struct ieee80211_reassoc_request *)(&amp;tx_buffer-&gt;packet);
++	req = (struct ieee80211_reassoc_request *)tx_buffer-&gt;packet;
+ 	mgmt = &amp;req-&gt;header;
+ 	tlv = req-&gt;info_element;
+ 
+@@ -1962,7 +1961,7 @@ static int at76_disassoc_req(struct at76_priv *priv, struct bss_info *bss)
+ 	if (!tx_buffer)
+ 		return -ENOMEM;
+ 
+-	req = (struct ieee80211_disassoc *)(&amp;tx_buffer-&gt;packet);
++	req = (struct ieee80211_disassoc *)tx_buffer-&gt;packet;
+ 	mgmt = &amp;req-&gt;header;
+ 
+ 	/* make wireless header */
+@@ -3720,7 +3719,7 @@ static int at76_tx(struct sk_buff *skb, struct net_device *netdev)
+ 	int submit_len;
+ 	struct at76_tx_buffer *tx_buffer = priv-&gt;bulk_out_buffer;
+ 	struct ieee80211_hdr_3addr *i802_11_hdr =
+-	    (struct ieee80211_hdr_3addr *)(&amp;tx_buffer-&gt;packet);
++	    (struct ieee80211_hdr_3addr *)tx_buffer-&gt;packet;
+ 	u8 *payload = tx_buffer-&gt;packet + sizeof(struct ieee80211_hdr_3addr);
+ 
+ 	if (netif_queue_stopped(netdev)) {
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000127.html">[at76c503a-develop] [PATCH 04/10] Always use cpu_to_le16 to	populate priv-&gt;mib_buf.data	with 16-bit data
+</A></li>
+	<LI>Next message: <A HREF="000129.html">[at76c503a-develop] [PATCH 06/10] Use consistent timeout in	usb_control_msg()
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#126">[ date ]</a>
+              <a href="thread.html#126">[ thread ]</a>
+              <a href="subject.html#126">[ subject ]</a>
+              <a href="author.html#126">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">More information about the at76c503a-develop
+mailing list</a><br>
+</body></html>

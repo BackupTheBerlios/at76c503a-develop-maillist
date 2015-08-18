@@ -1,0 +1,666 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [at76c503a-develop] [PATCH 03/12] Simplify dumping hex data
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/at76c503a-develop/2007-June/index.html" >
+   <LINK REL="made" HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%2003/12%5D%20Simplify%20dumping%20hex%20data&In-Reply-To=%3C20070614011106.25709.10687.stgit%40dv.roinet.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000110.html">
+   <LINK REL="Next"  HREF="000112.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[at76c503a-develop] [PATCH 03/12] Simplify dumping hex data</H1>
+    <B>Pavel Roskin</B> 
+    <A HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%2003/12%5D%20Simplify%20dumping%20hex%20data&In-Reply-To=%3C20070614011106.25709.10687.stgit%40dv.roinet.com%3E"
+       TITLE="[at76c503a-develop] [PATCH 03/12] Simplify dumping hex data">proski at gnu.org
+       </A><BR>
+    <I>Thu Jun 14 03:11:06 CEST 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000110.html">[at76c503a-develop] [PATCH 02/12] Add compat.h to the source file	list in Makefile
+</A></li>
+        <LI>Next message: <A HREF="000112.html">[at76c503a-develop] [PATCH 04/12] Fix more instances of bad	formatting
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#111">[ date ]</a>
+              <a href="thread.html#111">[ thread ]</a>
+              <a href="subject.html#111">[ subject ]</a>
+              <a href="author.html#111">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Use rotating buffer pool in mac2str() and hex2str().  This makes it
+unnecessary to allocate any buffers for either function, and also allows
+to use mac2str() more than once in the same expression.  Move mac2str()
+and hex2str() closer together.
+
+Replace hex2str() with mac2str() where appropriate.  For other hex2str()
+calls, always use &quot;-&quot; separator to improve readability.  Check buffer
+length in hex2str().
+
+Reformat some expressions along the way.
+
+Signed-off-by: Pavel Roskin &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">proski at gnu.org</A>&gt;
+---
+
+ at76_usb.c |  316 +++++++++++++++++++++++++-----------------------------------
+ at76_usb.h |    1 
+ 2 files changed, 134 insertions(+), 183 deletions(-)
+
+diff --git a/at76_usb.c b/at76_usb.c
+index 5039288..edc002b 100644
+--- a/at76_usb.c
++++ b/at76_usb.c
+@@ -486,63 +486,48 @@ static inline void at76_iwevent_bss_disconnect(struct net_device *netdev)
+ }
+ 
+ 
+-#define BIN2HEX(x) ((x) &lt; 10 ? '0'+(x) : (x)+'A'-10)
++#define HEX2STR_BUFFERS 4
++#define HEX2STR_MAX_LEN 64
++#define BIN2HEX(x) ((x) &lt; 10 ? '0' + (x) : (x) + 'A' - 10)
+ 
+-/* hexdump len many bytes from buf into obuf, separated by delim,
+-   add a trailing \0 into obuf */
+-static char *hex2str(char *obuf, void *buf, int len, char delim)
++/* Convert binary data into hex string */
++static char *hex2str(void *buf, int len)
+ {
++	static atomic_t a = ATOMIC_INIT(0);
++	static char bufs[3 * HEX2STR_MAX_LEN + 1][HEX2STR_BUFFERS];
++	char *ret = bufs[atomic_inc_return(&amp;a) &amp; (HEX2STR_BUFFERS - 1)];
++	char *obuf = ret;
+ 	u8 *ibuf = buf;
+-	char *ret = obuf;
++
++	if (len &gt; HEX2STR_MAX_LEN)
++		len = HEX2STR_MAX_LEN;
++
++	if (len &lt;= 0) {
++		ret[0] = '\0';
++		return ret;
++	}
+ 
+ 	while (len--) {
+ 		*obuf++ = BIN2HEX(*ibuf &gt;&gt; 4);
+ 		*obuf++ = BIN2HEX(*ibuf &amp; 0xf);
+-		if (delim != '\0')
+-			*obuf++ = delim;
++		*obuf++ = '-';
+ 		ibuf++;
+ 	}
+-	if (delim != '\0' &amp;&amp; obuf &gt; ret)
+-		obuf--;		/* remove last inserted delimiter */
+-	*obuf = '\0';
++	*(--obuf) = '\0';
+ 
+ 	return ret;
+ }
+ 
+ 
+-/* check if the given ssid is cloaked */
+-static inline int at76_is_cloaked_ssid(u8 *ssid, int length)
+-{
+-	static const u8 zeros[32];
+-
+-	return (length == 0) ||
+-	    (length == 1 &amp;&amp; *ssid == ' ') ||
+-	    (length &gt; 0 &amp;&amp; !memcmp(ssid, zeros, length));
+-}
+-
+-
+-static inline void at76_free_bss_list(struct at76_priv *priv)
+-{
+-	struct list_head *next, *ptr;
+-	unsigned long flags;
+-
+-	spin_lock_irqsave(&amp;priv-&gt;bss_list_spinlock, flags);
+-
+-	priv-&gt;curr_bss = priv-&gt;new_bss = NULL;
+-
+-	list_for_each_safe(ptr, next, &amp;priv-&gt;bss_list) {
+-		list_del(ptr);
+-		kfree(list_entry(ptr, struct bss_info, list));
+-	}
+-
+-	spin_unlock_irqrestore(&amp;priv-&gt;bss_list_spinlock, flags);
+-}
+-
++#define MAC2STR_BUFFERS 4
+ 
+ static inline char *mac2str(u8 *mac)
+ {
+-	static char str[6 * 3];
++	static atomic_t a = ATOMIC_INIT(0);
++	static char bufs[6 * 3][MAC2STR_BUFFERS];
++	char *str;
+ 
++	str = bufs[atomic_inc_return(&amp;a) &amp; (MAC2STR_BUFFERS - 1)];
+ 	sprintf(str, &quot;%02x:%02x:%02x:%02x:%02x:%02x&quot;,
+ 		mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+ 	return str;
+@@ -578,6 +563,35 @@ static void at76_ledtrig_tx_activity(void)
+ }
+ 
+ 
++/* check if the given ssid is cloaked */
++static inline int at76_is_cloaked_ssid(u8 *ssid, int length)
++{
++	static const u8 zeros[32];
++
++	return (length == 0) ||
++	    (length == 1 &amp;&amp; *ssid == ' ') ||
++	    (length &gt; 0 &amp;&amp; !memcmp(ssid, zeros, length));
++}
++
++
++static inline void at76_free_bss_list(struct at76_priv *priv)
++{
++	struct list_head *next, *ptr;
++	unsigned long flags;
++
++	spin_lock_irqsave(&amp;priv-&gt;bss_list_spinlock, flags);
++
++	priv-&gt;curr_bss = priv-&gt;new_bss = NULL;
++
++	list_for_each_safe(ptr, next, &amp;priv-&gt;bss_list) {
++		list_del(ptr);
++		kfree(list_entry(ptr, struct bss_info, list));
++	}
++
++	spin_unlock_irqrestore(&amp;priv-&gt;bss_list_spinlock, flags);
++}
++
++
+ static int at76_remap(struct usb_device *udev)
+ {
+ 	int ret;
+@@ -1144,8 +1158,7 @@ static int at76_dump_mib_mac_addr(struct at76_priv *priv)
+ 	dbg(&quot;%s: MIB MAC_ADDR: mac_addr %s res 0x%x 0x%x group_addr %s status %d %d %d %d&quot;,
+ 	       priv-&gt;netdev-&gt;name, mac2str(mac_addr-&gt;mac_addr),
+ 		   mac_addr-&gt;res[0], mac_addr-&gt;res[1],
+-	       hex2str(priv-&gt;obuf, mac_addr-&gt;group_addr,
+-		       min((int)(sizeof(priv-&gt;obuf)-1)/2, 4*ETH_ALEN), '\0'),
++	       hex2str(mac_addr-&gt;group_addr, 4 * ETH_ALEN),
+ 	       mac_addr-&gt;group_addr_status[0], mac_addr-&gt;group_addr_status[1],
+ 	       mac_addr-&gt;group_addr_status[2], mac_addr-&gt;group_addr_status[3]);
+ 
+@@ -1174,25 +1187,16 @@ static int at76_dump_mib_mac_wep(struct at76_priv *priv)
+ 	}
+ 
+ 	dbg(&quot;%s: MIB MAC_WEP: priv_invoked %u def_key_id %u key_len %u &quot;
+-	       &quot;excl_unencr %u wep_icv_err %u wep_excluded %u encr_level %u key %d: %s&quot;,
+-	       priv-&gt;netdev-&gt;name, mac_wep-&gt;privacy_invoked,
+-	       mac_wep-&gt;wep_default_key_id, mac_wep-&gt;wep_key_mapping_len,
+-	       mac_wep-&gt;exclude_unencrypted,
+-	       le32_to_cpu(mac_wep-&gt;wep_icv_error_count),
+-	       le32_to_cpu(mac_wep-&gt;wep_excluded_count),
+-	       mac_wep-&gt;encryption_level, mac_wep-&gt;wep_default_key_id,
+-	       mac_wep-&gt;wep_default_key_id &lt; 4 ? hex2str(priv-&gt;obuf,
+-							 mac_wep-&gt;
+-							 wep_default_keyvalue
+-							 [mac_wep-&gt;
+-							  wep_default_key_id],
+-							 min((int)
+-							     (sizeof(priv-&gt;obuf)
+-							      - 1) / 2,
+-							     mac_wep-&gt;
+-							     encryption_level ==
+-							     2 ? 13 : 5),
+-							 '\0') :
++	    &quot;excl_unencr %u wep_icv_err %u wep_excluded %u encr_level %u key %d: %s&quot;,
++	    priv-&gt;netdev-&gt;name, mac_wep-&gt;privacy_invoked,
++	    mac_wep-&gt;wep_default_key_id, mac_wep-&gt;wep_key_mapping_len,
++	    mac_wep-&gt;exclude_unencrypted,
++	    le32_to_cpu(mac_wep-&gt;wep_icv_error_count),
++	    le32_to_cpu(mac_wep-&gt;wep_excluded_count),
++	    mac_wep-&gt;encryption_level, mac_wep-&gt;wep_default_key_id,
++	    mac_wep-&gt;wep_default_key_id &lt; 4 ?
++		hex2str(mac_wep-&gt;wep_default_keyvalue[mac_wep-&gt;wep_default_key_id],
++			mac_wep-&gt;encryption_level == 2 ? 13 : 5) :
+ 	       &quot;&lt;invalid key id&gt;&quot;);
+ 
+       err:
+@@ -1241,9 +1245,7 @@ static int at76_dump_mib_mac_mgmt(struct at76_priv *priv)
+ 	       mac_mgmt-&gt;DTIM_period,
+ 	       mac_mgmt-&gt;CFP_period,
+ 	       mac2str(mac_mgmt-&gt;current_bssid),
+-	       hex2str(priv-&gt;obuf, mac_mgmt-&gt;current_essid,
+-		       min((int)(sizeof(priv-&gt;obuf) - 1) / 2,
+-			   IW_ESSID_MAX_SIZE), '\0'),
++	       hex2str(mac_mgmt-&gt;current_essid, IW_ESSID_MAX_SIZE),
+ 	       mac_mgmt-&gt;current_bss_type,
+ 	       mac_mgmt-&gt;power_mgmt_mode,
+ 	       mac_mgmt-&gt;ibss_change,
+@@ -1295,9 +1297,7 @@ static int at76_dump_mib_mac(struct at76_priv *priv)
+ 	       le16_to_cpu(mac-&gt;min_channel_time),
+ 	       le16_to_cpu(mac-&gt;max_channel_time),
+ 	       le16_to_cpu(mac-&gt;listen_interval),
+-	       hex2str(priv-&gt;obuf, mac-&gt;desired_ssid,
+-		       min((int)(sizeof(priv-&gt;obuf) - 1) / 2,
+-			   IW_ESSID_MAX_SIZE), '\0'),
++	       hex2str(mac-&gt;desired_ssid, IW_ESSID_MAX_SIZE),
+ 	       mac2str(mac-&gt;desired_bssid), mac-&gt;desired_bsstype);
+       err:
+ 	kfree(mac);
+@@ -1405,22 +1405,22 @@ static int at76_get_mib_mdomain(struct at76_priv *priv, struct mib_mdomain *val)
+ 
+ static void at76_dump_mib_mdomain(struct at76_priv *priv)
+ {
+-	char obuf1[2*14+1], obuf2[2*14+1]; /* to hexdump tx_powerlevel,
+-					      channel_list */
+ 	int ret;
+ 	struct mib_mdomain mdomain;
+ 
+-	if ((ret=at76_get_mib_mdomain(priv, &amp;mdomain)) &lt; 0) {
++	ret = at76_get_mib_mdomain(priv, &amp;mdomain);
++	if (ret &lt; 0) {
+ 		err(&quot;%s: at76_get_mib_mdomain returned %d&quot;, __FUNCTION__, ret);
+ 		return;
+ 	}
+ 
+-	at76_dbg(DBG_MIB, &quot;%s: MIB MDOMAIN: channel_list %s tx_powerlevel %s&quot;,
++	at76_dbg(DBG_MIB, &quot;%s: MIB MDOMAIN: channel_list %s&quot;,
++		 priv-&gt;netdev-&gt;name,
++		 hex2str(mdomain.channel_list, sizeof(mdomain.channel_list)));
++
++	at76_dbg(DBG_MIB, &quot;%s: MIB MDOMAIN: tx_powerlevel %s&quot;,
+ 		 priv-&gt;netdev-&gt;name,
+-		 hex2str(obuf1, mdomain.channel_list,
+-			 (sizeof(obuf1) - 1) / 2, '\0'),
+-		 hex2str(obuf2, mdomain.tx_powerlevel,
+-			 (sizeof(obuf2) - 1) / 2, '\0'));
++		 hex2str(mdomain.tx_powerlevel, sizeof(mdomain.tx_powerlevel)));
+ }
+ 
+ 
+@@ -1740,8 +1740,7 @@ static int at76_send_mgmt_bulk(struct at76_priv *priv,
+ 		   implement a queue or silently modify the old msg */
+ 		err(&quot;%s: %s removed pending mgmt buffer %s&quot;,
+ 		    priv-&gt;netdev-&gt;name, __FUNCTION__,
+-		    hex2str(priv-&gt;obuf, priv-&gt;next_mgmt_bulk,
+-			    min((int)(sizeof(priv-&gt;obuf)) / 3, 64), ' '));
++		    hex2str(priv-&gt;next_mgmt_bulk, 64));
+ 		kfree(priv-&gt;next_mgmt_bulk);
+ 	}
+ 
+@@ -1758,9 +1757,7 @@ static int at76_send_mgmt_bulk(struct at76_priv *priv,
+ 		at76_dbg(DBG_TX_MGMT, &quot;%s: tx mgmt: wlen %d tx_rate %d pad %d %s&quot;,
+ 			 priv-&gt;netdev-&gt;name, le16_to_cpu(txbuf-&gt;wlength),
+ 			 txbuf-&gt;tx_rate, txbuf-&gt;padding,
+-			 hex2str(priv-&gt;obuf, txbuf-&gt;packet,
+-			    min((sizeof(priv-&gt;obuf) - 1) / 2,
+-				(size_t) le16_to_cpu(txbuf-&gt;wlength)), '\0'));
++			 hex2str(txbuf-&gt;packet, le16_to_cpu(txbuf-&gt;wlength)));
+ 
+ 		/* txbuf was not consumed above -&gt; send mgmt msg immediately */
+ 		memcpy(priv-&gt;bulk_out_buffer, txbuf,
+@@ -1841,8 +1838,7 @@ static int at76_auth_req(struct at76_priv *priv, struct bss_info *bss,
+ 	if (seq_nr == 3) {
+ 		at76_dbg(DBG_TX_MGMT, &quot;%s: AuthReq challenge: %s ...&quot;,
+ 			 priv-&gt;netdev-&gt;name,
+-			 hex2str(priv-&gt;obuf, req-&gt;info_element,
+-			     min((int)sizeof(priv-&gt;obuf) / 3, 18), ' '));
++			 hex2str(req-&gt;info_element, 18));
+ 	}
+ 
+ 	/* either send immediately (if no data tx is pending
+@@ -1857,6 +1853,8 @@ static int at76_assoc_req(struct at76_priv *priv, struct bss_info *bss)
+ 	struct ieee80211_hdr_3addr *mgmt;
+ 	struct ieee80211_assoc_request *req;
+ 	struct ieee80211_info_element *tlv;
++	char essid[IW_ESSID_MAX_SIZE + 1];
++	int len;
+ 
+ 	at76_assert(bss != NULL);
+ 
+@@ -1903,22 +1901,16 @@ static int at76_assoc_req(struct at76_priv *priv, struct bss_info *bss)
+ 	/* init. at76_priv tx header */
+ 	tx_buffer-&gt;wlength = cpu_to_le16((u8 *) tlv - (u8 *) mgmt);
+ 
+-	{
+-		/* output buffer for ssid and rates */
+-		char orates[4 * 2 + 1];
+-		int len;
+-
+-		tlv = req-&gt;info_element;
+-		len = min_t(int, IW_ESSID_MAX_SIZE, tlv-&gt;len);
+-		memcpy(priv-&gt;obuf, tlv-&gt;data, len);
+-		priv-&gt;obuf[len] = '\0';
+-		next_ie(&amp;tlv); /* points to IE of rates now */
+-		at76_dbg(DBG_TX_MGMT, &quot;%s: AssocReq bssid %s capa x%04x ssid %s rates %s&quot;,
+-			 priv-&gt;netdev-&gt;name, mac2str(mgmt-&gt;addr3),
+-			 le16_to_cpu(req-&gt;capability), priv-&gt;obuf,
+-			 hex2str(orates,tlv-&gt;data,min((sizeof(orates)-1)/2,(size_t)tlv-&gt;len),
+-			    '\0'));
+-	}
++	tlv = req-&gt;info_element;
++	len = min_t(int, IW_ESSID_MAX_SIZE, tlv-&gt;len);
++	memcpy(essid, tlv-&gt;data, len);
++	essid[len] = '\0';
++	next_ie(&amp;tlv); /* points to IE of rates now */
++	at76_dbg(DBG_TX_MGMT,
++		 &quot;%s: AssocReq bssid %s capa x%04x ssid %s rates %s&quot;,
++		 priv-&gt;netdev-&gt;name, mac2str(mgmt-&gt;addr3),
++		 le16_to_cpu(req-&gt;capability), essid,
++		 hex2str(tlv-&gt;data, tlv-&gt;len));
+ 
+ 	/* either send immediately (if no data tx is pending
+ 	   or put it in pending list */
+@@ -1935,6 +1927,8 @@ static int at76_reassoc_req(struct at76_priv *priv, struct bss_info *curr_bss,
+ 	struct ieee80211_hdr_3addr *mgmt;
+ 	struct ieee80211_reassoc_request *req;
+ 	struct ieee80211_info_element *tlv;
++	char essid[IW_ESSID_MAX_SIZE + 1];
++	int len;
+ 
+ 	at76_assert(curr_bss != NULL);
+ 	at76_assert(new_bss != NULL);
+@@ -1986,21 +1980,16 @@ static int at76_reassoc_req(struct at76_priv *priv, struct bss_info *curr_bss,
+ 	/* init. at76_priv tx header */
+ 	tx_buffer-&gt;wlength = cpu_to_le16((u8 *)tlv-(u8 *)mgmt);
+ 
+-	{
+-		/* output buffer for rates and bssid */
+-		char orates[4*2+1];
+-		char ocurr[6*3+1];
+-		tlv = req-&gt;info_element;
+-		memcpy(priv-&gt;obuf, tlv-&gt;data, min(sizeof(priv-&gt;obuf),(size_t)tlv-&gt;len));
+-		priv-&gt;obuf[IW_ESSID_MAX_SIZE] = '\0';
+-		next_ie(&amp;tlv); /* points to IE of rates now */
+-		at76_dbg(DBG_TX_MGMT, &quot;%s: ReAssocReq curr %s new %s capa x%04x ssid %s rates %s&quot;,
+-			 priv-&gt;netdev-&gt;name,
+-			 hex2str(ocurr, req-&gt;current_ap, ETH_ALEN, ':'),
+-			 mac2str(mgmt-&gt;addr3), le16_to_cpu(req-&gt;capability), priv-&gt;obuf,
+-			 hex2str(orates,tlv-&gt;data,min((sizeof(orates)-1)/2,(size_t)tlv-&gt;len),
+-			    '\0'));
+-	}
++	tlv = req-&gt;info_element;
++	len = min_t(int, IW_ESSID_MAX_SIZE, tlv-&gt;len);
++	memcpy(essid, tlv-&gt;data, len);
++	essid[len] = '\0';
++	next_ie(&amp;tlv); /* points to IE of rates now */
++	at76_dbg(DBG_TX_MGMT,
++		 &quot;%s: ReAssocReq curr %s new %s capa x%04x ssid %s rates %s&quot;,
++		 priv-&gt;netdev-&gt;name, mac2str(req-&gt;current_ap),
++		 mac2str(mgmt-&gt;addr3), le16_to_cpu(req-&gt;capability), essid,
++		 hex2str(tlv-&gt;data, tlv-&gt;len));
+ 
+ 	/* either send immediately (if no data tx is pending
+ 	   or put it in pending list */
+@@ -2090,7 +2079,6 @@ static void at76_dump_bss_table(struct at76_priv *priv)
+ 	struct bss_info *ptr;
+ 	unsigned long flags;
+ 	struct list_head *lptr;
+-	char obuf_s[3*32];
+ 
+ 	spin_lock_irqsave(&amp;priv-&gt;bss_list_spinlock, flags);
+ 
+@@ -2104,13 +2092,9 @@ static void at76_dump_bss_table(struct at76_priv *priv)
+ 			 ptr, mac2str(ptr-&gt;bssid),
+ 			 ptr-&gt;channel,
+ 			 ptr-&gt;ssid,
+-			 hex2str(priv-&gt;obuf, ptr-&gt;ssid,
+-			       min((sizeof(priv-&gt;obuf) - 1) / 2,
+-				   (size_t) ptr-&gt;ssid_len), '\0'),
++			 hex2str(ptr-&gt;ssid, ptr-&gt;ssid_len),
+ 			 ptr-&gt;capa,
+-			 hex2str(obuf_s, ptr-&gt;rates,
+-			       min(sizeof(obuf_s) / 3,
+-				   (size_t) ptr-&gt;rates_len), ' '),
++			 hex2str(ptr-&gt;rates, ptr-&gt;rates_len),
+ 			 ptr-&gt;rssi, ptr-&gt;link_qual, ptr-&gt;noise_level);
+ 	}
+ 	spin_unlock_irqrestore(&amp;priv-&gt;bss_list_spinlock, flags);
+@@ -2166,17 +2150,15 @@ static void at76_handle_mgmt_timeout_scan(struct at76_priv *priv)
+ 
+ 	case 1:
+ 		at76_assert(priv-&gt;international_roaming);
+-		if ((ret=at76_get_mib_mdomain(priv, &amp;mdomain)) &lt; 0) {
++		if ((ret = at76_get_mib_mdomain(priv, &amp;mdomain)) &lt; 0) {
+ 			err(&quot;at76_get_mib_mdomain returned %d&quot;, ret);
+ 		} else {
+-			char obuf1[2*14+1], obuf2[2*14+1];
+-
+ 			at76_dbg(DBG_MIB, &quot;%s: MIB MDOMAIN: channel_list %s &quot;
+ 				 &quot;tx_powerlevel %s&quot;, priv-&gt;netdev-&gt;name,
+-				 hex2str(obuf1, mdomain.channel_list,
+-					 (sizeof(obuf1) - 1) / 2, '\0'),
+-				 hex2str(obuf2, mdomain.tx_powerlevel,
+-					 (sizeof(obuf2) - 1) / 2, '\0'));
++				 hex2str(mdomain.channel_list,
++					 sizeof(mdomain.channel_list)),
++				 hex2str(mdomain.tx_powerlevel,
++					 sizeof(mdomain.tx_powerlevel)));
+ 			}
+ 		if ((ret = at76_start_scan(priv, 0, 1)) &lt; 0) {
+ 			err(&quot;%s: %s: start_scan (ANY) failed with %d&quot;,
+@@ -3828,21 +3810,15 @@ static int at76_tx(struct sk_buff *skb, struct net_device *netdev)
+ 	tx_buffer-&gt;padding = at76_calc_padding(wlen);
+ 	submit_len = wlen + AT76_TX_HDRLEN + tx_buffer-&gt;padding;
+ 
+-	{
+-		at76_dbg(DBG_TX_DATA_CONTENT, &quot;%s skb-&gt;data %s&quot;, priv-&gt;netdev-&gt;name,
+-			 hex2str(priv-&gt;obuf, skb-&gt;data,
+-			    min((int)(sizeof(priv-&gt;obuf) - 1) / 2, 32), '\0'));
+-		at76_dbg(DBG_TX_DATA, &quot;%s tx  wlen x%x pad x%x rate %d hdr %s&quot;,
+-			 priv-&gt;netdev-&gt;name,
+-			 le16_to_cpu(tx_buffer-&gt;wlength),
+-			 tx_buffer-&gt;padding, tx_buffer-&gt;tx_rate,
+-			 hex2str(priv-&gt;obuf, i802_11_hdr,
+-			    min((sizeof(priv-&gt;obuf) - 1) / 2,
+-				sizeof(struct ieee80211_hdr_3addr)), '\0'));
+-		at76_dbg(DBG_TX_DATA_CONTENT, &quot;%s payload %s&quot;, priv-&gt;netdev-&gt;name,
+-			 hex2str(priv-&gt;obuf, payload,
+-			    min((int)(sizeof(priv-&gt;obuf) - 1) / 2, 48), '\0'));
+-	}
++	at76_dbg(DBG_TX_DATA_CONTENT, &quot;%s skb-&gt;data %s&quot;, priv-&gt;netdev-&gt;name,
++		 hex2str(skb-&gt;data, 32));
++	at76_dbg(DBG_TX_DATA, &quot;%s tx  wlen x%x pad x%x rate %d hdr %s&quot;,
++		 priv-&gt;netdev-&gt;name,
++		 le16_to_cpu(tx_buffer-&gt;wlength),
++		 tx_buffer-&gt;padding, tx_buffer-&gt;tx_rate,
++		 hex2str(i802_11_hdr, sizeof(*i802_11_hdr)));
++	at76_dbg(DBG_TX_DATA_CONTENT, &quot;%s payload %s&quot;, priv-&gt;netdev-&gt;name,
++		 hex2str(payload, 48));
+ 
+ 	/* send stuff */
+ 	netif_stop_queue(netdev);
+@@ -4612,9 +4588,7 @@ static int at76_startup_device(struct at76_priv *priv)
+ 
+ 		dbg(&quot;%s param: ssid %s (%s) mode %s ch %d wep %s key %d keylen %d&quot;,
+ 		       priv-&gt;netdev-&gt;name, ossid,
+-		       hex2str(priv-&gt;obuf, priv-&gt;essid,
+-			       min((int)(sizeof(priv-&gt;obuf)-1)/2,
+-				   IW_ESSID_MAX_SIZE), '\0'),
++		       hex2str(priv-&gt;essid, IW_ESSID_MAX_SIZE),
+ 		       priv-&gt;iw_mode == IW_MODE_ADHOC ? &quot;adhoc&quot; : &quot;infra&quot;,
+ 		       priv-&gt;channel,
+ 		       priv-&gt;wep_enabled ? &quot;enabled&quot; : &quot;disabled&quot;,
+@@ -4822,9 +4796,9 @@ static void at76_rx_mgmt_assoc(struct at76_priv *priv,
+ 	u16 capa = le16_to_cpu(resp-&gt;capability);
+ 	at76_dbg(DBG_RX_MGMT, &quot;%s: rx AssocResp bssid %s capa x%04x status x%04x &quot;
+ 		 &quot;assoc_id x%04x rates %s&quot;,
+-	    priv-&gt;netdev-&gt;name, mac2str(mgmt-&gt;addr3), capa, status, assoc_id,
+-	    hex2str(priv-&gt;obuf, resp-&gt;info_element-&gt;data,
+-		    min((size_t)resp-&gt;info_element-&gt;len, (sizeof(priv-&gt;obuf)-1)/2), '\0'));
++		 priv-&gt;netdev-&gt;name, mac2str(mgmt-&gt;addr3), capa, status,
++		 assoc_id, hex2str(resp-&gt;info_element-&gt;data,
++				   resp-&gt;info_element-&gt;len));
+ 	if (priv-&gt;istate == ASSOCIATING) {
+ 		at76_assert(priv-&gt;curr_bss != NULL);
+ 		if (priv-&gt;curr_bss == NULL)
+@@ -4865,9 +4839,7 @@ static void at76_rx_mgmt_reassoc(struct at76_priv *priv,
+ 	at76_dbg(DBG_RX_MGMT, &quot;%s: rx ReAssocResp bssid %s capa x%04x status x%04x &quot;
+ 		 &quot;assoc_id x%04x rates %s&quot;,
+ 		 priv-&gt;netdev-&gt;name, mac2str(mgmt-&gt;addr3), capa, status, assoc_id,
+-		 hex2str(priv-&gt;obuf, resp-&gt;info_element-&gt;data,
+-		    min((size_t) resp-&gt;info_element-&gt;len,
+-			(sizeof(priv-&gt;obuf) - 1) / 2), '\0'));
++		 hex2str(resp-&gt;info_element-&gt;data, resp-&gt;info_element-&gt;len));
+ 	if (priv-&gt;istate == REASSOCIATING) {
+ 		at76_assert(priv-&gt;new_bss != NULL);
+ 		if (priv-&gt;new_bss == NULL)
+@@ -4915,8 +4887,7 @@ static void at76_rx_mgmt_disassoc(struct at76_priv *priv,
+ 	at76_dbg(DBG_RX_MGMT, &quot;%s: rx DisAssoc bssid %s reason x%04x destination %s&quot;,
+ 		 priv-&gt;netdev-&gt;name, mac2str(mgmt-&gt;addr3),
+ 		 le16_to_cpu(resp-&gt;reason),
+-		 hex2str(priv-&gt;obuf, mgmt-&gt;addr1,
+-		    min((int)sizeof(priv-&gt;obuf) / 3, ETH_ALEN), ':'));
++		 mac2str(mgmt-&gt;addr1));
+ 	if (priv-&gt;istate == SCANNING || priv-&gt;istate == INIT)
+ 		return;
+ 
+@@ -4968,15 +4939,12 @@ static void at76_rx_mgmt_auth(struct at76_priv *priv, struct at76_rx_buffer *buf
+ 	at76_dbg(DBG_RX_MGMT, &quot;%s: rx AuthFrame bssid %s alg %d seq_nr %d status %d &quot;
+ 		 &quot;destination %s&quot;,
+ 		 priv-&gt;netdev-&gt;name, mac2str(mgmt-&gt;addr3),
+-		 alg, seq_nr, status,
+-		 hex2str(priv-&gt;obuf, mgmt-&gt;addr1,
+-		    min((int)sizeof(priv-&gt;obuf) / 3, ETH_ALEN), ':'));
++		 alg, seq_nr, status, mac2str(mgmt-&gt;addr1));
+ 
+ 	if (alg == WLAN_AUTH_SHARED_KEY &amp;&amp; seq_nr == 2) {
+ 		at76_dbg(DBG_RX_MGMT, &quot;%s: AuthFrame challenge %s ...&quot;,
+ 			 priv-&gt;netdev-&gt;name,
+-			 hex2str(priv-&gt;obuf, resp-&gt;info_element,
+-			    min((int)sizeof(priv-&gt;obuf) / 3, 18), ' '));
++			 hex2str(resp-&gt;info_element, 18));
+ 	}
+ 	if (priv-&gt;istate != AUTHENTICATING) {
+ 		info(&quot;%s: ignored AuthFrame in state %d&quot;,
+@@ -5036,8 +5004,7 @@ static void at76_rx_mgmt_deauth(struct at76_priv *priv,
+ 		 &quot;%s: rx DeAuth bssid %s reason x%04x destination %s&quot;,
+ 		 priv-&gt;netdev-&gt;name, mac2str(mgmt-&gt;addr3),
+ 		 le16_to_cpu(resp-&gt;reason),
+-		 hex2str(priv-&gt;obuf, mgmt-&gt;addr1,
+-		    min((int)sizeof(priv-&gt;obuf) / 3, ETH_ALEN), ':'));
++		 mac2str(mgmt-&gt;addr1));
+ 	if (priv-&gt;istate == DISASSOCIATING ||
+ 	    priv-&gt;istate == AUTHENTICATING ||
+ 	    priv-&gt;istate == ASSOCIATING ||
+@@ -5200,9 +5167,7 @@ static void at76_rx_mgmt_beacon(struct at76_priv *priv,
+ 				at76_dbg(DBG_RX_BEACON,
+ 					 &quot;%s: SUPPORTED RATES %s&quot;,
+ 					 priv-&gt;netdev-&gt;name,
+-					 hex2str(priv-&gt;obuf, tlv-&gt;data,
+-					    min_t(int, (sizeof(priv-&gt;obuf)-1)/2,
+-						  tlv-&gt;len), '\0'));
++					 hex2str(tlv-&gt;data, tlv-&gt;len));
+ 			}
+ 			break;
+ 
+@@ -5221,9 +5186,7 @@ static void at76_rx_mgmt_beacon(struct at76_priv *priv,
+ 		default:
+ 			at76_dbg(DBG_RX_BEACON, &quot;%s: beacon IE id %d len %d %s&quot;,
+ 				 priv-&gt;netdev-&gt;name, tlv-&gt;id, tlv-&gt;len,
+-				 hex2str(priv-&gt;obuf, tlv-&gt;data,
+-				    min_t(int, (sizeof(priv-&gt;obuf)-1)/2,
+-					  tlv-&gt;len), '\0'));
++				 hex2str(tlv-&gt;data, tlv-&gt;len));
+ 			break;
+ 		}
+ 
+@@ -5337,9 +5300,7 @@ static void at76_rx_mgmt(struct at76_priv *priv, struct at76_rx_buffer *buf)
+ 
+ 	at76_dbg(DBG_RX_MGMT_CONTENT, &quot;%s rx mgmt subtype x%x %s&quot;,
+ 		 priv-&gt;netdev-&gt;name, subtype,
+-		 hex2str(priv-&gt;obuf, mgmt,
+-		     min((sizeof(priv-&gt;obuf) - 1) / 2,
+-			 (size_t) le16_to_cpu(buf-&gt;wlength)), '\0'));
++		 hex2str(mgmt, le16_to_cpu(buf-&gt;wlength)));
+ 
+ 	switch (subtype) {
+ 	case IEEE80211_STYPE_BEACON:
+@@ -5413,8 +5374,7 @@ static void at76_ieee80211_to_eth(struct sk_buff *skb, int iw_mode)
+ 	i802_11_hdr = (struct ieee80211_hdr_3addr *)skb-&gt;data;
+ 
+ 	dbg(&quot;%s: ENTRY skb len %d data %s&quot;, __FUNCTION__,
+-	    skb-&gt;len, hex2str(priv-&gt;obuf, skb-&gt;data,
+-			      min((int)sizeof(priv-&gt;obuf) / 3, 64), ' '));
++	    skb-&gt;len, hex2str(skb-&gt;data, 64));
+ 
+ 	skb_pull(skb, sizeof(struct ieee80211_hdr_3addr));
+ 
+@@ -5478,15 +5438,9 @@ static void at76_ieee80211_to_eth(struct sk_buff *skb, int iw_mode)
+ 		skb-&gt;protocol = htons(ETH_P_802_2);
+ 	}
+ 
+-#ifdef DEBUG
+-	char da[3*ETH_ALEN], sa[3*ETH_ALEN];
+-#endif
+ 	dbg(&quot;%s: EXIT skb da %s sa %s proto x%04x len %d data %s&quot;, __FUNCTION__,
+-	    hex2str(da, eth_hdr(skb)-&gt;h_dest, ETH_ALEN, ':'),
+-	    hex2str(sa, eth_hdr(skb)-&gt;h_source, ETH_ALEN, ':'),
+-	    ntohs(skb-&gt;protocol), skb-&gt;len,
+-	    hex2str(priv-&gt;obuf, skb-&gt;data,
+-		    min((int)sizeof(priv-&gt;obuf)/3,64), ' '));
++	    mac2str(eth_hdr(skb)-&gt;h_dest), mac2str(eth_hdr(skb)-&gt;h_source),
++	    ntohs(skb-&gt;protocol), skb-&gt;len, hex2str(skb-&gt;data, 64));
+ }
+ 
+ 
+@@ -5528,8 +5482,7 @@ static struct sk_buff *at76_check_for_rx_frags(struct at76_priv *priv)
+ 		 priv-&gt;netdev-&gt;name, frame_ctl,
+ 		 mac2str(i802_11_hdr-&gt;addr2),
+ 		 seqnr, fragnr, length, data_len,
+-		 hex2str(priv-&gt;obuf, data,
+-		    min((int)(sizeof(priv-&gt;obuf) - 1) / 2, 32), '\0'));
++		 hex2str(data, 32));
+ 
+ 	at76_dbg(DBG_RX_FRAGS_SKB, &quot;%s: incoming skb: head %p data %p &quot;
+ 		 &quot;tail %p end %p len %d&quot;, priv-&gt;netdev-&gt;name, skb-&gt;head,
+@@ -5889,8 +5842,7 @@ static void at76_rx_tasklet(unsigned long param)
+ 		 priv-&gt;netdev-&gt;name,
+ 		 buf-&gt;rx_rate, buf-&gt;rssi, buf-&gt;noise_level,
+ 		 buf-&gt;link_quality,
+-		 hex2str(priv-&gt;obuf, i802_11_hdr,
+-			 min((int)(sizeof(priv-&gt;obuf)-1)/2,48),'\0'));
++		 hex2str(i802_11_hdr, 48));
+ 	if (priv-&gt;istate == MONITORING) {
+ 		at76_rx_monitor_mode(priv);
+ 		goto finish;
+diff --git a/at76_usb.h b/at76_usb.h
+index 396dfc4..2a292b5 100644
+--- a/at76_usb.h
++++ b/at76_usb.h
+@@ -582,7 +582,6 @@ struct at76_priv {
+ 	struct fwentry *fwe;
+ 	unsigned int device_unplugged:1;
+ 	unsigned int netdev_registered:1;
+-	char obuf[2 * 256 + 1];	/* global debug output buffer to reduce stack usage */
+ 	struct set_mib_buffer mib_buf;	/* global buffer for set_mib calls */
+ 
+ 	/* beacon counting */
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000110.html">[at76c503a-develop] [PATCH 02/12] Add compat.h to the source file	list in Makefile
+</A></li>
+	<LI>Next message: <A HREF="000112.html">[at76c503a-develop] [PATCH 04/12] Fix more instances of bad	formatting
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#111">[ date ]</a>
+              <a href="thread.html#111">[ thread ]</a>
+              <a href="subject.html#111">[ subject ]</a>
+              <a href="author.html#111">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">More information about the at76c503a-develop
+mailing list</a><br>
+</body></html>

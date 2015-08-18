@@ -1,0 +1,143 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [at76c503a-develop] [PATCH 05/11] Don't reschedule firmware loading
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/at76c503a-develop/2007-June/index.html" >
+   <LINK REL="made" HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%2005/11%5D%20Don%27t%20reschedule%20firmware%20loading&In-Reply-To=%3C20070602180024.28397.55569.stgit%40dv.roinet.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000079.html">
+   <LINK REL="Next"  HREF="000081.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[at76c503a-develop] [PATCH 05/11] Don't reschedule firmware loading</H1>
+    <B>Pavel Roskin</B> 
+    <A HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%2005/11%5D%20Don%27t%20reschedule%20firmware%20loading&In-Reply-To=%3C20070602180024.28397.55569.stgit%40dv.roinet.com%3E"
+       TITLE="[at76c503a-develop] [PATCH 05/11] Don't reschedule firmware loading">proski at gnu.org
+       </A><BR>
+    <I>Sat Jun  2 20:00:24 CEST 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000079.html">[at76c503a-develop] [PATCH 04/11] Release priv-&gt;mtx when	registering network device
+</A></li>
+        <LI>Next message: <A HREF="000081.html">[at76c503a-develop] [PATCH 06/11] Don't ignore errors during	firmware download
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#80">[ date ]</a>
+              <a href="thread.html#80">[ thread ]</a>
+              <a href="subject.html#80">[ subject ]</a>
+              <a href="author.html#80">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>at76_probe() is run in the process context and doesn't need to delay the
+firmware download.  Rescheduling doesn't guarantee the execution order,
+so it's better to make the order predictable.  It also makes it possible
+to handle errors in the firmware download.
+
+Signed-off-by: Pavel Roskin &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">proski at gnu.org</A>&gt;
+---
+
+ at76_usb.c |   14 ++++----------
+ at76_usb.h |    2 --
+ 2 files changed, 4 insertions(+), 12 deletions(-)
+
+diff --git a/at76_usb.c b/at76_usb.c
+index 10da864..c4e99be 100644
+--- a/at76_usb.c
++++ b/at76_usb.c
+@@ -4264,10 +4264,8 @@ static int at76_init_new_device(struct at76_priv *priv)
+ 
+ 
+ /* Download external firmware */
+-static void at76_work_external_fw(struct work_struct *work)
++static void at76_load_external_fw(struct at76_priv *priv)
+ {
+-	struct at76_priv *priv = container_of(work, struct at76_priv,
+-					     work_external_fw);
+ 	int ret;
+ 	int op_mode;
+ 
+@@ -4307,10 +4305,8 @@ static void at76_work_external_fw(struct work_struct *work)
+ 
+ 
+ /* Download internal firmware */
+-static void at76_work_internal_fw(struct work_struct *work)
++static void at76_load_internal_fw(struct at76_priv *priv)
+ {
+-	struct at76_priv *priv = container_of(work, struct at76_priv,
+-					     work_internal_fw);
+ 	int ret;
+ 
+ 	mutex_lock(&amp;priv-&gt;mtx);
+@@ -6127,8 +6123,6 @@ static struct at76_priv *at76_alloc_new_device(struct usb_device *udev,
+ 
+ 	mutex_init(&amp;priv-&gt;mtx);
+ 	INIT_WORK(&amp;priv-&gt;work_assoc_done, at76_work_assoc_done);
+-	INIT_WORK(&amp;priv-&gt;work_external_fw, at76_work_external_fw);
+-	INIT_WORK(&amp;priv-&gt;work_internal_fw, at76_work_internal_fw);
+ 	INIT_WORK(&amp;priv-&gt;work_join, at76_work_join);
+ 	INIT_WORK(&amp;priv-&gt;work_mgmt_timeout, at76_work_mgmt_timeout);
+ 	INIT_WORK(&amp;priv-&gt;work_new_bss, at76_work_new_bss);
+@@ -6285,7 +6279,7 @@ static int at76_probe(struct usb_interface *interface,
+ 		/* download internal firmware part */
+ 		at76_dbg(DBG_DEVSTART, &quot;downloading internal firmware&quot;);
+ 		priv-&gt;istate = INTFW_DOWNLOAD;
+-		schedule_work(&amp;priv-&gt;work_internal_fw);
++		at76_load_internal_fw(priv);
+ 	} else {
+ 		/* Internal firmware already inside the device.  Get firmware
+ 		 * version to test if external firmware is loaded.
+@@ -6320,7 +6314,7 @@ static int at76_probe(struct usb_interface *interface,
+ 					 &quot;- download external firmware&quot;, ret);
+ 
+ 			priv-&gt;istate = EXTFW_DOWNLOAD;
+-			schedule_work(&amp;priv-&gt;work_external_fw);
++			at76_load_external_fw(priv);
+ 		} else {
+ 			priv-&gt;istate = INIT;
+ 			if ((ret = at76_init_new_device(priv)) &lt; 0)
+diff --git a/at76_usb.h b/at76_usb.h
+index 4ea3e32..474049c 100644
+--- a/at76_usb.h
++++ b/at76_usb.h
+@@ -470,8 +470,6 @@ struct at76_priv {
+ 
+ 	/* work queues */
+ 	struct work_struct work_assoc_done;
+-	struct work_struct work_external_fw;
+-	struct work_struct work_internal_fw;
+ 	struct work_struct work_join;
+ 	struct work_struct work_mgmt_timeout;
+ 	struct work_struct work_new_bss;
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000079.html">[at76c503a-develop] [PATCH 04/11] Release priv-&gt;mtx when	registering network device
+</A></li>
+	<LI>Next message: <A HREF="000081.html">[at76c503a-develop] [PATCH 06/11] Don't ignore errors during	firmware download
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#80">[ date ]</a>
+              <a href="thread.html#80">[ thread ]</a>
+              <a href="subject.html#80">[ subject ]</a>
+              <a href="author.html#80">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">More information about the at76c503a-develop
+mailing list</a><br>
+</body></html>

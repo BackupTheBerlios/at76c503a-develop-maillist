@@ -1,0 +1,130 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [at76c503a-develop] mac80211 conversion of at76_usb
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/at76c503a-develop/2007-December/index.html" >
+   <LINK REL="made" HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20mac80211%20conversion%20of%20at76_usb&In-Reply-To=%3C4773741D.5030600%40iki.fi%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000212.html">
+   
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[at76c503a-develop] mac80211 conversion of at76_usb</H1>
+    <B>Kalle Valo</B> 
+    <A HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20mac80211%20conversion%20of%20at76_usb&In-Reply-To=%3C4773741D.5030600%40iki.fi%3E"
+       TITLE="[at76c503a-develop] mac80211 conversion of at76_usb">kalle.valo at iki.fi
+       </A><BR>
+    <I>Thu Dec 27 10:45:01 CET 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000212.html">[at76c503a-develop] mac80211 conversion of at76_usb
+</A></li>
+        
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#213">[ date ]</a>
+              <a href="thread.html#213">[ thread ]</a>
+              <a href="subject.html#213">[ subject ]</a>
+              <a href="author.html#213">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Pavel!
+
+Pavel Roskin wrote:
+&gt;&gt;<i> I have the mac80211 port somewhat working now. My current stgit
+</I>&gt;&gt;<i> patches are available here which should follow your advice:
+</I>&gt;&gt;<i>
+</I>&gt;&gt;<i> <A HREF="http://www.valot.fi/kalle/at76/mac80211-port/20071209/">http://www.valot.fi/kalle/at76/mac80211-port/20071209/</A>
+</I>&gt;<i> 
+</I>&gt;<i> That's great news!
+</I>&gt;<i> 
+</I>&gt;<i> I suggest that you use &quot;stg export -np&quot; to make the patches numbered  
+</I>&gt;<i> and to add &quot;.diff&quot; at the end.
+</I>
+I have now updated my patchset and it's available here:
+
+<A HREF="http://www.valot.fi/kalle/at76/mac80211-port/20071227/">http://www.valot.fi/kalle/at76/mac80211-port/20071227/</A>
+
+It's now much more complete than the earlier one, for example it removes 
+the old stack and netdev altogether.
+
+&gt;<i> It would be great if you run scripts/checkpatch.pl from the Linux  
+</I>&gt;<i> sources on it to catch come trivial style errors.
+</I>
+I have run both checkpatch and sparse, and all errors should be fixed now.
+
+There are few compiler warnings:
+
+at76_usb.c:884: warning: 'at76_set_associd' defined but not used
+at76_usb.c:902: warning: 'at76_set_listen_interval' defined but not used
+at76_usb.c:988: warning: 'at76_add_mac_address' defined but not used
+at76_usb.c:1232: warning: 'at76_get_current_bssid' defined but not used
+at76_usb.c:1259: warning: 'at76_get_current_channel' defined but not used
+
+This is because I haven't yet implemented a debug interface for the 
+driver, but I will do that next. Pavel, what's your opinion of having a 
+debugfs interface? I think other wireless drivers use that already.
+
+&gt;<i> I had to replace &quot;%d&quot; with &quot;%zd&quot; on lines 5406 and 5461 because size_t  
+</I>&gt;<i> is 64-bit on 64-systems and doesn't fit int.
+</I>
+Thanks, fixed.
+
+&gt;&gt;<i> I'm planning to add rest of the features/cleanups as separate patches
+</I>&gt;&gt;<i> to avoid large patches. As usual, I will be working slowly but
+</I>&gt;&gt;<i> hopefully we have something ready by the end of this year.
+</I>&gt;<i> 
+</I>&gt;<i> That's great.  Please let me know if you want your patches to be  
+</I>&gt;<i> published in my repository.
+</I>
+Most of the features are now implemented, but there is still something 
+missing. Here's the TODO from the patchset:
+
+  * TODO for the mac80211 port:
+  * o adhoc support
+  * o RTS/CTS support
+  * o Power Save Mode support
+  * o support for short/long preambles
+  * o export variables through debugfs/sysfs
+
+I haven't run stress tests of any sort and I'm sure there's plenty of 
+bugs also. But my plan is first to implement all the features and then 
+start hunting bugs.
+
+But please distribute the patches as you see fit. I think we should 
+start thinking about asking comments from linux-wireless list. And, 
+after the missing features are implemented, try to get the driver 
+included to 2.6.26. Earlier we do this the better. mac80211 is changing 
+quite fast and it would be easier from development perspective to have 
+the driver in mainline.
+
+Kalle
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000212.html">[at76c503a-develop] mac80211 conversion of at76_usb
+</A></li>
+	
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#213">[ date ]</a>
+              <a href="thread.html#213">[ thread ]</a>
+              <a href="subject.html#213">[ subject ]</a>
+              <a href="author.html#213">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">More information about the at76c503a-develop
+mailing list</a><br>
+</body></html>

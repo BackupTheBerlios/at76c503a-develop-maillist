@@ -1,0 +1,92 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [at76c503a-develop] [PATCH 11/12] Change SET_NET_DEVICE to use	interface-&gt;dev
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/at76c503a-develop/2007-June/index.html" >
+   <LINK REL="made" HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%2011/12%5D%20Change%20SET_NET_DEVICE%20to%20use%0A%09interface-%3Edev&In-Reply-To=%3C20070614011147.25709.49751.stgit%40dv.roinet.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000118.html">
+   <LINK REL="Next"  HREF="000120.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[at76c503a-develop] [PATCH 11/12] Change SET_NET_DEVICE to use	interface-&gt;dev</H1>
+    <B>Pavel Roskin</B> 
+    <A HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%2011/12%5D%20Change%20SET_NET_DEVICE%20to%20use%0A%09interface-%3Edev&In-Reply-To=%3C20070614011147.25709.49751.stgit%40dv.roinet.com%3E"
+       TITLE="[at76c503a-develop] [PATCH 11/12] Change SET_NET_DEVICE to use	interface-&gt;dev">proski at gnu.org
+       </A><BR>
+    <I>Thu Jun 14 03:11:47 CEST 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000118.html">[at76c503a-develop] [PATCH 10/12] Improve info messages,	avoid printing full path
+</A></li>
+        <LI>Next message: <A HREF="000120.html">[at76c503a-develop] [PATCH 12/12] Use usb_make_path() for bus info	in ethtool output
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#119">[ date ]</a>
+              <a href="thread.html#119">[ thread ]</a>
+              <a href="subject.html#119">[ subject ]</a>
+              <a href="author.html#119">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>This way, /sys/class/net/ethX/device/driver points to at76_usb driver
+rather than usb driver.  This is consistent with other network drivers.
+
+Signed-off-by: Pavel Roskin &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">proski at gnu.org</A>&gt;
+---
+
+ at76_usb.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/at76_usb.c b/at76_usb.c
+index d363ff9..8704872 100644
+--- a/at76_usb.c
++++ b/at76_usb.c
+@@ -5818,7 +5818,6 @@ static struct at76_priv *at76_alloc_new_device(struct usb_device *udev)
+ 		return NULL;
+ 	}
+ 
+-	SET_NETDEV_DEV(netdev, &amp;udev-&gt;dev);
+ 	priv = netdev_priv(netdev);
+ 	memset(priv, 0, sizeof(*priv));
+ 
+@@ -6019,6 +6018,7 @@ static int at76_probe(struct usb_interface *interface,
+ 		goto error;
+ 	}
+ 
++	SET_NETDEV_DEV(priv-&gt;netdev, &amp;interface-&gt;dev);
+ 	usb_set_intfdata(interface, priv);
+ 	priv-&gt;fwe = fwe;
+ 
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000118.html">[at76c503a-develop] [PATCH 10/12] Improve info messages,	avoid printing full path
+</A></li>
+	<LI>Next message: <A HREF="000120.html">[at76c503a-develop] [PATCH 12/12] Use usb_make_path() for bus info	in ethtool output
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#119">[ date ]</a>
+              <a href="thread.html#119">[ thread ]</a>
+              <a href="subject.html#119">[ subject ]</a>
+              <a href="author.html#119">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">More information about the at76c503a-develop
+mailing list</a><br>
+</body></html>

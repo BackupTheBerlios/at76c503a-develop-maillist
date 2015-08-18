@@ -1,0 +1,308 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [at76c503a-develop] [PATCH 10/10] Fully separate scanning and	monitoring
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/at76c503a-develop/2007-June/index.html" >
+   <LINK REL="made" HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%2010/10%5D%20Fully%20separate%20scanning%20and%0A%09monitoring&In-Reply-To=%3C20070605010434.32602.18362.stgit%40dv.roinet.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000096.html">
+   <LINK REL="Next"  HREF="000099.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[at76c503a-develop] [PATCH 10/10] Fully separate scanning and	monitoring</H1>
+    <B>Pavel Roskin</B> 
+    <A HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%2010/10%5D%20Fully%20separate%20scanning%20and%0A%09monitoring&In-Reply-To=%3C20070605010434.32602.18362.stgit%40dv.roinet.com%3E"
+       TITLE="[at76c503a-develop] [PATCH 10/10] Fully separate scanning and	monitoring">proski at gnu.org
+       </A><BR>
+    <I>Tue Jun  5 03:04:34 CEST 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000096.html">[at76c503a-develop] [PATCH 09/10] Remove at76_ieee80211_fixup(),	it's not used
+</A></li>
+        <LI>Next message: <A HREF="000099.html">[at76c503a-develop] [PATCH 01/10] Merge	at76_handle_mgmt_timeout() and at76_work_mgmt_timeout()
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#97">[ date ]</a>
+              <a href="thread.html#97">[ thread ]</a>
+              <a href="subject.html#97">[ subject ]</a>
+              <a href="author.html#97">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Don't use management timer in monitor mode, it's not needed.  All that's
+needed is to read the status from CMD_SCAN.  Remove monitor mode support
+from at76_handle_mgmt_timeout_scan(), reorganize the logic to reduce
+indentation.
+
+Split at76_start_monitor() from at76_start_scan().
+
+Signed-off-by: Pavel Roskin &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">proski at gnu.org</A>&gt;
+---
+
+ at76_usb.c |  168 +++++++++++++++++++++++++++++++-----------------------------
+ 1 files changed, 86 insertions(+), 82 deletions(-)
+
+diff --git a/at76_usb.c b/at76_usb.c
+index 71d5fd8..1c23efc 100644
+--- a/at76_usb.c
++++ b/at76_usb.c
+@@ -1506,8 +1506,7 @@ static int at76_start_scan(struct at76_priv *priv, int use_essid, int ir_step)
+ 
+ 	/* atmelwlandriver differs between scan type 0 and 1 (active/passive)
+ 	   For ad-hoc mode, it uses type 0 only. */
+-	if ((priv-&gt;international_roaming == IR_ON &amp;&amp; ir_step == 0) ||
+-	    priv-&gt;iw_mode == IW_MODE_MONITOR)
++	if (priv-&gt;international_roaming == IR_ON &amp;&amp; ir_step == 0)
+ 		scan.scan_type = SCAN_TYPE_PASSIVE;
+ 	else
+ 		scan.scan_type = priv-&gt;scan_mode;
+@@ -1515,11 +1514,10 @@ static int at76_start_scan(struct at76_priv *priv, int use_essid, int ir_step)
+ 	/* INFO: For probe_delay, not multiplying by 1024 as this will be
+ 	   slightly less than min_channel_time
+ 	   (per spec: probe delay &lt; min. channel time) */
+-	if (priv-&gt;istate != MONITORING) {
+-		scan.min_channel_time = cpu_to_le16(priv-&gt;scan_min_time);
+-		scan.max_channel_time = cpu_to_le16(priv-&gt;scan_max_time);
+-		scan.probe_delay = cpu_to_le16(priv-&gt;scan_min_time * 1000);
+-	}
++	scan.min_channel_time = cpu_to_le16(priv-&gt;scan_min_time);
++	scan.max_channel_time = cpu_to_le16(priv-&gt;scan_max_time);
++	scan.probe_delay = cpu_to_le16(priv-&gt;scan_min_time * 1000);
++
+ 	if (priv-&gt;international_roaming == IR_ON &amp;&amp; ir_step == 1)
+ 		scan.international_scan = 0;
+ 	else
+@@ -1540,6 +1538,27 @@ static int at76_start_scan(struct at76_priv *priv, int use_essid, int ir_step)
+ }
+ 
+ 
++/* Enable monitor mode */
++static int at76_start_monitor(struct at76_priv *priv)
++{
++	struct at76_req_scan scan;
++	int ret;
++
++	memset(&amp;scan, 0, sizeof(struct at76_req_scan));
++	memset(scan.bssid, 0xff, ETH_ALEN);
++
++	scan.channel = priv-&gt;channel;
++	scan.scan_type = SCAN_TYPE_PASSIVE;
++	scan.international_scan = priv-&gt;international_roaming;
++
++	ret = at76_set_card_command(priv-&gt;udev, CMD_SCAN, &amp;scan, sizeof(scan));
++	if (ret &gt;= 0)
++		ret = at76_get_cmd_status(priv-&gt;udev, CMD_SCAN);
++
++	return ret;
++}
++
++
+ static int at76_start_ibss(struct at76_priv *priv)
+ {
+ 	struct at76_req_ibss bss;
+@@ -2097,72 +2116,8 @@ static void at76_handle_mgmt_timeout_scan(struct at76_priv *priv)
+ 		 &quot;scan_runs %d)&quot;,
+ 		 priv-&gt;netdev-&gt;name, __FUNCTION__, __LINE__, status,
+ 		 priv-&gt;istate, priv-&gt;scan_runs);
+-	if (status == CMD_STATUS_COMPLETE) {
+-		if (priv-&gt;istate == SCANNING) {
+-			if (at76_debug &amp; DBG_BSS_TABLE)
+-				at76_dump_bss_table(priv);
+-			switch (priv-&gt;scan_runs) {
+-
+-			case 1:
+-				at76_assert(priv-&gt;international_roaming);
+-				if ((ret=at76_get_mib_mdomain(priv, &amp;mdomain)) &lt; 0) {
+-					err(&quot;at76_get_mib_mdomain returned %d&quot;, ret);
+-				} else {
+-					char obuf1[2*14+1], obuf2[2*14+1];
+-
+-					at76_dbg(DBG_MIB, &quot;%s: MIB MDOMAIN: channel_list %s &quot;
+-						 &quot;tx_powerlevel %s&quot;,
+-						 priv-&gt;netdev-&gt;name,
+-						 hex2str(obuf1, mdomain.channel_list,
+-						    (sizeof(obuf1)-1)/2,'\0'),
+-						 hex2str(obuf2, mdomain.tx_powerlevel,
+-						    (sizeof(obuf2)-1)/2,'\0'));
+-				}
+-				if ((ret = at76_start_scan(priv, 0, 1)) &lt; 0) {
+-					err(&quot;%s: %s: start_scan (ANY) failed with %d&quot;,
+-					    priv-&gt;netdev-&gt;name, __FUNCTION__, ret);
+-				}
+-				at76_dbg(DBG_MGMT_TIMER, &quot;%s:%d: starting mgmt_timer for %d ticks&quot;,
+-					 __FUNCTION__, __LINE__, SCAN_POLL_INTERVAL);
+-				mod_timer(&amp;priv-&gt;mgmt_timer, jiffies + SCAN_POLL_INTERVAL);
+-				break;
+-
+-			case 2:
+-				if ((ret = at76_start_scan(priv, 1, 1)) &lt; 0) {
+-					err(&quot;%s: %s: start_scan (SSID) failed with %d&quot;,
+-					    priv-&gt;netdev-&gt;name, __FUNCTION__, ret);
+-				}
+-				at76_dbg(DBG_MGMT_TIMER, &quot;%s:%d: starting mgmt_timer for %d ticks&quot;,
+-					 __FUNCTION__, __LINE__, SCAN_POLL_INTERVAL);
+-				mod_timer(&amp;priv-&gt;mgmt_timer, jiffies + SCAN_POLL_INTERVAL);
+-				break;
+-
+-			case 3:
+-				priv-&gt;scan_state = SCAN_COMPLETED;
+-				/* report the end of scan to user space */
+-				at76_iwevent_scan_complete(priv-&gt;netdev);
+-				priv-&gt;istate = JOINING;
+-				/* call join_bss immediately after
+-				   re-run of all other threads in at76_devent */
+-				schedule_work(&amp;priv-&gt;work_join);
+-				break;
+-
+-			default:
+-				err(&quot;unexpected priv-&gt;scan_runs %d&quot;, priv-&gt;scan_runs);
+-			}
+-			priv-&gt;scan_runs++;
+-		} else {
+-
+-			at76_assert(priv-&gt;istate == MONITORING);
+-			at76_dbg(DBG_MONITOR_MODE, &quot;%s: MONITOR MODE: restart scan&quot;,
+-				 priv-&gt;netdev-&gt;name);
+-			at76_start_scan(priv, 0, 0);
+-			at76_dbg(DBG_MGMT_TIMER, &quot;%s:%d: starting mgmt_timer for %d ticks&quot;,
+-				 __FUNCTION__, __LINE__, SCAN_POLL_INTERVAL);
+-			mod_timer(&amp;priv-&gt;mgmt_timer, jiffies + SCAN_POLL_INTERVAL);
+-		}
+ 
+-	} else {
++	if (status != CMD_STATUS_COMPLETE) {
+ 		if ((status != CMD_STATUS_IN_PROGRESS) &amp;&amp;
+ 		    (status != CMD_STATUS_IDLE))
+ 			err(&quot;%s: %s: Bad scan status: %s&quot;,
+@@ -2174,7 +2129,61 @@ static void at76_handle_mgmt_timeout_scan(struct at76_priv *priv)
+ 		at76_dbg(DBG_MGMT_TIMER, &quot;%s:%d: starting mgmt_timer for %d ticks&quot;,
+ 			 __FUNCTION__, __LINE__, SCAN_POLL_INTERVAL);
+ 		mod_timer(&amp;priv-&gt;mgmt_timer, jiffies + SCAN_POLL_INTERVAL);
++		return;
+ 	}
++
++	if (at76_debug &amp; DBG_BSS_TABLE)
++		at76_dump_bss_table(priv);
++	switch (priv-&gt;scan_runs) {
++
++	case 1:
++		at76_assert(priv-&gt;international_roaming);
++		if ((ret=at76_get_mib_mdomain(priv, &amp;mdomain)) &lt; 0) {
++			err(&quot;at76_get_mib_mdomain returned %d&quot;, ret);
++		} else {
++			char obuf1[2*14+1], obuf2[2*14+1];
++
++			at76_dbg(DBG_MIB, &quot;%s: MIB MDOMAIN: channel_list %s &quot;
++				 &quot;tx_powerlevel %s&quot;, priv-&gt;netdev-&gt;name,
++				 hex2str(obuf1, mdomain.channel_list,
++					 (sizeof(obuf1) - 1) / 2, '\0'),
++				 hex2str(obuf2, mdomain.tx_powerlevel,
++					 (sizeof(obuf2) - 1) / 2, '\0'));
++			}
++		if ((ret = at76_start_scan(priv, 0, 1)) &lt; 0) {
++			err(&quot;%s: %s: start_scan (ANY) failed with %d&quot;,
++			    priv-&gt;netdev-&gt;name, __FUNCTION__, ret);
++		}
++		at76_dbg(DBG_MGMT_TIMER, &quot;%s:%d: starting mgmt_timer for %d ticks&quot;,
++			 __FUNCTION__, __LINE__, SCAN_POLL_INTERVAL);
++		mod_timer(&amp;priv-&gt;mgmt_timer, jiffies + SCAN_POLL_INTERVAL);
++		break;
++
++	case 2:
++		if ((ret = at76_start_scan(priv, 1, 1)) &lt; 0) {
++			err(&quot;%s: %s: start_scan (SSID) failed with %d&quot;,
++			    priv-&gt;netdev-&gt;name, __FUNCTION__, ret);
++		}
++		at76_dbg(DBG_MGMT_TIMER, &quot;%s:%d: starting mgmt_timer for %d ticks&quot;,
++			 __FUNCTION__, __LINE__, SCAN_POLL_INTERVAL);
++		mod_timer(&amp;priv-&gt;mgmt_timer, jiffies + SCAN_POLL_INTERVAL);
++		break;
++
++	case 3:
++		priv-&gt;scan_state = SCAN_COMPLETED;
++		/* report the end of scan to user space */
++		at76_iwevent_scan_complete(priv-&gt;netdev);
++		priv-&gt;istate = JOINING;
++		/* call join_bss immediately after
++		   re-run of all other threads in at76_devent */
++		schedule_work(&amp;priv-&gt;work_join);
++		break;
++
++	default:
++		err(&quot;unexpected priv-&gt;scan_runs %d&quot;, priv-&gt;scan_runs);
++	}
++
++	priv-&gt;scan_runs++;
+ }
+ 
+ 
+@@ -4436,19 +4445,19 @@ static void at76_work_mgmt_timeout(struct work_struct *work)
+ 					     work_mgmt_timeout);
+ 
+ 	mutex_lock(&amp;priv-&gt;mtx);
+-	if ((priv-&gt;istate != SCANNING &amp;&amp; priv-&gt;istate != MONITORING) ||
+-	    (at76_debug &amp; DBG_MGMT_TIMER))
+-		/* this is normal behavior in states MONITORING, SCANNING ... */
++
++	/* timeouts are normal in SCANNING state, otherwise report */
++	if ((priv-&gt;istate != SCANNING) || (at76_debug &amp; DBG_MGMT_TIMER))
+ 		at76_dbg(DBG_PROGRESS, &quot;%s: timeout, state %d&quot;, priv-&gt;netdev-&gt;name,
+ 			 priv-&gt;istate);
+ 
+ 	switch (priv-&gt;istate) {
+ 
+-	case MONITORING:
+ 	case SCANNING:
+ 		at76_handle_mgmt_timeout_scan(priv);
+ 		break;
+ 
++	case MONITORING:
+ 	case JOINING:
+ 		at76_assert(0);
+ 		break;
+@@ -4716,12 +4725,7 @@ static void at76_work_restart(struct work_struct *work)
+ 		schedule_work(&amp;priv-&gt;work_scan);
+ 	} else {
+ 		priv-&gt;istate = MONITORING;
+-		at76_start_scan(priv, 0, 0);
+-		at76_dbg(DBG_MGMT_TIMER,
+-			 &quot;%s:%d: starting mgmt_timer for %d ticks&quot;,
+-			 __FUNCTION__, __LINE__, SCAN_POLL_INTERVAL);
+-		mod_timer(&amp;priv-&gt;mgmt_timer,
+-			  jiffies + SCAN_POLL_INTERVAL);
++		at76_start_monitor(priv);
+ 	}
+ 
+ 	mutex_unlock(&amp;priv-&gt;mtx);
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000096.html">[at76c503a-develop] [PATCH 09/10] Remove at76_ieee80211_fixup(),	it's not used
+</A></li>
+	<LI>Next message: <A HREF="000099.html">[at76c503a-develop] [PATCH 01/10] Merge	at76_handle_mgmt_timeout() and at76_work_mgmt_timeout()
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#97">[ date ]</a>
+              <a href="thread.html#97">[ thread ]</a>
+              <a href="subject.html#97">[ subject ]</a>
+              <a href="author.html#97">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">More information about the at76c503a-develop
+mailing list</a><br>
+</body></html>

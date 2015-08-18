@@ -1,0 +1,88 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [at76c503a-develop] [PATCH 3/4] Remove usage of data which	were	already skb_pull-ed.
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/at76c503a-develop/2008-August/index.html" >
+   <LINK REL="made" HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%203/4%5D%20Remove%20usage%20of%20data%20which%09were%0A%09already%20skb_pull-ed.&In-Reply-To=%3C87r697lqra.fsf%40litku.valot.fi%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000247.html">
+   <LINK REL="Next"  HREF="000249.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[at76c503a-develop] [PATCH 3/4] Remove usage of data which	were	already skb_pull-ed.</H1>
+    <B>Kalle Valo</B> 
+    <A HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%203/4%5D%20Remove%20usage%20of%20data%20which%09were%0A%09already%20skb_pull-ed.&In-Reply-To=%3C87r697lqra.fsf%40litku.valot.fi%3E"
+       TITLE="[at76c503a-develop] [PATCH 3/4] Remove usage of data which	were	already skb_pull-ed.">Kalle.Valo at iki.fi
+       </A><BR>
+    <I>Sat Aug  2 11:18:01 CEST 2008</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000247.html">[at76c503a-develop] [PATCH 3/4] Remove usage of data which	were	already skb_pull-ed.
+</A></li>
+        <LI>Next message: <A HREF="000249.html">[at76c503a-develop] [PATCH 3/4] Remove usage of data which were	already skb_pull-ed.
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#248">[ date ]</a>
+              <a href="thread.html#248">[ thread ]</a>
+              <a href="subject.html#248">[ subject ]</a>
+              <a href="author.html#248">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Milan Plzik &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">milan.plzik at gmail.com</A>&gt; writes:
+
+&gt;<i> On Pi, 2008-08-01 at 19:50 -0400, Pavel Roskin wrote:
+</I>&gt;&gt;<i> On Thu, 2008-05-01 at 22:28 +0200, Milan Plzik wrote:
+</I>&gt;&gt;<i> &gt; at76_rx_tasklet makes use of data referenced by 'buf' despite of the fact
+</I>&gt;&gt;<i> &gt; they were already marked as free by skb_pull. This patch delays skb_pull, so
+</I>&gt;&gt;<i> &gt; data will remain valid.
+</I>&gt;&gt;<i> &gt; 
+</I>&gt;&gt;<i> &gt; Signed-off-by: Milan Plzik &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">milan.plzik at gmail.com</A>&gt;
+</I>&gt;&gt;<i> 
+</I>&gt;&gt;<i> I'm sorry, it have been months since I was supposed to review your
+</I>&gt;&gt;<i> patches.  I still could not find time for that.  Therefore, I resign
+</I>&gt;&gt;<i> from the maintenance of the driver.  Please send the patches directly to
+</I>&gt;&gt;<i> <A HREF="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">linux-wireless at vger.kernel.org</A>
+</I>&gt;&gt;<i> 
+</I>&gt;<i>
+</I>&gt;<i>   No problem :). In the meanwhile, I already sent the patches to
+</I>&gt;<i> linux-wireless. On the other hand, there was no response, so I'm not
+</I>&gt;<i> sure whether the driver was at least noticed by maintainers. I hope it
+</I>&gt;<i> will find its way to wireless-testing.
+</I>
+Your patches are already on wireless-testing:
+
+<A HREF="http://git.kernel.org/?p=linux/kernel/git/linville/wireless-testing.git;a=commit;h=3f02e851562f93ab3df28d9b6c6e92488a1d08cb">http://git.kernel.org/?p=linux/kernel/git/linville/wireless-testing.git;a=commit;h=3f02e851562f93ab3df28d9b6c6e92488a1d08cb</A>
+
+-- 
+Kalle Valo
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000247.html">[at76c503a-develop] [PATCH 3/4] Remove usage of data which	were	already skb_pull-ed.
+</A></li>
+	<LI>Next message: <A HREF="000249.html">[at76c503a-develop] [PATCH 3/4] Remove usage of data which were	already skb_pull-ed.
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#248">[ date ]</a>
+              <a href="thread.html#248">[ thread ]</a>
+              <a href="subject.html#248">[ subject ]</a>
+              <a href="author.html#248">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">More information about the at76c503a-develop
+mailing list</a><br>
+</body></html>

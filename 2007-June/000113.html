@@ -1,0 +1,1429 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [at76c503a-develop] [PATCH 05/12] Don't use double newline to	separate functions
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/at76c503a-develop/2007-June/index.html" >
+   <LINK REL="made" HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%2005/12%5D%20Don%27t%20use%20double%20newline%20to%0A%09separate%20functions&In-Reply-To=%3C20070614011117.25709.95373.stgit%40dv.roinet.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000112.html">
+   <LINK REL="Next"  HREF="000114.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[at76c503a-develop] [PATCH 05/12] Don't use double newline to	separate functions</H1>
+    <B>Pavel Roskin</B> 
+    <A HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%2005/12%5D%20Don%27t%20use%20double%20newline%20to%0A%09separate%20functions&In-Reply-To=%3C20070614011117.25709.95373.stgit%40dv.roinet.com%3E"
+       TITLE="[at76c503a-develop] [PATCH 05/12] Don't use double newline to	separate functions">proski at gnu.org
+       </A><BR>
+    <I>Thu Jun 14 03:11:17 CEST 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000112.html">[at76c503a-develop] [PATCH 04/12] Fix more instances of bad	formatting
+</A></li>
+        <LI>Next message: <A HREF="000114.html">[at76c503a-develop] [PATCH 06/12] Convert wireless handler	initialization to use a macro
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#113">[ date ]</a>
+              <a href="thread.html#113">[ thread ]</a>
+              <a href="subject.html#113">[ subject ]</a>
+              <a href="author.html#113">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Lindent converts them to single newlines
+
+Signed-off-by: Pavel Roskin &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">proski at gnu.org</A>&gt;
+---
+
+ at76_usb.c |  170 ------------------------------------------------------------
+ 1 files changed, 0 insertions(+), 170 deletions(-)
+
+diff --git a/at76_usb.c b/at76_usb.c
+index af8369b..f369c5f 100644
+--- a/at76_usb.c
++++ b/at76_usb.c
+@@ -225,7 +225,6 @@ struct dfu_ctx {
+ 	void *buf;
+ };
+ 
+-
+ static int at76_dfu_download_block(struct dfu_ctx *ctx, u8 *buffer, int bytes,
+ 				   int block)
+ {
+@@ -252,7 +251,6 @@ static int at76_dfu_download_block(struct dfu_ctx *ctx, u8 *buffer, int bytes,
+ 	return result;
+ }
+ 
+-
+ static int at76_dfu_get_status(struct dfu_ctx *ctx, struct dfu_status *status)
+ {
+ 	int result;
+@@ -269,7 +267,6 @@ static int at76_dfu_get_status(struct dfu_ctx *ctx, struct dfu_status *status)
+ 	return result;
+ }
+ 
+-
+ static u8 at76_dfu_get_state(struct usb_device *udev, u8 *state)
+ {
+ 	int result;
+@@ -285,7 +282,6 @@ static u8 at76_dfu_get_state(struct usb_device *udev, u8 *state)
+ 	return result;
+ }
+ 
+-
+ static inline u32 at76_get_timeout(struct dfu_status *s)
+ {
+ 	u32 ret = (s-&gt;poll_timeout[2] &lt;&lt; 16) | (s-&gt;poll_timeout[1] &lt;&lt; 8) |
+@@ -294,7 +290,6 @@ static inline u32 at76_get_timeout(struct dfu_status *s)
+ 	return ret;
+ }
+ 
+-
+ static struct dfu_ctx *at76_dfu_alloc_ctx(struct usb_device *udev)
+ {
+ 	struct dfu_ctx *ctx;
+@@ -308,7 +303,6 @@ static struct dfu_ctx *at76_dfu_alloc_ctx(struct usb_device *udev)
+ 	return ctx;
+ }
+ 
+-
+ /* if manifest_sync_timeout &gt; 0 use this timeout (in msec) instead of the
+    one reported by the device in state MANIFEST_SYNC */
+ static int at76_usbdfu_download(struct usb_device *udev, u8 *dfu_buffer,
+@@ -448,7 +442,6 @@ static int at76_usbdfu_download(struct usb_device *udev, u8 *dfu_buffer,
+ 		return 0;
+ }
+ 
+-
+ /* some abbrev. for wireless events */
+ static inline void at76_iwevent_scan_complete(struct net_device *netdev)
+ {
+@@ -459,7 +452,6 @@ static inline void at76_iwevent_scan_complete(struct net_device *netdev)
+ 	at76_dbg(DBG_WE_EVENTS, &quot;%s: SIOCGIWSCAN sent&quot;, netdev-&gt;name);
+ }
+ 
+-
+ static inline void at76_iwevent_bss_connect(struct net_device *netdev,
+ 					    u8 *bssid)
+ {
+@@ -473,7 +465,6 @@ static inline void at76_iwevent_bss_connect(struct net_device *netdev,
+ 		 __FUNCTION__);
+ }
+ 
+-
+ static inline void at76_iwevent_bss_disconnect(struct net_device *netdev)
+ {
+ 	union iwreq_data wrqu;
+@@ -486,7 +477,6 @@ static inline void at76_iwevent_bss_disconnect(struct net_device *netdev)
+ 		 __FUNCTION__);
+ }
+ 
+-
+ #define HEX2STR_BUFFERS 4
+ #define HEX2STR_MAX_LEN 64
+ #define BIN2HEX(x) ((x) &lt; 10 ? '0' + (x) : (x) + 'A' - 10)
+@@ -519,7 +509,6 @@ static char *hex2str(void *buf, int len)
+ 	return ret;
+ }
+ 
+-
+ #define MAC2STR_BUFFERS 4
+ 
+ static inline char *mac2str(u8 *mac)
+@@ -534,14 +523,12 @@ static inline char *mac2str(u8 *mac)
+ 	return str;
+ }
+ 
+-
+ /* led trigger */
+ static int tx_activity;
+ static void at76_ledtrig_tx_timerfunc(unsigned long data);
+ static DEFINE_TIMER(ledtrig_tx_timer, at76_ledtrig_tx_timerfunc, 0, 0);
+ DEFINE_LED_TRIGGER(ledtrig_tx);
+ 
+-
+ static void at76_ledtrig_tx_timerfunc(unsigned long data)
+ {
+ 	static int tx_lastactivity;
+@@ -555,7 +542,6 @@ static void at76_ledtrig_tx_timerfunc(unsigned long data)
+ 	}
+ }
+ 
+-
+ static void at76_ledtrig_tx_activity(void)
+ {
+ 	tx_activity++;
+@@ -563,7 +549,6 @@ static void at76_ledtrig_tx_activity(void)
+ 		mod_timer(&amp;ledtrig_tx_timer, jiffies + msecs_to_jiffies(250));
+ }
+ 
+-
+ /* check if the given ssid is cloaked */
+ static inline int at76_is_cloaked_ssid(u8 *ssid, int length)
+ {
+@@ -574,7 +559,6 @@ static inline int at76_is_cloaked_ssid(u8 *ssid, int length)
+ 	    (length &gt; 0 &amp;&amp; !memcmp(ssid, zeros, length));
+ }
+ 
+-
+ static inline void at76_free_bss_list(struct at76_priv *priv)
+ {
+ 	struct list_head *next, *ptr;
+@@ -592,7 +576,6 @@ static inline void at76_free_bss_list(struct at76_priv *priv)
+ 	spin_unlock_irqrestore(&amp;priv-&gt;bss_list_spinlock, flags);
+ }
+ 
+-
+ static int at76_remap(struct usb_device *udev)
+ {
+ 	int ret;
+@@ -604,7 +587,6 @@ static int at76_remap(struct usb_device *udev)
+ 	return 0;
+ }
+ 
+-
+ static int at76_get_op_mode(struct usb_device *udev)
+ {
+ 	int ret;
+@@ -618,7 +600,6 @@ static int at76_get_op_mode(struct usb_device *udev)
+ 	return op_mode;
+ }
+ 
+-
+ /* this loads a block of the second part of the firmware */
+ static inline int at76_load_ext_fw_block(struct usb_device *udev, int i,
+ 					 void *buf, int bsize)
+@@ -628,7 +609,6 @@ static inline int at76_load_ext_fw_block(struct usb_device *udev, int i,
+ 			       0x0802, i, buf, bsize, USB_CTRL_GET_TIMEOUT);
+ }
+ 
+-
+ static inline int at76_get_hw_cfg_rfmd(struct usb_device *udev,
+ 				       union at76_hwcfg *buf, int buf_size)
+ {
+@@ -638,7 +618,6 @@ static inline int at76_get_hw_cfg_rfmd(struct usb_device *udev,
+ 			       buf, buf_size, USB_CTRL_GET_TIMEOUT);
+ }
+ 
+-
+ /* Intersil boards use a different &quot;value&quot; for GetHWConfig requests */
+ static inline int get_hw_cfg_intersil(struct usb_device *udev,
+ 				      union at76_hwcfg *buf, int buf_size)
+@@ -649,7 +628,6 @@ static inline int get_hw_cfg_intersil(struct usb_device *udev,
+ 			       buf, buf_size, USB_CTRL_GET_TIMEOUT);
+ }
+ 
+-
+ /* Get the hardware configuration for the adapter and place the appropriate
+  * data in the appropriate fields of 'priv' (the GetHWConfig request and
+  * interpretation of the result depends on the type of board we're dealing
+@@ -706,7 +684,6 @@ static int at76_get_hw_config(struct at76_priv *priv)
+ 	return ret;
+ }
+ 
+-
+ static struct reg_domain const *at76_get_reg_domain(u16 code)
+ {
+ 	static struct reg_domain const fd_tab[] = {
+@@ -733,7 +710,6 @@ static struct reg_domain const *at76_get_reg_domain(u16 code)
+ 	return (i &gt;= tab_len) ? &amp;unknown : &amp;fd_tab[i];
+ }
+ 
+-
+ static inline int at76_get_mib(struct usb_device *udev, u16 mib, void *buf,
+ 			       int buf_size)
+ {
+@@ -743,7 +719,6 @@ static inline int at76_get_mib(struct usb_device *udev, u16 mib, void *buf,
+ 			       buf, buf_size, USB_CTRL_GET_TIMEOUT);
+ }
+ 
+-
+ /* Return positive number for status, negative for an error */
+ static inline int at76_get_cmd_status(struct usb_device *udev, u8 cmd)
+ {
+@@ -759,7 +734,6 @@ static inline int at76_get_cmd_status(struct usb_device *udev, u8 cmd)
+ 	return stat_buf[5];
+ }
+ 
+-
+ #define EXT_FW_BLOCK_SIZE 1024
+ static int at76_download_external_fw(struct usb_device *udev, u8 *buf, int size)
+ {
+@@ -805,7 +779,6 @@ static int at76_download_external_fw(struct usb_device *udev, u8 *buf, int size)
+ 	return ret;
+ }
+ 
+-
+ static int at76_set_card_command(struct usb_device *udev, int cmd, void *buf,
+ 				 int buf_size)
+ {
+@@ -832,7 +805,6 @@ static int at76_set_card_command(struct usb_device *udev, int cmd, void *buf,
+ 	return -ENOMEM;
+ }
+ 
+-
+ #define MAKE_CMD_STATUS_CASE(c)	case (c): return #c
+ static const char *at76_get_cmd_status_string(u8 cmd_status)
+ {
+@@ -851,7 +823,6 @@ static const char *at76_get_cmd_status_string(u8 cmd_status)
+ 	return &quot;UNKNOWN&quot;;
+ }
+ 
+-
+ /* TODO: should timeout */
+ static int at76_wait_completion(struct at76_priv *priv, int cmd)
+ {
+@@ -880,7 +851,6 @@ static int at76_wait_completion(struct at76_priv *priv, int cmd)
+ 	return status;
+ }
+ 
+-
+ static int at76_set_mib(struct at76_priv *priv, struct set_mib_buffer *buf)
+ {
+ 	struct usb_device *udev = priv-&gt;udev;
+@@ -913,7 +883,6 @@ static int at76_set_mib(struct at76_priv *priv, struct set_mib_buffer *buf)
+ 	return ret;
+ }
+ 
+-
+ /* return &lt; 0 on error, == 0 if no command sent, == 1 if cmd sent */
+ static int at76_set_radio(struct at76_priv *priv, int on_off)
+ {
+@@ -931,7 +900,6 @@ static int at76_set_radio(struct at76_priv *priv, int on_off)
+ 	return ret;
+ }
+ 
+-
+ /**
+  * set_pm_mode - set current power save mode
+  * (AT76_PM_OFF/AT76_PM_ON/AT76_PM_SMART)
+@@ -954,7 +922,6 @@ static int at76_set_pm_mode(struct at76_priv *priv)
+ 	return ret;
+ }
+ 
+-
+ /* sets the assoc id for power save mode */
+ static int at76_set_associd(struct at76_priv *priv, u16 id)
+ {
+@@ -975,7 +942,6 @@ static int at76_set_associd(struct at76_priv *priv, u16 id)
+ 	return ret;
+ }
+ 
+-
+ /* sets the listen interval for power save mode.
+    really needed, as we have a similar parameter in the assocreq ??? */
+ static int at76_set_listen_interval(struct at76_priv *priv, u16 interval)
+@@ -998,7 +964,6 @@ static int at76_set_listen_interval(struct at76_priv *priv, u16 interval)
+ 	return ret;
+ }
+ 
+-
+ static int at76_set_preamble(struct at76_priv *priv, u8 type)
+ {
+ 	int ret = 0;
+@@ -1015,7 +980,6 @@ static int at76_set_preamble(struct at76_priv *priv, u8 type)
+ 	return ret;
+ }
+ 
+-
+ static int at76_set_frag(struct at76_priv *priv, u16 size)
+ {
+ 	int ret = 0;
+@@ -1032,7 +996,6 @@ static int at76_set_frag(struct at76_priv *priv, u16 size)
+ 	return ret;
+ }
+ 
+-
+ static int at76_set_rts(struct at76_priv *priv, u16 size)
+ {
+ 	int ret = 0;
+@@ -1049,7 +1012,6 @@ static int at76_set_rts(struct at76_priv *priv, u16 size)
+ 	return ret;
+ }
+ 
+-
+ static int at76_set_autorate_fallback(struct at76_priv *priv, int onoff)
+ {
+ 	int ret = 0;
+@@ -1066,7 +1028,6 @@ static int at76_set_autorate_fallback(struct at76_priv *priv, int onoff)
+ 	return ret;
+ }
+ 
+-
+ /* set network device type for the current mode */
+ static void at76_set_monitor_mode(struct at76_priv *priv)
+ {
+@@ -1081,7 +1042,6 @@ static void at76_set_monitor_mode(struct at76_priv *priv)
+ 	}
+ }
+ 
+-
+ static int at76_add_mac_address(struct at76_priv *priv, void *addr)
+ {
+ 	int ret = 0;
+@@ -1099,7 +1059,6 @@ static int at76_add_mac_address(struct at76_priv *priv, void *addr)
+ 	return ret;
+ }
+ 
+-
+ #if 0
+ /* implemented to get promisc. mode working, but does not help.
+    May still be useful for multicast eventually. */
+@@ -1136,7 +1095,6 @@ static int set_group_address(struct at76_priv *priv, u8 *addr, int n)
+ }
+ #endif
+ 
+-
+ static int at76_dump_mib_mac_addr(struct at76_priv *priv)
+ {
+ 	int ret = 0;
+@@ -1169,7 +1127,6 @@ static int at76_dump_mib_mac_addr(struct at76_priv *priv)
+ 	return ret;
+ }
+ 
+-
+ static int at76_dump_mib_mac_wep(struct at76_priv *priv)
+ {
+ 	int ret = 0;
+@@ -1206,7 +1163,6 @@ static int at76_dump_mib_mac_wep(struct at76_priv *priv)
+ 	return ret;
+ }
+ 
+-
+ static int at76_dump_mib_mac_mgmt(struct at76_priv *priv)
+ {
+ 	int ret = 0;
+@@ -1260,7 +1216,6 @@ static int at76_dump_mib_mac_mgmt(struct at76_priv *priv)
+ 	return ret;
+ }
+ 
+-
+ static int at76_dump_mib_mac(struct at76_priv *priv)
+ {
+ 	int ret = 0;
+@@ -1306,7 +1261,6 @@ static int at76_dump_mib_mac(struct at76_priv *priv)
+ 	return ret;
+ }
+ 
+-
+ static int at76_dump_mib_phy(struct at76_priv *priv)
+ {
+ 	int ret = 0;
+@@ -1346,7 +1300,6 @@ static int at76_dump_mib_phy(struct at76_priv *priv)
+ 	return ret;
+ }
+ 
+-
+ static int at76_dump_mib_local(struct at76_priv *priv)
+ {
+ 	int ret = 0;
+@@ -1376,7 +1329,6 @@ static int at76_dump_mib_local(struct at76_priv *priv)
+ 	return ret;
+ }
+ 
+-
+ static int at76_get_mib_mdomain(struct at76_priv *priv, struct mib_mdomain *val)
+ {
+ 	int ret = 0;
+@@ -1403,7 +1355,6 @@ static int at76_get_mib_mdomain(struct at76_priv *priv, struct mib_mdomain *val)
+ 	return ret;
+ }
+ 
+-
+ static void at76_dump_mib_mdomain(struct at76_priv *priv)
+ {
+ 	int ret;
+@@ -1424,7 +1375,6 @@ static void at76_dump_mib_mdomain(struct at76_priv *priv)
+ 		 hex2str(mdomain.tx_powerlevel, sizeof(mdomain.tx_powerlevel)));
+ }
+ 
+-
+ static int at76_get_current_bssid(struct at76_priv *priv)
+ {
+ 	int ret = 0;
+@@ -1450,7 +1400,6 @@ static int at76_get_current_bssid(struct at76_priv *priv)
+ 	return ret;
+ }
+ 
+-
+ static int at76_get_current_channel(struct at76_priv *priv)
+ {
+ 	int ret = 0;
+@@ -1472,7 +1421,6 @@ static int at76_get_current_channel(struct at76_priv *priv)
+ 	return ret;
+ }
+ 
+-
+ /**
+  * start_scan - start a scan
+  *
+@@ -1529,7 +1477,6 @@ static int at76_start_scan(struct at76_priv *priv, int use_essid, int ir_step)
+ 	return at76_set_card_command(priv-&gt;udev, CMD_SCAN, &amp;scan, sizeof(scan));
+ }
+ 
+-
+ /* Enable monitor mode */
+ static int at76_start_monitor(struct at76_priv *priv)
+ {
+@@ -1550,7 +1497,6 @@ static int at76_start_monitor(struct at76_priv *priv)
+ 	return ret;
+ }
+ 
+-
+ static int at76_start_ibss(struct at76_priv *priv)
+ {
+ 	struct at76_req_ibss bss;
+@@ -1603,7 +1549,6 @@ static int at76_start_ibss(struct at76_priv *priv)
+ 	return 0;
+ }
+ 
+-
+ /* idx points into priv-&gt;bss */
+ static int at76_join_bss(struct at76_priv *priv, struct bss_info *ptr)
+ {
+@@ -1626,7 +1571,6 @@ static int at76_join_bss(struct at76_priv *priv, struct bss_info *ptr)
+ 				     sizeof(struct at76_req_join));
+ }
+ 
+-
+ /* calc. the padding from txbuf-&gt;wlength (which excludes the USB TX header)
+    guess this is needed to compensate a flaw in the AT76C503A USB part ... */
+ static inline int at76_calc_padding(int wlen)
+@@ -1645,7 +1589,6 @@ static inline int at76_calc_padding(int wlen)
+ 	return 0;
+ }
+ 
+-
+ /* we are doing a lot of things here in an interrupt. Need
+    a bh handler (Watching TV with a TV card is probably
+    a good test: if you see flickers, we are doing too much.
+@@ -1663,7 +1606,6 @@ static void at76_read_bulk_callback(struct urb *urb)
+ 	return;
+ }
+ 
+-
+ static void at76_write_bulk_callback(struct urb *urb)
+ {
+ 	struct at76_priv *priv = urb-&gt;context;
+@@ -1712,7 +1654,6 @@ static void at76_write_bulk_callback(struct urb *urb)
+ 		netif_wake_queue(priv-&gt;netdev);
+ }
+ 
+-
+ /* send a management frame on bulk-out.
+    txbuf-&gt;wlength must be set (in LE format !) */
+ static int at76_send_mgmt_bulk(struct at76_priv *priv,
+@@ -1783,14 +1724,12 @@ static int at76_send_mgmt_bulk(struct at76_priv *priv,
+ 	return ret;
+ }
+ 
+-
+ /* Go to the next information element */
+ static inline void next_ie(struct ieee80211_info_element **ie)
+ {
+ 	*ie = (struct ieee80211_info_element *)(&amp;(*ie)-&gt;data[(*ie)-&gt;len]);
+ }
+ 
+-
+ /* challenge is the challenge string (in TLV format)
+    we got with seq_nr 2 for shared secret authentication only and
+    send in seq_nr 3 WEP encrypted to prove we have the correct WEP key;
+@@ -1847,7 +1786,6 @@ static int at76_auth_req(struct at76_priv *priv, struct bss_info *bss,
+ 	return at76_send_mgmt_bulk(priv, tx_buffer);
+ }
+ 
+-
+ static int at76_assoc_req(struct at76_priv *priv, struct bss_info *bss)
+ {
+ 	struct at76_tx_buffer *tx_buffer;
+@@ -1919,7 +1857,6 @@ static int at76_assoc_req(struct at76_priv *priv, struct bss_info *bss)
+ 	return at76_send_mgmt_bulk(priv, tx_buffer);
+ }
+ 
+-
+ /* we are currently associated to curr_bss and
+    want to reassoc to new_bss */
+ static int at76_reassoc_req(struct at76_priv *priv, struct bss_info *curr_bss,
+@@ -1999,7 +1936,6 @@ static int at76_reassoc_req(struct at76_priv *priv, struct bss_info *curr_bss,
+ 	return at76_send_mgmt_bulk(priv, tx_buffer);
+ }
+ 
+-
+ static int at76_disassoc_req(struct at76_priv *priv, struct bss_info *bss)
+ {
+ 	struct at76_tx_buffer *tx_buffer;
+@@ -2039,7 +1975,6 @@ static int at76_disassoc_req(struct at76_priv *priv, struct bss_info *bss)
+ 	return at76_send_mgmt_bulk(priv, tx_buffer);
+ }
+ 
+-
+ /* the restart timer timed out */
+ static void at76_restart_timeout(unsigned long par)
+ {
+@@ -2047,7 +1982,6 @@ static void at76_restart_timeout(unsigned long par)
+ 	schedule_work(&amp;priv-&gt;work_restart);
+ }
+ 
+-
+ /* we got to check the bss_list for old entries */
+ static void at76_bss_list_timeout(unsigned long par)
+ {
+@@ -2077,7 +2011,6 @@ static void at76_bss_list_timeout(unsigned long par)
+ 	mod_timer(&amp;priv-&gt;bss_list_timer, jiffies + BSS_LIST_TIMEOUT);
+ }
+ 
+-
+ static void at76_dump_bss_table(struct at76_priv *priv)
+ {
+ 	struct bss_info *ptr;
+@@ -2104,7 +2037,6 @@ static void at76_dump_bss_table(struct at76_priv *priv)
+ 	spin_unlock_irqrestore(&amp;priv-&gt;bss_list_spinlock, flags);
+ }
+ 
+-
+ /* we got a timeout for a infrastructure mgmt packet */
+ static void at76_mgmt_timeout(unsigned long par)
+ {
+@@ -2112,7 +2044,6 @@ static void at76_mgmt_timeout(unsigned long par)
+ 	schedule_work(&amp;priv-&gt;work_mgmt_timeout);
+ }
+ 
+-
+ /*
+  * at76_work_mgmt_timeout_scan - expiry of management timer in istate SCANNING
+  */
+@@ -2200,7 +2131,6 @@ static void at76_handle_mgmt_timeout_scan(struct at76_priv *priv)
+ 	priv-&gt;scan_runs++;
+ }
+ 
+-
+ /* Called after successful association */
+ static void at76_work_assoc_done(struct work_struct *work)
+ {
+@@ -2245,7 +2175,6 @@ static void at76_work_assoc_done(struct work_struct *work)
+ 	mutex_unlock(&amp;priv-&gt;mtx);
+ }
+ 
+-
+ static void at76_delete_device(struct at76_priv *priv)
+ {
+ 	int i;
+@@ -2310,7 +2239,6 @@ static void at76_delete_device(struct at76_priv *priv)
+ 	at76_dbg(DBG_PROC_ENTRY, &quot;%s: EXIT&quot;, __FUNCTION__);
+ }
+ 
+-
+ static int at76_alloc_urbs(struct at76_priv *priv,
+ 			   struct usb_interface *interface)
+ {
+@@ -2384,7 +2312,6 @@ static int at76_alloc_urbs(struct at76_priv *priv,
+ 	return 0;
+ }
+ 
+-
+ /* we only store the new mac address in netdev struct,
+    it gets set when the netdev is opened. */
+ static int at76_set_mac_address(struct net_device *netdev, void *addr)
+@@ -2394,14 +2321,12 @@ static int at76_set_mac_address(struct net_device *netdev, void *addr)
+ 	return 1;
+ }
+ 
+-
+ static struct net_device_stats *at76_get_stats(struct net_device *netdev)
+ {
+ 	struct at76_priv *priv = netdev_priv(netdev);
+ 	return &amp;priv-&gt;stats;
+ }
+ 
+-
+ static struct iw_statistics *at76_get_wireless_stats(struct net_device *netdev)
+ {
+ 	struct at76_priv *priv = netdev_priv(netdev);
+@@ -2413,7 +2338,6 @@ static struct iw_statistics *at76_get_wireless_stats(struct net_device *netdev)
+ 	return &amp;priv-&gt;wstats;
+ }
+ 
+-
+ static void at76_set_multicast(struct net_device *netdev)
+ {
+ 	struct at76_priv *priv = netdev_priv(netdev);
+@@ -2427,7 +2351,6 @@ static void at76_set_multicast(struct net_device *netdev)
+ 	}
+ }
+ 
+-
+ /*******************************************************************************
+  * at76_priv implementations of iw_handler functions:
+  */
+@@ -2465,7 +2388,6 @@ static int at76_iw_handler_commit(struct net_device *netdev,
+ 	return 0;
+ }
+ 
+-
+ static int at76_iw_handler_get_name(struct net_device *netdev,
+ 				    struct iw_request_info *info,
+ 				    char *name, char *extra)
+@@ -2475,7 +2397,6 @@ static int at76_iw_handler_get_name(struct net_device *netdev,
+ 	return 0;
+ }
+ 
+-
+ static int at76_iw_handler_set_freq(struct net_device *netdev,
+ 				    struct iw_request_info *info,
+ 				    struct iw_freq *freq, char *extra)
+@@ -2527,7 +2448,6 @@ static int at76_iw_handler_set_freq(struct net_device *netdev,
+ 	return ret;
+ }
+ 
+-
+ static int at76_iw_handler_get_freq(struct net_device *netdev,
+ 				    struct iw_request_info *info,
+ 				    struct iw_freq *freq, char *extra)
+@@ -2546,7 +2466,6 @@ static int at76_iw_handler_get_freq(struct net_device *netdev,
+ 	return 0;
+ }
+ 
+-
+ static int at76_iw_handler_set_mode(struct net_device *netdev,
+ 				    struct iw_request_info *info,
+ 				    __u32 *mode, char *extra)
+@@ -2567,7 +2486,6 @@ static int at76_iw_handler_set_mode(struct net_device *netdev,
+ 	return ret;
+ }
+ 
+-
+ static int at76_iw_handler_get_mode(struct net_device *netdev,
+ 				    struct iw_request_info *info,
+ 				    __u32 * mode, char *extra)
+@@ -2581,7 +2499,6 @@ static int at76_iw_handler_get_mode(struct net_device *netdev,
+ 	return 0;
+ }
+ 
+-
+ static int at76_iw_handler_get_range(struct net_device *netdev,
+ 				     struct iw_request_info *info,
+ 				     struct iw_point *data, char *extra)
+@@ -2668,7 +2585,6 @@ static int at76_iw_handler_get_range(struct net_device *netdev,
+ 	return 0;
+ }
+ 
+-
+ static int at76_iw_handler_set_spy(struct net_device *netdev,
+ 				   struct iw_request_info *info,
+ 				   struct iw_point *data, char *extra)
+@@ -2687,7 +2603,6 @@ static int at76_iw_handler_set_spy(struct net_device *netdev,
+ 	return ret;
+ }
+ 
+-
+ static int at76_iw_handler_get_spy(struct net_device *netdev,
+ 				   struct iw_request_info *info,
+ 				   struct iw_point *data, char *extra)
+@@ -2707,7 +2622,6 @@ static int at76_iw_handler_get_spy(struct net_device *netdev,
+ 	return ret;
+ }
+ 
+-
+ static int at76_iw_handler_set_thrspy(struct net_device *netdev,
+ 				      struct iw_request_info *info,
+ 				      struct iw_point *data, char *extra)
+@@ -2726,7 +2640,6 @@ static int at76_iw_handler_set_thrspy(struct net_device *netdev,
+ 	return ret;
+ }
+ 
+-
+ static int at76_iw_handler_get_thrspy(struct net_device *netdev,
+ 				      struct iw_request_info *info,
+ 				      struct iw_point *data, char *extra)
+@@ -2745,7 +2658,6 @@ static int at76_iw_handler_get_thrspy(struct net_device *netdev,
+ 	return ret;
+ }
+ 
+-
+ static int at76_iw_handler_set_wap(struct net_device *netdev,
+ 				   struct iw_request_info *info,
+ 				   struct sockaddr *ap_addr, char *extra)
+@@ -2769,7 +2681,6 @@ static int at76_iw_handler_set_wap(struct net_device *netdev,
+ 	return -EIWCOMMIT;
+ }
+ 
+-
+ static int at76_iw_handler_get_wap(struct net_device *netdev,
+ 				   struct iw_request_info *info,
+ 				   struct sockaddr *ap_addr, char *extra)
+@@ -2785,7 +2696,6 @@ static int at76_iw_handler_get_wap(struct net_device *netdev,
+ 	return 0;
+ }
+ 
+-
+ static int at76_iw_handler_set_scan(struct net_device *netdev,
+ 				    struct iw_request_info *info,
+ 				    union iwreq_data *wrqu, char *extra)
+@@ -2856,7 +2766,6 @@ static int at76_iw_handler_set_scan(struct net_device *netdev,
+ 	return ret;
+ }
+ 
+-
+ static int at76_iw_handler_get_scan(struct net_device *netdev,
+ 				    struct iw_request_info *info,
+ 				    struct iw_point *data, char *extra)
+@@ -2982,7 +2891,6 @@ static int at76_iw_handler_get_scan(struct net_device *netdev,
+ 	return 0;
+ }
+ 
+-
+ static int at76_iw_handler_set_essid(struct net_device *netdev,
+ 				     struct iw_request_info *info,
+ 				     struct iw_point *data, char *extra)
+@@ -3002,7 +2910,6 @@ static int at76_iw_handler_set_essid(struct net_device *netdev,
+ 	return -EIWCOMMIT;
+ }
+ 
+-
+ static int at76_iw_handler_get_essid(struct net_device *netdev,
+ 				     struct iw_request_info *info,
+ 				     struct iw_point *data, char *extra)
+@@ -3037,7 +2944,6 @@ static int at76_iw_handler_get_essid(struct net_device *netdev,
+ 	return 0;
+ }
+ 
+-
+ static int at76_iw_handler_set_rate(struct net_device *netdev,
+ 				    struct iw_request_info *info,
+ 				    struct iw_param *bitrate, char *extra)
+@@ -3070,7 +2976,6 @@ static int at76_iw_handler_set_rate(struct net_device *netdev,
+ 	return ret;
+ }
+ 
+-
+ static int at76_iw_handler_get_rate(struct net_device *netdev,
+ 				    struct iw_request_info *info,
+ 				    struct iw_param *bitrate, char *extra)
+@@ -3108,7 +3013,6 @@ static int at76_iw_handler_get_rate(struct net_device *netdev,
+ 	return ret;
+ }
+ 
+-
+ static int at76_iw_handler_set_rts(struct net_device *netdev,
+ 				   struct iw_request_info *info,
+ 				   struct iw_param *rts, char *extra)
+@@ -3132,7 +3036,6 @@ static int at76_iw_handler_set_rts(struct net_device *netdev,
+ 	return ret;
+ }
+ 
+-
+ static int at76_iw_handler_get_rts(struct net_device *netdev,
+ 				   struct iw_request_info *info,
+ 				   struct iw_param *rts, char *extra)
+@@ -3149,7 +3052,6 @@ static int at76_iw_handler_get_rts(struct net_device *netdev,
+ 	return 0;
+ }
+ 
+-
+ static int at76_iw_handler_set_frag(struct net_device *netdev,
+ 				    struct iw_request_info *info,
+ 				    struct iw_param *frag, char *extra)
+@@ -3173,7 +3075,6 @@ static int at76_iw_handler_set_frag(struct net_device *netdev,
+ 	return ret;
+ }
+ 
+-
+ static int at76_iw_handler_get_frag(struct net_device *netdev,
+ 				    struct iw_request_info *info,
+ 				    struct iw_param *frag, char *extra)
+@@ -3190,7 +3091,6 @@ static int at76_iw_handler_get_frag(struct net_device *netdev,
+ 	return 0;
+ }
+ 
+-
+ static int at76_iw_handler_get_txpow(struct net_device *netdev,
+ 				     struct iw_request_info *info,
+ 				     struct iw_param *power, char *extra)
+@@ -3206,7 +3106,6 @@ static int at76_iw_handler_get_txpow(struct net_device *netdev,
+ 	return 0;
+ }
+ 
+-
+ /* jal: short retry is handled by the firmware (at least 0.90.x),
+    while long retry is not (?) */
+ static int at76_iw_handler_set_retry(struct net_device *netdev,
+@@ -3232,7 +3131,6 @@ static int at76_iw_handler_set_retry(struct net_device *netdev,
+ 	return ret;
+ }
+ 
+-
+ /* adapted (ripped) from atmel.c */
+ static int at76_iw_handler_get_retry(struct net_device *netdev,
+ 				     struct iw_request_info *info,
+@@ -3249,7 +3147,6 @@ static int at76_iw_handler_get_retry(struct net_device *netdev,
+ 	return 0;
+ }
+ 
+-
+ static int at76_iw_handler_set_encode(struct net_device *netdev,
+ 				      struct iw_request_info *info,
+ 				      struct iw_point *encoding,
+@@ -3300,7 +3197,6 @@ static int at76_iw_handler_set_encode(struct net_device *netdev,
+ 	return -EIWCOMMIT;
+ }
+ 
+-
+ static int at76_iw_handler_get_encode(struct net_device *netdev,
+ 				      struct iw_request_info *info,
+ 				      struct iw_point *encoding,
+@@ -3340,7 +3236,6 @@ static int at76_iw_handler_get_encode(struct net_device *netdev,
+ 	return 0;
+ }
+ 
+-
+ static int at76_iw_handler_set_power(struct net_device *netdev,
+ 				     struct iw_request_info *info,
+ 				     struct iw_param *prq, char *extra)
+@@ -3376,7 +3271,6 @@ static int at76_iw_handler_set_power(struct net_device *netdev,
+ 	return err;
+ }
+ 
+-
+ static int at76_iw_handler_get_power(struct net_device *netdev,
+ 				     struct iw_request_info *info,
+ 				     struct iw_param *power, char *extra)
+@@ -3398,7 +3292,6 @@ static int at76_iw_handler_get_power(struct net_device *netdev,
+ 	return 0;
+ }
+ 
+-
+ /*******************************************************************************
+  * Private IOCTLS
+  */
+@@ -3424,7 +3317,6 @@ static int at76_iw_set_short_preamble(struct net_device *netdev,
+ 	return ret;
+ }
+ 
+-
+ static int at76_iw_set_debug(struct net_device *netdev,
+ 			     struct iw_request_info *info,
+ 			     struct iw_point *data, char *extra)
+@@ -3459,7 +3351,6 @@ static int at76_iw_set_debug(struct net_device *netdev,
+ 	return 0;
+ }
+ 
+-
+ static int at76_iw_set_powersave_mode(struct net_device *netdev,
+ 				      struct iw_request_info *info, char *name,
+ 				      char *extra)
+@@ -3481,7 +3372,6 @@ static int at76_iw_set_powersave_mode(struct net_device *netdev,
+ 	return ret;
+ }
+ 
+-
+ static int at76_iw_set_scan_times(struct net_device *netdev,
+ 				  struct iw_request_info *info, char *name,
+ 				  char *extra)
+@@ -3503,7 +3393,6 @@ static int at76_iw_set_scan_times(struct net_device *netdev,
+ 	return ret;
+ }
+ 
+-
+ static int at76_iw_set_scan_mode(struct net_device *netdev,
+ 				 struct iw_request_info *info, char *name,
+ 				 char *extra)
+@@ -3525,7 +3414,6 @@ static int at76_iw_set_scan_mode(struct net_device *netdev,
+ 	return ret;
+ }
+ 
+-
+ static int at76_set_iroaming(struct at76_priv *priv, int onoff)
+ {
+ 	int ret = 0;
+@@ -3543,7 +3431,6 @@ static int at76_set_iroaming(struct at76_priv *priv, int onoff)
+ 	return ret;
+ }
+ 
+-
+ static int at76_iw_set_intl_roaming(struct net_device *netdev,
+ 				    struct iw_request_info *info, char *name,
+ 				    char *extra)
+@@ -3568,7 +3455,6 @@ static int at76_iw_set_intl_roaming(struct net_device *netdev,
+ 	return ret;
+ }
+ 
+-
+ /*******************************************************************************
+  * structure that advertises the iw handlers of this driver
+  */
+@@ -3618,7 +3504,6 @@ static const iw_handler at76_priv_handlers[] = {
+ 	AT76_SET_PRIV(AT76_SET_INTL_ROAMING, at76_iw_set_intl_roaming),
+ };
+ 
+-
+ /*******************************************************************************
+  * structure that describes the private ioctls/iw handlers of this driver
+  */
+@@ -3651,7 +3536,6 @@ static const struct iw_priv_args at76_priv_args[] = {
+ 	 &quot;intl_roaming&quot;},
+ };
+ 
+-
+ static const struct iw_handler_def at76_handler_def =
+ {
+ 	.num_standard	= ARRAY_SIZE(at76_handlers),
+@@ -3663,7 +3547,6 @@ static const struct iw_handler_def at76_handler_def =
+ 	.get_wireless_stats = at76_get_wireless_stats,
+ };
+ 
+-
+ /* A short overview on Ethernet-II, 802.2, 802.3 and SNAP
+    (taken from <A HREF="http://www.geocities.com/billalexander/ethernet.html">http://www.geocities.com/billalexander/ethernet.html</A>):
+ 
+@@ -3681,7 +3564,6 @@ Ethernet (a.k.a. Ethernet II)
+ 	 Type 0x06 0x00 = XNS
+ 	 Type 0x81 0x37 = Novell NetWare
+ 
+-
+ 802.3
+ 
+ 	+---------+---------+---------+----------
+@@ -3713,7 +3595,6 @@ static const u8 snapsig[] = { 0xaa, 0xaa, 0x03 };
+  * a SNAP OID of 0 (0x00, 0x00, 0x00) */
+ static const u8 rfc1042sig[] = { 0xaa, 0xaa, 0x03, 0x00, 0x00, 0x00 };
+ 
+-
+ static int at76_tx(struct sk_buff *skb, struct net_device *netdev)
+ {
+ 	struct at76_priv *priv = netdev_priv(netdev);
+@@ -3855,7 +3736,6 @@ static int at76_tx(struct sk_buff *skb, struct net_device *netdev)
+ 	return ret;
+ }
+ 
+-
+ static void at76_tx_timeout(struct net_device *netdev)
+ {
+ 	struct at76_priv *priv = netdev_priv(netdev);
+@@ -3868,7 +3748,6 @@ static void at76_tx_timeout(struct net_device *netdev)
+ 	priv-&gt;stats.tx_errors++;
+ }
+ 
+-
+ static int at76_submit_rx_urb(struct at76_priv *priv)
+ {
+ 	int ret, size;
+@@ -3924,7 +3803,6 @@ static int at76_submit_rx_urb(struct at76_priv *priv)
+ 	return ret;
+ }
+ 
+-
+ static int at76_open(struct net_device *netdev)
+ {
+ 	struct at76_priv *priv = netdev_priv(netdev);
+@@ -3965,7 +3843,6 @@ static int at76_open(struct net_device *netdev)
+ 	return ret &lt; 0 ? ret : 0;
+ }
+ 
+-
+ static int at76_stop(struct net_device *netdev)
+ {
+ 	struct at76_priv *priv = netdev_priv(netdev);
+@@ -4012,7 +3889,6 @@ static int at76_stop(struct net_device *netdev)
+ 	return 0;
+ }
+ 
+-
+ static void at76_ethtool_get_drvinfo(struct net_device *netdev,
+ 					 struct ethtool_drvinfo *info)
+ {
+@@ -4032,20 +3908,17 @@ static void at76_ethtool_get_drvinfo(struct net_device *netdev,
+ 		 priv-&gt;fwe-&gt;fw_version.patch, priv-&gt;fwe-&gt;fw_version.build);
+ }
+ 
+-
+ static u32 at76_ethtool_get_link(struct net_device *netdev)
+ {
+ 	struct at76_priv *priv = netdev_priv(netdev);
+ 	return priv-&gt;istate == CONNECTED;
+ }
+ 
+-
+ static struct ethtool_ops at76_ethtool_ops = {
+ 	.get_drvinfo = at76_ethtool_get_drvinfo,
+ 	.get_link = at76_ethtool_get_link,
+ };
+ 
+-
+ /**
+  * at76_init_new_device - continue device initialization after firmware download
+  *
+@@ -4162,7 +4035,6 @@ static int at76_init_new_device(struct at76_priv *priv,
+ 	return ret;
+ }
+ 
+-
+ /* Download external firmware */
+ static int at76_load_external_fw(struct usb_device *udev, struct fwentry *fwe)
+ {
+@@ -4193,7 +4065,6 @@ static int at76_load_external_fw(struct usb_device *udev, struct fwentry *fwe)
+ 	return 0;
+ }
+ 
+-
+ /* Download internal firmware */
+ static int at76_load_internal_fw(struct usb_device *udev, struct fwentry *fwe)
+ {
+@@ -4225,7 +4096,6 @@ static int at76_load_internal_fw(struct usb_device *udev, struct fwentry *fwe)
+ 	return ret;
+ }
+ 
+-
+ static int at76_essid_matched(struct at76_priv *priv, struct bss_info *ptr)
+ {
+ 	/* common criteria for both modi */
+@@ -4239,7 +4109,6 @@ static int at76_essid_matched(struct at76_priv *priv, struct bss_info *ptr)
+ 	return ret;
+ }
+ 
+-
+ static inline int at76_mode_matched(struct at76_priv *priv, struct bss_info *ptr)
+ {
+ 	int ret;
+@@ -4254,7 +4123,6 @@ static inline int at76_mode_matched(struct at76_priv *priv, struct bss_info *ptr
+ 	return ret;
+ }
+ 
+-
+ static int at76_rates_matched(struct at76_priv *priv, struct bss_info *ptr)
+ {
+ 	int i;
+@@ -4284,7 +4152,6 @@ static int at76_rates_matched(struct at76_priv *priv, struct bss_info *ptr)
+ 		return 1;
+ }
+ 
+-
+ static inline int at76_wep_matched(struct at76_priv *priv, struct bss_info *ptr)
+ {
+ 	if (!priv-&gt;wep_enabled &amp;&amp; ptr-&gt;capa &amp; WLAN_CAPABILITY_PRIVACY) {
+@@ -4298,7 +4165,6 @@ static inline int at76_wep_matched(struct at76_priv *priv, struct bss_info *ptr)
+ 	return 1;
+ }
+ 
+-
+ static inline int at76_bssid_matched(struct at76_priv *priv,
+ 				     struct bss_info *ptr)
+ {
+@@ -4314,7 +4180,6 @@ static inline int at76_bssid_matched(struct at76_priv *priv,
+ 	}
+ }
+ 
+-
+ /**
+  * at76_match_bss - try to find a matching bss in priv-&gt;bss
+  *
+@@ -4351,7 +4216,6 @@ static struct bss_info *at76_match_bss(struct at76_priv *priv,
+ 	return ptr;
+ }
+ 
+-
+ /* Try joining a BSS */
+ static void at76_work_join(struct work_struct *work)
+ {
+@@ -4435,7 +4299,6 @@ static void at76_work_join(struct work_struct *work)
+ 	mutex_unlock(&amp;priv-&gt;mtx);
+ }
+ 
+-
+ /* Process scheduled events */
+ static void at76_work_mgmt_timeout(struct work_struct *work)
+ {
+@@ -4542,7 +4405,6 @@ static void at76_work_mgmt_timeout(struct work_struct *work)
+ 	mutex_unlock(&amp;priv-&gt;mtx);
+ }
+ 
+-
+ static void at76_work_new_bss(struct work_struct *work)
+ {
+ 	struct at76_priv *priv = container_of(work, struct at76_priv,
+@@ -4578,7 +4440,6 @@ static void at76_work_new_bss(struct work_struct *work)
+ 	mutex_unlock(&amp;priv-&gt;mtx);
+ }
+ 
+-
+ static int at76_startup_device(struct at76_priv *priv)
+ {
+ 	struct at76_card_config *ccfg = &amp;priv-&gt;card_config;
+@@ -4704,7 +4565,6 @@ static int at76_startup_device(struct at76_priv *priv)
+ 	return 0;
+ }
+ 
+-
+ static void at76_work_restart(struct work_struct *work)
+ {
+ 	struct at76_priv *priv = container_of(work, struct at76_priv,
+@@ -4727,7 +4587,6 @@ static void at76_work_restart(struct work_struct *work)
+ 	mutex_unlock(&amp;priv-&gt;mtx);
+ }
+ 
+-
+ static void at76_work_scan(struct work_struct *work)
+ {
+ 	struct at76_priv *priv = container_of(work, struct at76_priv,
+@@ -4755,7 +4614,6 @@ static void at76_work_scan(struct work_struct *work)
+ 	mutex_unlock(&amp;priv-&gt;mtx);
+ }
+ 
+-
+ static void at76_work_set_promisc(struct work_struct *work)
+ {
+ 	struct at76_priv *priv = container_of(work, struct at76_priv,
+@@ -4778,7 +4636,6 @@ static void at76_work_set_promisc(struct work_struct *work)
+ 	mutex_unlock(&amp;priv-&gt;mtx);
+ }
+ 
+-
+ static void at76_work_submit_rx(struct work_struct *work)
+ {
+ 	struct at76_priv *priv = container_of(work, struct at76_priv,
+@@ -4789,7 +4646,6 @@ static void at76_work_submit_rx(struct work_struct *work)
+ 	mutex_unlock(&amp;priv-&gt;mtx);
+ }
+ 
+-
+ /* we got an association response */
+ static void at76_rx_mgmt_assoc(struct at76_priv *priv,
+ 			       struct at76_rx_buffer *buf)
+@@ -4830,7 +4686,6 @@ static void at76_rx_mgmt_assoc(struct at76_priv *priv,
+ 	}
+ }
+ 
+-
+ static void at76_rx_mgmt_reassoc(struct at76_priv *priv,
+ 				 struct at76_rx_buffer *buf)
+ {
+@@ -4882,7 +4737,6 @@ static void at76_rx_mgmt_reassoc(struct at76_priv *priv,
+ 	}
+ }
+ 
+-
+ static void at76_rx_mgmt_disassoc(struct at76_priv *priv,
+ 				  struct at76_rx_buffer *buf)
+ {
+@@ -4933,7 +4787,6 @@ static void at76_rx_mgmt_disassoc(struct at76_priv *priv,
+ 	/* ignore DisAssoc to other STA or from other BSSID */
+ }
+ 
+-
+ static void at76_rx_mgmt_auth(struct at76_priv *priv, struct at76_rx_buffer *buf)
+ {
+ 	struct ieee80211_auth *resp = (struct ieee80211_auth *)buf-&gt;packet;
+@@ -4998,7 +4851,6 @@ static void at76_rx_mgmt_auth(struct at76_priv *priv, struct at76_rx_buffer *buf
+ 	/* else: ignore AuthFrames to other recipients */
+ }
+ 
+-
+ static void at76_rx_mgmt_deauth(struct at76_priv *priv,
+ 				struct at76_rx_buffer *buf)
+ {
+@@ -5040,7 +4892,6 @@ static void at76_rx_mgmt_deauth(struct at76_priv *priv,
+ 	}
+ }
+ 
+-
+ static void at76_rx_mgmt_beacon(struct at76_priv *priv,
+ 				struct at76_rx_buffer *buf)
+ {
+@@ -5220,7 +5071,6 @@ static void at76_rx_mgmt_beacon(struct at76_priv *priv,
+ 	spin_unlock_irqrestore(&amp;priv-&gt;bss_list_spinlock, flags);
+ }
+ 
+-
+ /* calc the link level from a given rx_buffer */
+ static void at76_calc_level(struct at76_priv *priv, struct at76_rx_buffer *buf,
+ 			    struct iw_quality *qual)
+@@ -5233,7 +5083,6 @@ static void at76_calc_level(struct at76_priv *priv, struct at76_rx_buffer *buf,
+ 	qual-&gt;updated |= IW_QUAL_LEVEL_UPDATED;
+ }
+ 
+-
+ /* calc the link quality from a given rx_buffer */
+ static void at76_calc_qual(struct at76_priv *priv, struct at76_rx_buffer *buf,
+ 			   struct iw_quality* qual)
+@@ -5259,7 +5108,6 @@ static void at76_calc_qual(struct at76_priv *priv, struct at76_rx_buffer *buf,
+ 	qual-&gt;updated |= IW_QUAL_QUAL_UPDATED;
+ }
+ 
+-
+ /* calc the noise quality from a given rx_buffer */
+ static void at76_calc_noise(struct at76_priv *priv, struct at76_rx_buffer *buf,
+ 			    struct iw_quality *qual)
+@@ -5268,7 +5116,6 @@ static void at76_calc_noise(struct at76_priv *priv, struct at76_rx_buffer *buf,
+ 	qual-&gt;updated |= IW_QUAL_NOISE_INVALID;
+ }
+ 
+-
+ static void at76_update_wstats(struct at76_priv *priv,
+ 			       struct at76_rx_buffer *buf)
+ {
+@@ -5287,7 +5134,6 @@ static void at76_update_wstats(struct at76_priv *priv,
+ 	}
+ }
+ 
+-
+ static void at76_rx_mgmt(struct at76_priv *priv, struct at76_rx_buffer *buf)
+ {
+ 	struct ieee80211_hdr_3addr *mgmt =
+@@ -5345,7 +5191,6 @@ static void at76_rx_mgmt(struct at76_priv *priv, struct at76_rx_buffer *buf)
+ 	return;
+ }
+ 
+-
+ static void at76_dbg_dumpbuf(const char *tag, const u8 *buf, int size)
+ {
+ 	int i;
+@@ -5364,7 +5209,6 @@ static void at76_dbg_dumpbuf(const char *tag, const u8 *buf, int size)
+ 	pr_debug(&quot;\n&quot;);
+ }
+ 
+-
+ /* Convert the 802.11 header on a packet into an ethernet-style header
+  * (basically, pretend we're an ethernet card receiving ethernet packets)
+  *
+@@ -5452,7 +5296,6 @@ static void at76_ieee80211_to_eth(struct sk_buff *skb, int iw_mode)
+ 	    ntohs(skb-&gt;protocol), skb-&gt;len, hex2str(skb-&gt;data, 64));
+ }
+ 
+-
+ /* check for fragmented data in priv-&gt;rx_skb. If the packet was no fragment
+    or it was the last of a fragment set a skb containing the whole packet
+    is returned for further processing. Otherwise we get NULL and are
+@@ -5670,7 +5513,6 @@ static struct sk_buff *at76_check_for_rx_frags(struct at76_priv *priv)
+ 	}
+ }
+ 
+-
+ /* rx interrupt: we expect the complete data buffer in priv-&gt;rx_skb */
+ static void at76_rx_data(struct at76_priv *priv)
+ {
+@@ -5716,7 +5558,6 @@ static void at76_rx_data(struct at76_priv *priv)
+ 	return;
+ }
+ 
+-
+ static void at76_rx_monitor_mode(struct at76_priv *priv)
+ {
+ 	struct at76_rx_radiotap *rt;
+@@ -5779,7 +5620,6 @@ static void at76_rx_monitor_mode(struct at76_priv *priv)
+ 	stats-&gt;rx_bytes += length;
+ }
+ 
+-
+ /**
+  * at76_iwspy_update - check if we spy on the sender address of buf and update stats
+  */
+@@ -5803,7 +5643,6 @@ static void at76_iwspy_update(struct at76_priv *priv, struct at76_rx_buffer *buf
+ 	spin_unlock_bh(&amp;(priv-&gt;spy_spinlock));
+ }
+ 
+-
+ static void at76_rx_tasklet(unsigned long param)
+ {
+ 	struct at76_priv *priv = (struct at76_priv *)param;
+@@ -5825,7 +5664,6 @@ static void at76_rx_tasklet(unsigned long param)
+ 		return;
+ 	}
+ 
+-
+ 	if (!urb || !priv-&gt;rx_skb || !netdev || !priv-&gt;rx_skb-&gt;data)
+ 		return;
+ 
+@@ -5896,7 +5734,6 @@ static void at76_rx_tasklet(unsigned long param)
+ 	return;
+ }
+ 
+-
+ static struct at76_priv *at76_alloc_new_device(struct usb_device *udev)
+ {
+ 	struct net_device *netdev;
+@@ -5965,7 +5802,6 @@ static struct at76_priv *at76_alloc_new_device(struct usb_device *udev)
+ 	return priv;
+ }
+ 
+-
+ /* Load firmware into kernel memory and parse it */
+ static struct fwentry *at76_load_firmware(struct usb_device *udev,
+ 					  int board_type)
+@@ -6028,7 +5864,6 @@ static struct fwentry *at76_load_firmware(struct usb_device *udev,
+ 	return fwe;
+ }
+ 
+-
+ static int at76_probe(struct usb_interface *interface,
+ 		      const struct usb_device_id *id)
+ {
+@@ -6128,7 +5963,6 @@ static int at76_probe(struct usb_interface *interface,
+ 	return ret;
+ }
+ 
+-
+ static void at76_disconnect(struct usb_interface *interface)
+ {
+ 	struct at76_priv *priv;
+@@ -6145,7 +5979,6 @@ static void at76_disconnect(struct usb_interface *interface)
+ 	info(DRIVER_NAME &quot; disconnected&quot;);
+ }
+ 
+-
+ /* structure for registering this driver with the USB subsystem */
+ static struct usb_driver at76_driver = {
+ 	.name = DRIVER_NAME,
+@@ -6154,7 +5987,6 @@ static struct usb_driver at76_driver = {
+ 	.id_table = dev_table,
+ };
+ 
+-
+ static int __init at76_mod_init(void)
+ {
+ 	int result;
+@@ -6171,7 +6003,6 @@ static int __init at76_mod_init(void)
+ 	return result;
+ }
+ 
+-
+ static void __exit at76_mod_exit(void)
+ {
+ 	int i;
+@@ -6185,7 +6016,6 @@ static void __exit at76_mod_exit(void)
+ 	led_trigger_unregister_simple(ledtrig_tx);
+ }
+ 
+-
+ module_param_named(debug, at76_debug, int, 0600);
+ MODULE_PARM_DESC(debug, &quot;Debugging level&quot;);
+ module_param(rx_copybreak, int, 0400);
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000112.html">[at76c503a-develop] [PATCH 04/12] Fix more instances of bad	formatting
+</A></li>
+	<LI>Next message: <A HREF="000114.html">[at76c503a-develop] [PATCH 06/12] Convert wireless handler	initialization to use a macro
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#113">[ date ]</a>
+              <a href="thread.html#113">[ thread ]</a>
+              <a href="subject.html#113">[ subject ]</a>
+              <a href="author.html#113">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">More information about the at76c503a-develop
+mailing list</a><br>
+</body></html>

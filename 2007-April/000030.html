@@ -1,0 +1,192 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [at76c503a-develop] [PATCH 3/6] Remove unused and write-only fields	from some structures
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/at76c503a-develop/2007-April/index.html" >
+   <LINK REL="made" HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%203/6%5D%20Remove%20unused%20and%20write-only%20fields%0A%09from%20some%20structures&In-Reply-To=%3C20070413065737.1380.42212.stgit%40dv.roinet.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000029.html">
+   <LINK REL="Next"  HREF="000031.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[at76c503a-develop] [PATCH 3/6] Remove unused and write-only fields	from some structures</H1>
+    <B>Pavel Roskin</B> 
+    <A HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%203/6%5D%20Remove%20unused%20and%20write-only%20fields%0A%09from%20some%20structures&In-Reply-To=%3C20070413065737.1380.42212.stgit%40dv.roinet.com%3E"
+       TITLE="[at76c503a-develop] [PATCH 3/6] Remove unused and write-only fields	from some structures">proski at gnu.org
+       </A><BR>
+    <I>Fri Apr 13 08:57:37 CEST 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000029.html">[at76c503a-develop] [PATCH 2/6] Change buffer pointers to void* or	safer types to avoid	casts
+</A></li>
+        <LI>Next message: <A HREF="000031.html">[at76c503a-develop] [PATCH 4/6] Use safer declaration for	at76_priv_handlers
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#30">[ date ]</a>
+              <a href="thread.html#30">[ thread ]</a>
+              <a href="subject.html#30">[ subject ]</a>
+              <a href="author.html#30">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Signed-off-by: Pavel Roskin &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">proski at gnu.org</A>&gt;
+---
+
+ at76_usb.c |   15 ---------------
+ at76_usb.h |   17 -----------------
+ 2 files changed, 0 insertions(+), 32 deletions(-)
+
+diff --git a/at76_usb.c b/at76_usb.c
+index 4f495eb..840d39a 100644
+--- a/at76_usb.c
++++ b/at76_usb.c
+@@ -666,9 +666,6 @@ static int at76_get_hw_config(struct at76_priv *dev)
+ 		if (ret &lt; 0)
+ 			break;
+ 		memcpy(dev-&gt;mac_addr, hwcfg-&gt;i.mac_addr, ETH_ALEN);
+-		memcpy(dev-&gt;cr31_values, hwcfg-&gt;i.cr31_values, 14);
+-		memcpy(dev-&gt;cr58_values, hwcfg-&gt;i.cr58_values, 14);
+-		memcpy(dev-&gt;pidvid, hwcfg-&gt;i.pidvid, 4);
+ 		dev-&gt;regulatory_domain = hwcfg-&gt;i.regulatory_domain;
+ 		break;
+ 
+@@ -677,14 +674,8 @@ static int at76_get_hw_config(struct at76_priv *dev)
+ 		ret = at76_get_hw_cfg_rfmd(dev-&gt;udev, hwcfg, sizeof(hwcfg-&gt;r3));
+ 		if (ret &lt; 0)
+ 			break;
+-		memcpy(dev-&gt;cr20_values, hwcfg-&gt;r3.cr20_values, 14);
+-		memcpy(dev-&gt;cr21_values, hwcfg-&gt;r3.cr21_values, 14);
+-		memcpy(dev-&gt;bb_cr, hwcfg-&gt;r3.bb_cr, 14);
+-		memcpy(dev-&gt;pidvid, hwcfg-&gt;r3.pidvid, 4);
+ 		memcpy(dev-&gt;mac_addr, hwcfg-&gt;r3.mac_addr, ETH_ALEN);
+ 		dev-&gt;regulatory_domain = hwcfg-&gt;r3.regulatory_domain;
+-		memcpy(dev-&gt;low_power_values, hwcfg-&gt;r3.low_power_values, 14);
+-		memcpy(dev-&gt;normal_power_values, hwcfg-&gt;r3.normal_power_values, 14);
+ 		break;
+ 
+ 	case BOARDTYPE_505_RFMD:
+@@ -693,12 +684,8 @@ static int at76_get_hw_config(struct at76_priv *dev)
+ 		ret = at76_get_hw_cfg_rfmd(dev-&gt;udev, hwcfg, sizeof(hwcfg-&gt;r5));
+ 		if (ret &lt; 0)
+ 			break;
+-		memcpy(dev-&gt;cr39_values, hwcfg-&gt;r5.cr39_values, 14);
+-		memcpy(dev-&gt;bb_cr, hwcfg-&gt;r5.bb_cr, 14);
+-		memcpy(dev-&gt;pidvid, hwcfg-&gt;r5.pidvid, 4);
+ 		memcpy(dev-&gt;mac_addr, hwcfg-&gt;r5.mac_addr, ETH_ALEN);
+ 		dev-&gt;regulatory_domain = hwcfg-&gt;r5.regulatory_domain;
+-		memcpy(dev-&gt;cr15_values, hwcfg-&gt;r5.cr15_values, 14);
+ 		break;
+ 
+ 	default:
+@@ -3032,7 +3019,6 @@ static void at76_rx_mgmt_beacon(struct at76_priv *dev, struct at76_rx_buffer *bu
+ 	match-&gt;rssi = buf-&gt;rssi;
+ 	match-&gt;link_qual = buf-&gt;link_quality;
+ 	match-&gt;noise_level = buf-&gt;noise_level;
+-	memcpy(match-&gt;mac, mgmt-&gt;addr2, ETH_ALEN);	/* just for info */
+ 	memcpy(match-&gt;bssid, mgmt-&gt;addr3, ETH_ALEN);
+ 	at76_dbg(DBG_RX_BEACON, &quot;%s: bssid %s&quot;, dev-&gt;netdev-&gt;name,
+ 	         mac2str(match-&gt;bssid));
+@@ -5961,7 +5947,6 @@ static int at76_alloc_urbs(struct at76_priv *dev)
+ 			}
+ 			buffer_size = sizeof(struct at76_tx_buffer) +
+ 			    MAX_PADDING_SIZE;
+-			dev-&gt;bulk_out_size = buffer_size;
+ 			dev-&gt;bulk_out_endpointAddr = endpoint-&gt;bEndpointAddress;
+ 			dev-&gt;bulk_out_buffer = kmalloc(buffer_size, GFP_KERNEL);
+ 			if (!dev-&gt;bulk_out_buffer) {
+diff --git a/at76_usb.h b/at76_usb.h
+index 944e41f..e486bbf 100644
+--- a/at76_usb.h
++++ b/at76_usb.h
+@@ -426,8 +426,6 @@ struct reg_domain {
+ struct bss_info {
+ 	struct list_head list;
+ 
+-	u8 mac[ETH_ALEN];	/* real mac address, differs 
+-				   for ad-hoc from bssid */
+ 	u8 bssid[ETH_ALEN];	/* bssid */
+ 	u8 ssid[IW_ESSID_MAX_SIZE + 1];	/* ssid, +1 for trailing \0 
+ 					   to make it printable */
+@@ -476,7 +474,6 @@ struct at76_priv {
+ 	__u8 bulk_in_endpointAddr;	/* the address of the bulk in endpoint */
+ 
+ 	void *bulk_out_buffer;	/* the buffer to send data */
+-	int bulk_out_size;	/* the size of the send buffer */
+ 	struct urb *write_urb;	/* the urb used to send data */
+ 	struct urb *read_urb;
+ 	__u8 bulk_out_endpointAddr;	/* the address of the bulk out endpoint */
+@@ -495,8 +492,6 @@ struct at76_priv {
+ 	void *ctrl_buffer;
+ 	struct urb *ctrl_urb;
+ 
+-	u8 op_mode;
+-
+ 	/* the WEP stuff */
+ 	int wep_enabled;	/* 1 if WEP is enabled */
+ 	int wep_key_id;		/* key id to be used */
+@@ -506,7 +501,6 @@ struct at76_priv {
+ 
+ 	int channel;
+ 	int iw_mode;
+-	int curr_ap;
+ 	u8 bssid[ETH_ALEN];
+ 	u8 essid[IW_ESSID_MAX_SIZE];
+ 	char nickn[IW_ESSID_MAX_SIZE + 1];	/* nickname, only used in the iwconfig i/f */
+@@ -561,7 +555,6 @@ struct at76_priv {
+ 
+ 	struct timer_list mgmt_timer;	/* the timer we use to repeat auth_req etc. */
+ 	int retries;		/* counts backwards while re-trying to send auth/assoc_req's */
+-	u16 assoc_id;		/* the assoc_id for states JOINING, REASSOCIATING, CONNECTED */
+ 	u8 pm_mode;		/* power management mode: AT76_PM_{OFF, ON, SMART} */
+ 	u32 pm_period;		/* power manag. period in us */
+ 	u32 board_type;		/* BOARDTYPE_* in at76_usb_ids.h */
+@@ -577,17 +570,7 @@ struct at76_priv {
+ 	/* These fields contain HW config provided by the device (not all of
+ 	 * these fields are used by all board types) */
+ 	u8 mac_addr[ETH_ALEN];
+-	u8 bb_cr[14];
+-	u8 pidvid[4];
+ 	u8 regulatory_domain;
+-	u8 cr15_values[14];
+-	u8 cr20_values[14];
+-	u8 cr21_values[14];
+-	u8 cr31_values[14];
+-	u8 cr39_values[14];
+-	u8 cr58_values[14];
+-	u8 low_power_values[14];
+-	u8 normal_power_values[14];
+ 
+ 	struct at76_card_config card_config;
+ 	struct mib_fw_version fw_version;
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000029.html">[at76c503a-develop] [PATCH 2/6] Change buffer pointers to void* or	safer types to avoid	casts
+</A></li>
+	<LI>Next message: <A HREF="000031.html">[at76c503a-develop] [PATCH 4/6] Use safer declaration for	at76_priv_handlers
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#30">[ date ]</a>
+              <a href="thread.html#30">[ thread ]</a>
+              <a href="subject.html#30">[ subject ]</a>
+              <a href="author.html#30">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">More information about the at76c503a-develop
+mailing list</a><br>
+</body></html>

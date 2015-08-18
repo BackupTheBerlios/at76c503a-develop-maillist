@@ -1,0 +1,113 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [at76c503a-develop] mac80211 conversion of at76_usb
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/at76c503a-develop/2007-December/index.html" >
+   <LINK REL="made" HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20mac80211%20conversion%20of%20at76_usb&In-Reply-To=%3C87r6hqxws6.fsf%40litku.valot.fi%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   
+   <LINK REL="Next"  HREF="000211.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[at76c503a-develop] mac80211 conversion of at76_usb</H1>
+    <B>Kalle Valo</B> 
+    <A HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20mac80211%20conversion%20of%20at76_usb&In-Reply-To=%3C87r6hqxws6.fsf%40litku.valot.fi%3E"
+       TITLE="[at76c503a-develop] mac80211 conversion of at76_usb">kalle.valo at iki.fi
+       </A><BR>
+    <I>Thu Dec 13 19:41:13 CET 2007</I>
+    <P><UL>
+        
+        <LI>Next message: <A HREF="000211.html">[at76c503a-develop] mac80211 conversion of at76_usb
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#210">[ date ]</a>
+              <a href="thread.html#210">[ thread ]</a>
+              <a href="subject.html#210">[ subject ]</a>
+              <a href="author.html#210">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>[resend because my first email didn't get to the list, CCing Pavel so
+that this won't get lost anymore]
+
+Pavel Roskin &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">proski at gnu.org</A>&gt; writes:
+
+&gt;<i> But I think one way to approach the problem would be to add the mac80211
+</I>&gt;<i> based device without removing the network device.  This way, you have
+</I>&gt;<i> the old and the new code side-by side, there are no warnings about
+</I>&gt;<i> unused functions.
+</I>&gt;<i>
+</I>&gt;<i> You could make the new implementation call the old one temporarily.  You
+</I>&gt;<i> could insert debug statements and see if the new and the old interface
+</I>&gt;<i> do the same thing to the hardware.
+</I>
+This was a really good advice, thank you. Having the old and new
+stacks available in the same driver helped a lot with debugging.
+
+&gt;<i> I don't think you'll be able to split the patch after the fact.  It
+</I>&gt;<i> would be easier to make separate changes.  With StGIT, you can always
+</I>&gt;<i> return to the old patches to adjust them as necessary.
+</I>
+Again good advice, much appreciated. StGIT is really handy, I will
+start using it a lot more.
+
+&gt;<i> The first patch would be to add device registration.  Then the rx and tx
+</I>&gt;<i> functions (you could make the rx function deliver packets to whichever
+</I>&gt;<i> interface is up).  Then whatever else is needed for mac80211 support.
+</I>&gt;<i> Then removal of netdev and the trivial cleanups.  Then deeper cleanups.
+</I>
+I have the mac80211 port somewhat working now. My current stgit
+patches are available here which should follow your advice:
+
+<A HREF="http://www.valot.fi/kalle/at76/mac80211-port/20071209/">http://www.valot.fi/kalle/at76/mac80211-port/20071209/</A>
+
+Please note that this is early work, for example removal of the old
+legacy interface is still not done. Scanning, associating and pinging
+to an open mode AP works does work. PSM, WEP and monitor mode are not
+implemented. But I would prefer to hear any comments people might have
+so that I can fix them up early.
+
+The first three patches add debugging code which I need for mac80211
+development. In principle I could drop them, but it would prefer to
+have them in the driver.
+
+Pavel, what's your opinion about add-mac80211-support patch, is it too
+large? It only adds lines, there are no line removals, so basically it
+should be quite safe. If you want, I can split it up.
+
+I'm planning to add rest of the features/cleanups as separate patches
+to avoid large patches. As usual, I will be working slowly but
+hopefully we have something ready by the end of this year.
+
+-- 
+Kalle Valo
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	
+	<LI>Next message: <A HREF="000211.html">[at76c503a-develop] mac80211 conversion of at76_usb
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#210">[ date ]</a>
+              <a href="thread.html#210">[ thread ]</a>
+              <a href="subject.html#210">[ subject ]</a>
+              <a href="author.html#210">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">More information about the at76c503a-develop
+mailing list</a><br>
+</body></html>

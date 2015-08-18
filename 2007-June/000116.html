@@ -1,0 +1,1955 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [at76c503a-develop] [PATCH 08/12] Run at76_usb.c throut Lindent
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/at76c503a-develop/2007-June/index.html" >
+   <LINK REL="made" HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%2008/12%5D%20Run%20at76_usb.c%20throut%20Lindent&In-Reply-To=%3C20070614011132.25709.55251.stgit%40dv.roinet.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000115.html">
+   <LINK REL="Next"  HREF="000117.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[at76c503a-develop] [PATCH 08/12] Run at76_usb.c throut Lindent</H1>
+    <B>Pavel Roskin</B> 
+    <A HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%2008/12%5D%20Run%20at76_usb.c%20throut%20Lindent&In-Reply-To=%3C20070614011132.25709.55251.stgit%40dv.roinet.com%3E"
+       TITLE="[at76c503a-develop] [PATCH 08/12] Run at76_usb.c throut Lindent">proski at gnu.org
+       </A><BR>
+    <I>Thu Jun 14 03:11:32 CEST 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000115.html">[at76c503a-develop] [PATCH 07/12] Simplify capability setting in	(re)accociation requests
+</A></li>
+        <LI>Next message: <A HREF="000117.html">[at76c503a-develop] [PATCH 09/12] Save results of usb_sndbulkpipe()	and usb_rcvbulkpipe()
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#116">[ date ]</a>
+              <a href="thread.html#116">[ thread ]</a>
+              <a href="subject.html#116">[ subject ]</a>
+              <a href="author.html#116">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Intervene in some places to make the result readable
+
+Signed-off-by: Pavel Roskin &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">proski at gnu.org</A>&gt;
+---
+
+ at76_usb.c |  827 ++++++++++++++++++++++++++++++++----------------------------
+ 1 files changed, 446 insertions(+), 381 deletions(-)
+
+diff --git a/at76_usb.c b/at76_usb.c
+index f54d99e..6064171 100644
+--- a/at76_usb.c
++++ b/at76_usb.c
+@@ -47,15 +47,15 @@
+ static int at76_debug = DBG_DEFAULTS;
+ 
+ static struct fwentry firmwares[] = {
+-	[0]			      = { &quot;&quot; },
+-	[BOARDTYPE_503_INTERSIL_3861] = { &quot;atmel_at76c503-i3861.bin&quot; },
+-	[BOARDTYPE_503_INTERSIL_3863] = { &quot;atmel_at76c503-i3863.bin&quot; },
+-	[BOARDTYPE_503_RFMD]	      = { &quot;atmel_at76c503-rfmd.bin&quot; },
+-	[BOARDTYPE_503_RFMD_ACC]      = { &quot;atmel_at76c503-rfmd-acc.bin&quot; },
+-	[BOARDTYPE_505_RFMD]	      = { &quot;atmel_at76c505-rfmd.bin&quot; },
+-	[BOARDTYPE_505_RFMD_2958]     = { &quot;atmel_at76c505-rfmd2958.bin&quot; },
+-	[BOARDTYPE_505A_RFMD_2958]    = { &quot;atmel_at76c505a-rfmd2958.bin&quot; },
+-	[BOARDTYPE_505AMX_RFMD]       = { &quot;atmel_at76c505amx-rfmd.bin&quot; },
++	[0] = {&quot;&quot;},
++	[BOARDTYPE_503_INTERSIL_3861] = {&quot;atmel_at76c503-i3861.bin&quot;},
++	[BOARDTYPE_503_INTERSIL_3863] = {&quot;atmel_at76c503-i3863.bin&quot;},
++	[BOARDTYPE_503_RFMD] = {&quot;atmel_at76c503-rfmd.bin&quot;},
++	[BOARDTYPE_503_RFMD_ACC] = {&quot;atmel_at76c503-rfmd-acc.bin&quot;},
++	[BOARDTYPE_505_RFMD] = {&quot;atmel_at76c505-rfmd.bin&quot;},
++	[BOARDTYPE_505_RFMD_2958] = {&quot;atmel_at76c505-rfmd2958.bin&quot;},
++	[BOARDTYPE_505A_RFMD_2958] = {&quot;atmel_at76c505a-rfmd2958.bin&quot;},
++	[BOARDTYPE_505AMX_RFMD] = {&quot;atmel_at76c505amx-rfmd.bin&quot;},
+ };
+ 
+ static struct usb_device_id dev_table[] = {
+@@ -177,11 +177,13 @@ static int scan_max_time = 120;
+ 
+ /* the supported rates of this hardware, bit7 marks a basic rate */
+ static const u8 hw_rates[] = { 0x82, 0x84, 0x0b, 0x16 };
++
+ /* The frequency of each channel in MHz */
+ static const long channel_frequency[] = {
+ 	2412, 2417, 2422, 2427, 2432, 2437, 2442,
+ 	2447, 2452, 2457, 2462, 2467, 2472, 2484
+ };
++
+ #define NUM_CHANNELS ARRAY_SIZE(channel_frequency)
+ 
+ /* Firmware download */
+@@ -240,13 +242,9 @@ static int at76_dfu_download_block(struct dfu_ctx *ctx, u8 *buffer, int bytes,
+ 
+ 	memcpy(tmpbuf, buffer, bytes);
+ 
+-	result = usb_control_msg(udev, usb_sndctrlpipe(udev, 0),
+-				 DFU_DNLOAD,
+-				 USB_TYPE_CLASS | USB_DIR_OUT | USB_RECIP_INTERFACE,
+-				 block,	/* Value */
+-				 0,	/* Index */
+-				 tmpbuf,	/* Buffer */
+-				 bytes,	/* Size */
++	result = usb_control_msg(udev, usb_sndctrlpipe(udev, 0), DFU_DNLOAD,
++				 USB_TYPE_CLASS | USB_DIR_OUT |
++				 USB_RECIP_INTERFACE, block, 0, tmpbuf, bytes,
+ 				 HZ);
+ 	return result;
+ }
+@@ -256,14 +254,10 @@ static int at76_dfu_get_status(struct dfu_ctx *ctx, struct dfu_status *status)
+ 	int result;
+ 	struct usb_device *udev = ctx-&gt;udev;
+ 
+-	result = usb_control_msg(udev, usb_rcvctrlpipe(udev, 0),
+-				 DFU_GETSTATUS,
+-				 USB_TYPE_CLASS | USB_DIR_IN | USB_RECIP_INTERFACE,
+-				 0,	/* Value */
+-				 0,	/* Index */
+-				 status,	/* Buffer */
+-				 sizeof(struct dfu_status),	/* Size */
+-				 HZ);
++	result = usb_control_msg(udev, usb_rcvctrlpipe(udev, 0), DFU_GETSTATUS,
++				 USB_TYPE_CLASS | USB_DIR_IN |
++				 USB_RECIP_INTERFACE, 0, 0, status,
++				 sizeof(struct dfu_status), HZ);
+ 	return result;
+ }
+ 
+@@ -271,21 +265,16 @@ static u8 at76_dfu_get_state(struct usb_device *udev, u8 *state)
+ {
+ 	int result;
+ 
+-	result = usb_control_msg(udev, usb_rcvctrlpipe(udev, 0),
+-				 DFU_GETSTATE,	/* Request */
+-				 USB_TYPE_CLASS | USB_DIR_IN | USB_RECIP_INTERFACE,
+-				 0,	/* Value */
+-				 0,	/* Index */
+-				 state,	/* Buffer */
+-				 1,	/* Size */
+-				 HZ);
++	result = usb_control_msg(udev, usb_rcvctrlpipe(udev, 0), DFU_GETSTATE,
++				 USB_TYPE_CLASS | USB_DIR_IN |
++				 USB_RECIP_INTERFACE, 0, 0, state, 1, HZ);
+ 	return result;
+ }
+ 
+ static inline u32 at76_get_timeout(struct dfu_status *s)
+ {
+ 	u32 ret = (s-&gt;poll_timeout[2] &lt;&lt; 16) | (s-&gt;poll_timeout[1] &lt;&lt; 8) |
+-		  (s-&gt;poll_timeout[0]);
++	    (s-&gt;poll_timeout[0]);
+ 
+ 	return ret;
+ }
+@@ -315,7 +304,9 @@ static int at76_usbdfu_download(struct usb_device *udev, u8 *dfu_buffer,
+ 	int is_done = 0;
+ 	u8 dfu_state = 0;
+ 	u32 dfu_timeout = 0;
+-	int dfu_block_bytes = 0, dfu_bytes_left = dfu_len, dfu_buffer_offset = 0;
++	int dfu_block_bytes = 0;
++	int dfu_bytes_left = dfu_len;
++	int dfu_buffer_offset = 0;
+ 	int dfu_block_cnt = 0;
+ 
+ 	at76_dbg(DBG_DFU, &quot;%s( %p, %u, %d)&quot;, __FUNCTION__, dfu_buffer,
+@@ -352,7 +343,8 @@ static int at76_usbdfu_download(struct usb_device *udev, u8 *dfu_buffer,
+ 				dfu_timeout = at76_get_timeout(dfu_stat_buf);
+ 				need_dfu_state = 0;
+ 			} else
+-				err(&quot;at76_dfu_get_status failed with %d&quot;, status);
++				err(&quot;at76_dfu_get_status failed with %d&quot;,
++				    status);
+ 			break;
+ 
+ 		case STATE_DFU_DOWNLOAD_BUSY:
+@@ -360,7 +352,8 @@ static int at76_usbdfu_download(struct usb_device *udev, u8 *dfu_buffer,
+ 			need_dfu_state = 1;
+ 
+ 			at76_dbg(DBG_DFU, &quot;DFU: Resetting device&quot;);
+-			schedule_timeout_interruptible(msecs_to_jiffies(dfu_timeout));
++			schedule_timeout_interruptible(msecs_to_jiffies
++						       (dfu_timeout));
+ 			break;
+ 
+ 		case STATE_DFU_DOWNLOAD_IDLE:
+@@ -377,14 +370,15 @@ static int at76_usbdfu_download(struct usb_device *udev, u8 *dfu_buffer,
+ 			dfu_bytes_left -= dfu_block_bytes;
+ 			status = at76_dfu_download_block(ctx,
+ 							 dfu_buffer +
+-							   dfu_buffer_offset,
++							 dfu_buffer_offset,
+ 							 dfu_block_bytes,
+ 							 dfu_block_cnt);
+ 			dfu_buffer_offset += dfu_block_bytes;
+ 			dfu_block_cnt++;
+ 
+ 			if (!DFU_USB_SUCCESS(status))
+-				err(&quot;dfu_download_block failed with %d&quot;, status);
++				err(&quot;dfu_download_block failed with %d&quot;,
++				    status);
+ 			need_dfu_state = 1;
+ 			break;
+ 
+@@ -403,8 +397,10 @@ static int at76_usbdfu_download(struct usb_device *udev, u8 *dfu_buffer,
+ 				if (manifest_sync_timeout &gt; 0)
+ 					dfu_timeout = manifest_sync_timeout;
+ 
+-				at76_dbg(DBG_DFU, &quot;DFU: Waiting for manifest phase&quot;);
+-				schedule_timeout_interruptible(msecs_to_jiffies(dfu_timeout));
++				at76_dbg(DBG_DFU,
++					 &quot;DFU: Waiting for manifest phase&quot;);
++				schedule_timeout_interruptible(msecs_to_jiffies
++							       (dfu_timeout));
+ 			}
+ 			break;
+ 
+@@ -653,7 +649,8 @@ static int at76_get_hw_config(struct at76_priv *priv)
+ 
+ 	case BOARDTYPE_503_RFMD:
+ 	case BOARDTYPE_503_RFMD_ACC:
+-		ret = at76_get_hw_cfg_rfmd(priv-&gt;udev, hwcfg, sizeof(hwcfg-&gt;r3));
++		ret =
++		    at76_get_hw_cfg_rfmd(priv-&gt;udev, hwcfg, sizeof(hwcfg-&gt;r3));
+ 		if (ret &lt; 0)
+ 			break;
+ 		memcpy(priv-&gt;mac_addr, hwcfg-&gt;r3.mac_addr, ETH_ALEN);
+@@ -663,7 +660,8 @@ static int at76_get_hw_config(struct at76_priv *priv)
+ 	case BOARDTYPE_505_RFMD:
+ 	case BOARDTYPE_505_RFMD_2958:
+ 	case BOARDTYPE_505A_RFMD_2958:
+-		ret = at76_get_hw_cfg_rfmd(priv-&gt;udev, hwcfg, sizeof(hwcfg-&gt;r5));
++		ret = at76_get_hw_cfg_rfmd(priv-&gt;udev, hwcfg,
++					   sizeof(hwcfg-&gt;r5));
+ 		if (ret &lt; 0)
+ 			break;
+ 		memcpy(priv-&gt;mac_addr, hwcfg-&gt;r5.mac_addr, ETH_ALEN);
+@@ -690,7 +688,7 @@ static struct reg_domain const *at76_get_reg_domain(u16 code)
+ 		{0x10, &quot;FCC (USA)&quot;, 0x7ff},	/* ch 1-11 */
+ 		{0x20, &quot;IC (Canada)&quot;, 0x7ff},	/* ch 1-11 */
+ 		{0x30, &quot;ETSI (Europe except Spain and France)&quot;, 0x1fff},	/* ch 1-13 */
+-		{0x31, &quot;Spain&quot;, 0x600},		/* ch 10-11 */
++		{0x31, &quot;Spain&quot;, 0x600},	/* ch 10-11 */
+ 		{0x32, &quot;France&quot;, 0x1e00},	/* ch 10-13 */
+ 		{0x40, &quot;MKK (Japan)&quot;, 0x2000},	/* ch 14 */
+ 		{0x41, &quot;MKK1 (Japan)&quot;, 0x3fff},	/* ch 1-14 */
+@@ -832,7 +830,8 @@ static int at76_wait_completion(struct at76_priv *priv, int cmd)
+ 	do {
+ 		status = at76_get_cmd_status(priv-&gt;udev, cmd);
+ 		if (status &lt; 0) {
+-			err(&quot;%s: at76_get_cmd_status failed: %d&quot;, netdev-&gt;name, status);
++			err(&quot;%s: at76_get_cmd_status failed: %d&quot;, netdev-&gt;name,
++			    status);
+ 			break;
+ 		}
+ 
+@@ -869,12 +868,14 @@ static int at76_set_mib(struct at76_priv *priv, struct set_mib_buffer *buf)
+ 				      cmd_buf,
+ 				      sizeof(struct at76_command) +
+ 				      buf-&gt;size + 4, USB_CTRL_GET_TIMEOUT);
+-		if (ret &gt;= 0)
+-			if ((ret = at76_wait_completion(priv, CMD_SET_MIB)) !=
+-			    CMD_STATUS_COMPLETE) {
+-				info(&quot;%s: set_mib: at76_wait_completion failed with %d&quot;, priv-&gt;netdev-&gt;name, ret);
++		if (ret &gt;= 0) {
++			ret = at76_wait_completion(priv, CMD_SET_MIB);
++			if (ret != CMD_STATUS_COMPLETE) {
++				info(&quot;%s: set_mib: at76_wait_completion failed &quot;
++				     &quot;with %d&quot;, priv-&gt;netdev-&gt;name, ret);
+ 				ret = -EIO;
+ 			}
++		}
+ 		kfree(cmd_buf);
+ 		return ret;
+ 	} else
+@@ -891,7 +892,8 @@ static int at76_set_radio(struct at76_priv *priv, int on_off)
+ 	if (priv-&gt;radio_on != on_off) {
+ 		ret = at76_set_card_command(priv-&gt;udev, CMD_RADIO, NULL, 0);
+ 		if (ret &lt; 0) {
+-			err(&quot;%s: at76_set_card_command(CMD_RADIO) failed: %d&quot;, priv-&gt;netdev-&gt;name, ret);
++			err(&quot;%s: at76_set_card_command(CMD_RADIO) failed: %d&quot;,
++			    priv-&gt;netdev-&gt;name, ret);
+ 		} else
+ 			ret = 1;
+ 		priv-&gt;radio_on = on_off;
+@@ -917,7 +919,8 @@ static int at76_set_pm_mode(struct at76_priv *priv)
+ 
+ 	ret = at76_set_mib(priv, &amp;priv-&gt;mib_buf);
+ 	if (ret &lt; 0) {
+-		err(&quot;%s: set_mib (pm_mode) failed: %d&quot;, priv-&gt;netdev-&gt;name, ret);
++		err(&quot;%s: set_mib (pm_mode) failed: %d&quot;, priv-&gt;netdev-&gt;name,
++		    ret);
+ 	}
+ 	return ret;
+ }
+@@ -937,7 +940,8 @@ static int at76_set_associd(struct at76_priv *priv, u16 id)
+ 
+ 	ret = at76_set_mib(priv, &amp;priv-&gt;mib_buf);
+ 	if (ret &lt; 0) {
+-		err(&quot;%s: set_mib (associd) failed: %d&quot;, priv-&gt;netdev-&gt;name, ret);
++		err(&quot;%s: set_mib (associd) failed: %d&quot;, priv-&gt;netdev-&gt;name,
++		    ret);
+ 	}
+ 	return ret;
+ }
+@@ -975,7 +979,8 @@ static int at76_set_preamble(struct at76_priv *priv, u8 type)
+ 	priv-&gt;mib_buf.data[0] = type;
+ 	ret = at76_set_mib(priv, &amp;priv-&gt;mib_buf);
+ 	if (ret &lt; 0) {
+-		err(&quot;%s: set_mib (preamble) failed: %d&quot;, priv-&gt;netdev-&gt;name, ret);
++		err(&quot;%s: set_mib (preamble) failed: %d&quot;, priv-&gt;netdev-&gt;name,
++		    ret);
+ 	}
+ 	return ret;
+ }
+@@ -988,10 +993,11 @@ static int at76_set_frag(struct at76_priv *priv, u16 size)
+ 	priv-&gt;mib_buf.type = MIB_MAC;
+ 	priv-&gt;mib_buf.size = 2;
+ 	priv-&gt;mib_buf.index = FRAGMENTATION_OFFSET;
+-	*(__le16 *) priv-&gt;mib_buf.data = cpu_to_le16(size);
++	*(__le16 *)priv-&gt;mib_buf.data = cpu_to_le16(size);
+ 	ret = at76_set_mib(priv, &amp;priv-&gt;mib_buf);
+ 	if (ret &lt; 0) {
+-		err(&quot;%s: set_mib (frag threshold) failed: %d&quot;, priv-&gt;netdev-&gt;name, ret);
++		err(&quot;%s: set_mib (frag threshold) failed: %d&quot;,
++		    priv-&gt;netdev-&gt;name, ret);
+ 	}
+ 	return ret;
+ }
+@@ -1004,7 +1010,7 @@ static int at76_set_rts(struct at76_priv *priv, u16 size)
+ 	priv-&gt;mib_buf.type = MIB_MAC;
+ 	priv-&gt;mib_buf.size = 2;
+ 	priv-&gt;mib_buf.index = RTS_OFFSET;
+-	*(__le16 *) priv-&gt;mib_buf.data = cpu_to_le16(size);
++	*(__le16 *)priv-&gt;mib_buf.data = cpu_to_le16(size);
+ 	ret = at76_set_mib(priv, &amp;priv-&gt;mib_buf);
+ 	if (ret &lt; 0) {
+ 		err(&quot;%s: set_mib (rts) failed: %d&quot;, priv-&gt;netdev-&gt;name, ret);
+@@ -1023,7 +1029,8 @@ static int at76_set_autorate_fallback(struct at76_priv *priv, int onoff)
+ 	priv-&gt;mib_buf.data[0] = onoff;
+ 	ret = at76_set_mib(priv, &amp;priv-&gt;mib_buf);
+ 	if (ret &lt; 0) {
+-		err(&quot;%s: set_mib (autorate fallback) failed: %d&quot;, priv-&gt;netdev-&gt;name, ret);
++		err(&quot;%s: set_mib (autorate fallback) failed: %d&quot;,
++		    priv-&gt;netdev-&gt;name, ret);
+ 	}
+ 	return ret;
+ }
+@@ -1109,17 +1116,17 @@ static int at76_dump_mib_mac_addr(struct at76_priv *priv)
+ 	ret = at76_get_mib(priv-&gt;udev, MIB_MAC_ADD,
+ 			   mac_addr, sizeof(struct mib_mac_addr));
+ 	if (ret &lt; 0) {
+-		err(&quot;%s: at76_get_mib (MAC_ADDR) failed: %d&quot;, priv-&gt;netdev-&gt;name,
+-		    ret);
++		err(&quot;%s: at76_get_mib (MAC_ADDR) failed: %d&quot;,
++		    priv-&gt;netdev-&gt;name, ret);
+ 		goto err;
+ 	}
+ 
+-	dbg(&quot;%s: MIB MAC_ADDR: mac_addr %s res 0x%x 0x%x group_addr %s status %d %d %d %d&quot;,
+-	       priv-&gt;netdev-&gt;name, mac2str(mac_addr-&gt;mac_addr),
+-		   mac_addr-&gt;res[0], mac_addr-&gt;res[1],
+-	       hex2str(mac_addr-&gt;group_addr, 4 * ETH_ALEN),
+-	       mac_addr-&gt;group_addr_status[0], mac_addr-&gt;group_addr_status[1],
+-	       mac_addr-&gt;group_addr_status[2], mac_addr-&gt;group_addr_status[3]);
++	dbg(&quot;%s: MIB MAC_ADDR: mac_addr %s res 0x%x 0x%x group_addr %s status &quot;
++	    &quot;%d %d %d %d&quot;, priv-&gt;netdev-&gt;name, mac2str(mac_addr-&gt;mac_addr),
++	    mac_addr-&gt;res[0], mac_addr-&gt;res[1],
++	    hex2str(mac_addr-&gt;group_addr, 4 * ETH_ALEN),
++	    mac_addr-&gt;group_addr_status[0], mac_addr-&gt;group_addr_status[1],
++	    mac_addr-&gt;group_addr_status[2], mac_addr-&gt;group_addr_status[3]);
+ 
+       err:
+ 	kfree(mac_addr);
+@@ -1140,7 +1147,8 @@ static int at76_dump_mib_mac_wep(struct at76_priv *priv)
+ 	ret = at76_get_mib(priv-&gt;udev, MIB_MAC_WEP, mac_wep,
+ 			   sizeof(struct mib_mac_wep));
+ 	if (ret &lt; 0) {
+-		err(&quot;%s: at76_get_mib (MAC_WEP) failed: %d&quot;, priv-&gt;netdev-&gt;name, ret);
++		err(&quot;%s: at76_get_mib (MAC_WEP) failed: %d&quot;, priv-&gt;netdev-&gt;name,
++		    ret);
+ 		goto err;
+ 	}
+ 
+@@ -1153,9 +1161,9 @@ static int at76_dump_mib_mac_wep(struct at76_priv *priv)
+ 	    le32_to_cpu(mac_wep-&gt;wep_excluded_count),
+ 	    mac_wep-&gt;encryption_level, mac_wep-&gt;wep_default_key_id,
+ 	    mac_wep-&gt;wep_default_key_id &lt; 4 ?
+-		hex2str(mac_wep-&gt;wep_default_keyvalue[mac_wep-&gt;wep_default_key_id],
+-			mac_wep-&gt;encryption_level == 2 ? 13 : 5) :
+-	       &quot;&lt;invalid key id&gt;&quot;);
++	    hex2str(mac_wep-&gt;wep_default_keyvalue[mac_wep-&gt;wep_default_key_id],
++		    mac_wep-&gt;encryption_level == 2 ? 13 : 5) :
++	    &quot;&lt;invalid key id&gt;&quot;);
+ 
+       err:
+ 	kfree(mac_wep);
+@@ -1185,31 +1193,30 @@ static int at76_dump_mib_mac_mgmt(struct at76_priv *priv)
+ 	country_string[3] = '\0';
+ 
+ 	dbg(&quot;%s: MIB MAC_MGMT: beacon_period %d CFP_max_duration %d &quot;
+-	       &quot;medium_occupancy_limit %d station_id 0x%x ATIM_window %d &quot;
+-	       &quot;CFP_mode %d privacy_opt_impl %d DTIM_period %d CFP_period %d &quot;
+-	       &quot;current_bssid %s current_essid %s current_bss_type %d &quot;
+-	       &quot;pm_mode %d ibss_change %d res %d &quot;
+-	       &quot;multi_domain_capability_implemented %d &quot;
+-	       &quot;international_roaming %d country_string %s&quot;,
+-	       priv-&gt;netdev-&gt;name,
+-	       le16_to_cpu(mac_mgmt-&gt;beacon_period),
+-	       le16_to_cpu(mac_mgmt-&gt;CFP_max_duration),
+-	       le16_to_cpu(mac_mgmt-&gt;medium_occupancy_limit),
+-	       le16_to_cpu(mac_mgmt-&gt;station_id),
+-	       le16_to_cpu(mac_mgmt-&gt;ATIM_window),
+-	       mac_mgmt-&gt;CFP_mode,
+-	       mac_mgmt-&gt;privacy_option_implemented,
+-	       mac_mgmt-&gt;DTIM_period,
+-	       mac_mgmt-&gt;CFP_period,
+-	       mac2str(mac_mgmt-&gt;current_bssid),
+-	       hex2str(mac_mgmt-&gt;current_essid, IW_ESSID_MAX_SIZE),
+-	       mac_mgmt-&gt;current_bss_type,
+-	       mac_mgmt-&gt;power_mgmt_mode,
+-	       mac_mgmt-&gt;ibss_change,
+-	       mac_mgmt-&gt;res,
+-	       mac_mgmt-&gt;multi_domain_capability_implemented,
+-	       mac_mgmt-&gt;multi_domain_capability_enabled,
+-	       country_string);
++	    &quot;medium_occupancy_limit %d station_id 0x%x ATIM_window %d &quot;
++	    &quot;CFP_mode %d privacy_opt_impl %d DTIM_period %d CFP_period %d &quot;
++	    &quot;current_bssid %s current_essid %s current_bss_type %d &quot;
++	    &quot;pm_mode %d ibss_change %d res %d &quot;
++	    &quot;multi_domain_capability_implemented %d &quot;
++	    &quot;international_roaming %d country_string %s&quot;,
++	    priv-&gt;netdev-&gt;name,
++	    le16_to_cpu(mac_mgmt-&gt;beacon_period),
++	    le16_to_cpu(mac_mgmt-&gt;CFP_max_duration),
++	    le16_to_cpu(mac_mgmt-&gt;medium_occupancy_limit),
++	    le16_to_cpu(mac_mgmt-&gt;station_id),
++	    le16_to_cpu(mac_mgmt-&gt;ATIM_window),
++	    mac_mgmt-&gt;CFP_mode,
++	    mac_mgmt-&gt;privacy_option_implemented,
++	    mac_mgmt-&gt;DTIM_period,
++	    mac_mgmt-&gt;CFP_period,
++	    mac2str(mac_mgmt-&gt;current_bssid),
++	    hex2str(mac_mgmt-&gt;current_essid, IW_ESSID_MAX_SIZE),
++	    mac_mgmt-&gt;current_bss_type,
++	    mac_mgmt-&gt;power_mgmt_mode,
++	    mac_mgmt-&gt;ibss_change,
++	    mac_mgmt-&gt;res,
++	    mac_mgmt-&gt;multi_domain_capability_implemented,
++	    mac_mgmt-&gt;multi_domain_capability_enabled, country_string);
+       err:
+ 	kfree(mac_mgmt);
+       exit:
+@@ -1233,28 +1240,28 @@ static int at76_dump_mib_mac(struct at76_priv *priv)
+ 	}
+ 
+ 	dbg(&quot;%s: MIB MAC: max_tx_msdu_lifetime %d max_rx_lifetime %d &quot;
+-	       &quot;frag_threshold %d rts_threshold %d cwmin %d cwmax %d &quot;
+-	       &quot;short_retry_time %d long_retry_time %d scan_type %d &quot;
+-	       &quot;scan_channel %d probe_delay %u min_channel_time %d &quot;
+-	       &quot;max_channel_time %d listen_int %d desired_ssid %s &quot;
+-	       &quot;desired_bssid %s desired_bsstype %d&quot;,
+-	       priv-&gt;netdev-&gt;name,
+-	       le32_to_cpu(mac-&gt;max_tx_msdu_lifetime),
+-	       le32_to_cpu(mac-&gt;max_rx_lifetime),
+-	       le16_to_cpu(mac-&gt;frag_threshold),
+-	       le16_to_cpu(mac-&gt;rts_threshold),
+-	       le16_to_cpu(mac-&gt;cwmin),
+-	       le16_to_cpu(mac-&gt;cwmax),
+-	       mac-&gt;short_retry_time,
+-	       mac-&gt;long_retry_time,
+-	       mac-&gt;scan_type,
+-	       mac-&gt;scan_channel,
+-	       le16_to_cpu(mac-&gt;probe_delay),
+-	       le16_to_cpu(mac-&gt;min_channel_time),
+-	       le16_to_cpu(mac-&gt;max_channel_time),
+-	       le16_to_cpu(mac-&gt;listen_interval),
+-	       hex2str(mac-&gt;desired_ssid, IW_ESSID_MAX_SIZE),
+-	       mac2str(mac-&gt;desired_bssid), mac-&gt;desired_bsstype);
++	    &quot;frag_threshold %d rts_threshold %d cwmin %d cwmax %d &quot;
++	    &quot;short_retry_time %d long_retry_time %d scan_type %d &quot;
++	    &quot;scan_channel %d probe_delay %u min_channel_time %d &quot;
++	    &quot;max_channel_time %d listen_int %d desired_ssid %s &quot;
++	    &quot;desired_bssid %s desired_bsstype %d&quot;,
++	    priv-&gt;netdev-&gt;name,
++	    le32_to_cpu(mac-&gt;max_tx_msdu_lifetime),
++	    le32_to_cpu(mac-&gt;max_rx_lifetime),
++	    le16_to_cpu(mac-&gt;frag_threshold),
++	    le16_to_cpu(mac-&gt;rts_threshold),
++	    le16_to_cpu(mac-&gt;cwmin),
++	    le16_to_cpu(mac-&gt;cwmax),
++	    mac-&gt;short_retry_time,
++	    mac-&gt;long_retry_time,
++	    mac-&gt;scan_type,
++	    mac-&gt;scan_channel,
++	    le16_to_cpu(mac-&gt;probe_delay),
++	    le16_to_cpu(mac-&gt;min_channel_time),
++	    le16_to_cpu(mac-&gt;max_channel_time),
++	    le16_to_cpu(mac-&gt;listen_interval),
++	    hex2str(mac-&gt;desired_ssid, IW_ESSID_MAX_SIZE),
++	    mac2str(mac-&gt;desired_bssid), mac-&gt;desired_bsstype);
+       err:
+ 	kfree(mac);
+       exit:
+@@ -1278,22 +1285,22 @@ static int at76_dump_mib_phy(struct at76_priv *priv)
+ 	}
+ 
+ 	dbg(&quot;%s: MIB PHY: ed_threshold %d slot_time %d sifs_time %d &quot;
+-	       &quot;preamble_length %d plcp_header_length %d mpdu_max_length %d &quot;
+-	       &quot;cca_mode_supported %d operation_rate_set &quot;
+-	       &quot;0x%x 0x%x 0x%x 0x%x channel_id %d current_cca_mode %d &quot;
+-	       &quot;phy_type %d current_reg_domain %d&quot;,
+-	       priv-&gt;netdev-&gt;name,
+-	       le32_to_cpu(phy-&gt;ed_threshold),
+-	       le16_to_cpu(phy-&gt;slot_time),
+-	       le16_to_cpu(phy-&gt;sifs_time),
+-	       le16_to_cpu(phy-&gt;preamble_length),
+-	       le16_to_cpu(phy-&gt;plcp_header_length),
+-	       le16_to_cpu(phy-&gt;mpdu_max_length),
+-	       le16_to_cpu(phy-&gt;cca_mode_supported),
+-	       phy-&gt;operation_rate_set[0], phy-&gt;operation_rate_set[1],
+-	       phy-&gt;operation_rate_set[2], phy-&gt;operation_rate_set[3],
+-	       phy-&gt;channel_id,
+-	       phy-&gt;current_cca_mode, phy-&gt;phy_type, phy-&gt;current_reg_domain);
++	    &quot;preamble_length %d plcp_header_length %d mpdu_max_length %d &quot;
++	    &quot;cca_mode_supported %d operation_rate_set &quot;
++	    &quot;0x%x 0x%x 0x%x 0x%x channel_id %d current_cca_mode %d &quot;
++	    &quot;phy_type %d current_reg_domain %d&quot;,
++	    priv-&gt;netdev-&gt;name,
++	    le32_to_cpu(phy-&gt;ed_threshold),
++	    le16_to_cpu(phy-&gt;slot_time),
++	    le16_to_cpu(phy-&gt;sifs_time),
++	    le16_to_cpu(phy-&gt;preamble_length),
++	    le16_to_cpu(phy-&gt;plcp_header_length),
++	    le16_to_cpu(phy-&gt;mpdu_max_length),
++	    le16_to_cpu(phy-&gt;cca_mode_supported),
++	    phy-&gt;operation_rate_set[0], phy-&gt;operation_rate_set[1],
++	    phy-&gt;operation_rate_set[2], phy-&gt;operation_rate_set[3],
++	    phy-&gt;channel_id,
++	    phy-&gt;current_cca_mode, phy-&gt;phy_type, phy-&gt;current_reg_domain);
+       err:
+ 	kfree(phy);
+       exit:
+@@ -1318,11 +1325,11 @@ static int at76_dump_mib_local(struct at76_priv *priv)
+ 	}
+ 
+ 	dbg(&quot;%s: MIB PHY: beacon_enable %d txautorate_fallback %d &quot;
+-	       &quot;ssid_size %d promiscuous_mode %d preamble_type %d&quot;,
+-	       priv-&gt;netdev-&gt;name,
+-	       local-&gt;beacon_enable,
+-	       local-&gt;txautorate_fallback,
+-	       local-&gt;ssid_size, local-&gt;promiscuous_mode, local-&gt;preamble_type);
++	    &quot;ssid_size %d promiscuous_mode %d preamble_type %d&quot;,
++	    priv-&gt;netdev-&gt;name,
++	    local-&gt;beacon_enable,
++	    local-&gt;txautorate_fallback,
++	    local-&gt;ssid_size, local-&gt;promiscuous_mode, local-&gt;preamble_type);
+       err:
+ 	kfree(local);
+       exit:
+@@ -1411,7 +1418,8 @@ static int at76_get_current_channel(struct at76_priv *priv)
+ 	}
+ 	ret = at76_get_mib(priv-&gt;udev, MIB_PHY, phy, sizeof(struct mib_phy));
+ 	if (ret &lt; 0) {
+-		err(&quot;%s: at76_get_mib(MIB_PHY) failed: %d&quot;, priv-&gt;netdev-&gt;name, ret);
++		err(&quot;%s: at76_get_mib(MIB_PHY) failed: %d&quot;, priv-&gt;netdev-&gt;name,
++		    ret);
+ 		goto err;
+ 	}
+ 	priv-&gt;channel = phy-&gt;channel_id;
+@@ -1540,7 +1548,8 @@ static int at76_start_ibss(struct at76_priv *priv)
+ 	priv-&gt;mib_buf.index = IBSS_CHANGE_OK_OFFSET;
+ 	ret = at76_set_mib(priv, &amp;priv-&gt;mib_buf);
+ 	if (ret &lt; 0) {
+-		err(&quot;%s: set_mib (ibss change ok) failed: %d&quot;, priv-&gt;netdev-&gt;name, ret);
++		err(&quot;%s: set_mib (ibss change ok) failed: %d&quot;,
++		    priv-&gt;netdev-&gt;name, ret);
+ 		return ret;
+ 	}
+ 
+@@ -1564,9 +1573,10 @@ static int at76_join_bss(struct at76_priv *priv, struct bss_info *ptr)
+ 	join.channel = ptr-&gt;channel;
+ 	join.timeout = cpu_to_le16(2000);
+ 
+-	at76_dbg(DBG_PROGRESS, &quot;%s join addr %s ssid %s type %d ch %d timeout %d&quot;,
+-		 priv-&gt;netdev-&gt;name, mac2str(join.bssid),
+-		 join.essid, join.bss_type, join.channel, le16_to_cpu(join.timeout));
++	at76_dbg(DBG_PROGRESS,
++		 &quot;%s join addr %s ssid %s type %d ch %d timeout %d&quot;,
++		 priv-&gt;netdev-&gt;name, mac2str(join.bssid), join.essid,
++		 join.bss_type, join.channel, le16_to_cpu(join.timeout));
+ 	return at76_set_card_command(priv-&gt;udev, CMD_JOIN, &amp;join,
+ 				     sizeof(struct at76_req_join));
+ }
+@@ -1620,7 +1630,7 @@ static void at76_write_bulk_callback(struct urb *urb)
+ 				 &quot;%s - nonzero write bulk status received: %d&quot;,
+ 				 __FUNCTION__, urb-&gt;status);
+ 		} else
+-			return; /* urb has been unlinked */
++			return;	/* urb has been unlinked */
+ 		stats-&gt;tx_errors++;
+ 	} else
+ 		stats-&gt;tx_packets++;
+@@ -1642,8 +1652,7 @@ static void at76_write_bulk_callback(struct urb *urb)
+ 				  priv-&gt;bulk_out_buffer,
+ 				  le16_to_cpu(mgmt_buf-&gt;wlength) +
+ 				  mgmt_buf-&gt;padding + AT76_TX_HDRLEN,
+-				  at76_write_bulk_callback,
+-				  priv);
++				  at76_write_bulk_callback, priv);
+ 		ret = usb_submit_urb(priv-&gt;write_urb, GFP_ATOMIC);
+ 		if (ret) {
+ 			err(&quot;%s: %s error in tx submit urb: %d&quot;,
+@@ -1696,7 +1705,8 @@ static int at76_send_mgmt_bulk(struct at76_priv *priv,
+ 			    priv-&gt;netdev-&gt;name, __FUNCTION__, urb_status);
+ 		}
+ 
+-		at76_dbg(DBG_TX_MGMT, &quot;%s: tx mgmt: wlen %d tx_rate %d pad %d %s&quot;,
++		at76_dbg(DBG_TX_MGMT,
++			 &quot;%s: tx mgmt: wlen %d tx_rate %d pad %d %s&quot;,
+ 			 priv-&gt;netdev-&gt;name, le16_to_cpu(txbuf-&gt;wlength),
+ 			 txbuf-&gt;tx_rate, txbuf-&gt;padding,
+ 			 hex2str(txbuf-&gt;packet, le16_to_cpu(txbuf-&gt;wlength)));
+@@ -1711,8 +1721,7 @@ static int at76_send_mgmt_bulk(struct at76_priv *priv,
+ 				  le16_to_cpu(txbuf-&gt;wlength) +
+ 				  txbuf-&gt;padding +
+ 				  AT76_TX_HDRLEN,
+-				  at76_write_bulk_callback,
+-				  priv);
++				  at76_write_bulk_callback, priv);
+ 		ret = usb_submit_urb(priv-&gt;write_urb, GFP_ATOMIC);
+ 		if (ret) {
+ 			err(&quot;%s: %s error in tx submit urb: %d&quot;,
+@@ -1754,8 +1763,9 @@ static int at76_auth_req(struct at76_priv *priv, struct bss_info *bss,
+ 
+ 	/* make wireless header */
+ 	/* first auth msg is not encrypted, only the second (seq_nr == 3) */
+-	mgmt-&gt;frame_ctl = cpu_to_le16(IEEE80211_FTYPE_MGMT | IEEE80211_STYPE_AUTH |
+-		(seq_nr == 3 ? IEEE80211_FCTL_PROTECTED : 0));
++	mgmt-&gt;frame_ctl =
++	    cpu_to_le16(IEEE80211_FTYPE_MGMT | IEEE80211_STYPE_AUTH |
++			(seq_nr == 3 ? IEEE80211_FCTL_PROTECTED : 0));
+ 
+ 	mgmt-&gt;duration_id = cpu_to_le16(0x8000);
+ 	memcpy(mgmt-&gt;addr1, bss-&gt;bssid, ETH_ALEN);
+@@ -1777,8 +1787,7 @@ static int at76_auth_req(struct at76_priv *priv, struct bss_info *bss,
+ 		 le16_to_cpu(req-&gt;algorithm), le16_to_cpu(req-&gt;transaction));
+ 	if (seq_nr == 3) {
+ 		at76_dbg(DBG_TX_MGMT, &quot;%s: AuthReq challenge: %s ...&quot;,
+-			 priv-&gt;netdev-&gt;name,
+-			 hex2str(req-&gt;info_element, 18));
++			 priv-&gt;netdev-&gt;name, hex2str(req-&gt;info_element, 18));
+ 	}
+ 
+ 	/* either send immediately (if no data tx is pending
+@@ -1842,13 +1851,13 @@ static int at76_assoc_req(struct at76_priv *priv, struct bss_info *bss)
+ 	next_ie(&amp;tlv);		/* tlv points behind the supp_rates field */
+ 
+ 	/* init. at76_priv tx header */
+-	tx_buffer-&gt;wlength = cpu_to_le16((u8 *) tlv - (u8 *) mgmt);
++	tx_buffer-&gt;wlength = cpu_to_le16((u8 *)tlv - (u8 *)mgmt);
+ 
+ 	tlv = req-&gt;info_element;
+ 	len = min_t(int, IW_ESSID_MAX_SIZE, tlv-&gt;len);
+ 	memcpy(essid, tlv-&gt;data, len);
+ 	essid[len] = '\0';
+-	next_ie(&amp;tlv); /* points to IE of rates now */
++	next_ie(&amp;tlv);		/* points to IE of rates now */
+ 	at76_dbg(DBG_TX_MGMT,
+ 		 &quot;%s: AssocReq bssid %s capa x%04x ssid %s rates %s&quot;,
+ 		 priv-&gt;netdev-&gt;name, mac2str(mgmt-&gt;addr3),
+@@ -1930,7 +1939,7 @@ static int at76_reassoc_req(struct at76_priv *priv, struct bss_info *curr_bss,
+ 	len = min_t(int, IW_ESSID_MAX_SIZE, tlv-&gt;len);
+ 	memcpy(essid, tlv-&gt;data, len);
+ 	essid[len] = '\0';
+-	next_ie(&amp;tlv); /* points to IE of rates now */
++	next_ie(&amp;tlv);		/* points to IE of rates now */
+ 	at76_dbg(DBG_TX_MGMT,
+ 		 &quot;%s: ReAssocReq curr %s new %s capa x%04x ssid %s rates %s&quot;,
+ 		 priv-&gt;netdev-&gt;name, mac2str(req-&gt;current_ap),
+@@ -2079,7 +2088,8 @@ static void at76_handle_mgmt_timeout_scan(struct at76_priv *priv)
+ 
+ 		/* the first cmd status after scan start is always a IDLE -&gt;
+ 		   start the timer to poll again until COMPLETED */
+-		at76_dbg(DBG_MGMT_TIMER, &quot;%s:%d: starting mgmt_timer for %d ticks&quot;,
++		at76_dbg(DBG_MGMT_TIMER,
++			 &quot;%s:%d: starting mgmt_timer for %d ticks&quot;,
+ 			 __FUNCTION__, __LINE__, SCAN_POLL_INTERVAL);
+ 		mod_timer(&amp;priv-&gt;mgmt_timer, jiffies + SCAN_POLL_INTERVAL);
+ 		return;
+@@ -2100,12 +2110,13 @@ static void at76_handle_mgmt_timeout_scan(struct at76_priv *priv)
+ 					 sizeof(mdomain.channel_list)),
+ 				 hex2str(mdomain.tx_powerlevel,
+ 					 sizeof(mdomain.tx_powerlevel)));
+-			}
++		}
+ 		if ((ret = at76_start_scan(priv, 0, 1)) &lt; 0) {
+ 			err(&quot;%s: %s: start_scan (ANY) failed with %d&quot;,
+ 			    priv-&gt;netdev-&gt;name, __FUNCTION__, ret);
+ 		}
+-		at76_dbg(DBG_MGMT_TIMER, &quot;%s:%d: starting mgmt_timer for %d ticks&quot;,
++		at76_dbg(DBG_MGMT_TIMER,
++			 &quot;%s:%d: starting mgmt_timer for %d ticks&quot;,
+ 			 __FUNCTION__, __LINE__, SCAN_POLL_INTERVAL);
+ 		mod_timer(&amp;priv-&gt;mgmt_timer, jiffies + SCAN_POLL_INTERVAL);
+ 		break;
+@@ -2115,7 +2126,8 @@ static void at76_handle_mgmt_timeout_scan(struct at76_priv *priv)
+ 			err(&quot;%s: %s: start_scan (SSID) failed with %d&quot;,
+ 			    priv-&gt;netdev-&gt;name, __FUNCTION__, ret);
+ 		}
+-		at76_dbg(DBG_MGMT_TIMER, &quot;%s:%d: starting mgmt_timer for %d ticks&quot;,
++		at76_dbg(DBG_MGMT_TIMER,
++			 &quot;%s:%d: starting mgmt_timer for %d ticks&quot;,
+ 			 __FUNCTION__, __LINE__, SCAN_POLL_INTERVAL);
+ 		mod_timer(&amp;priv-&gt;mgmt_timer, jiffies + SCAN_POLL_INTERVAL);
+ 		break;
+@@ -2141,23 +2153,25 @@ static void at76_handle_mgmt_timeout_scan(struct at76_priv *priv)
+ static void at76_work_assoc_done(struct work_struct *work)
+ {
+ 	struct at76_priv *priv = container_of(work, struct at76_priv,
+-					     work_assoc_done);
++					      work_assoc_done);
+ 
+ 	mutex_lock(&amp;priv-&gt;mtx);
+ 
+-	at76_assert(priv-&gt;istate == ASSOCIATING || priv-&gt;istate == REASSOCIATING);
++	at76_assert(priv-&gt;istate == ASSOCIATING
++		    || priv-&gt;istate == REASSOCIATING);
+ 	if (priv-&gt;iw_mode == IW_MODE_INFRA) {
+ 		at76_assert(priv-&gt;curr_bss != NULL);
+ 		if (priv-&gt;curr_bss != NULL &amp;&amp; priv-&gt;pm_mode != AT76_PM_OFF) {
+ 			/* calculate the listen interval in units of
+ 			   beacon intervals of the curr_bss */
+ 			u32 pm_period_beacon = (priv-&gt;pm_period &gt;&gt; 10) /
+-						priv-&gt;curr_bss-&gt;beacon_interval;
++			    priv-&gt;curr_bss-&gt;beacon_interval;
+ 
+ 			pm_period_beacon = max(pm_period_beacon, 2u);
+ 			pm_period_beacon = min(pm_period_beacon, 0xffffu);
+ 
+-			at76_dbg(DBG_PM, &quot;%s: pm_mode %d assoc id x%x listen int %d&quot;,
++			at76_dbg(DBG_PM,
++				 &quot;%s: pm_mode %d assoc id x%x listen int %d&quot;,
+ 				 priv-&gt;netdev-&gt;name, priv-&gt;pm_mode,
+ 				 priv-&gt;curr_bss-&gt;assoc_id, pm_period_beacon);
+ 
+@@ -2239,8 +2253,9 @@ static void at76_delete_device(struct at76_priv *priv)
+ 			dev_kfree_skb(priv-&gt;rx_data[i].skb);
+ 			priv-&gt;rx_data[i].skb = NULL;
+ 		}
+-	at76_dbg(DBG_PROC_ENTRY, &quot;%s: before freeing priv/netdev&quot;, __FUNCTION__);
+-	free_netdev(priv-&gt;netdev); /* priv is in netdev */
++	at76_dbg(DBG_PROC_ENTRY, &quot;%s: before freeing priv/netdev&quot;,
++		 __FUNCTION__);
++	free_netdev(priv-&gt;netdev);	/* priv is in netdev */
+ 
+ 	at76_dbg(DBG_PROC_ENTRY, &quot;%s: EXIT&quot;, __FUNCTION__);
+ }
+@@ -2256,15 +2271,15 @@ static int at76_alloc_urbs(struct at76_priv *priv,
+ 	at76_dbg(DBG_PROC_ENTRY, &quot;%s: ENTER&quot;, __FUNCTION__);
+ 
+ 	at76_dbg(DBG_URB, &quot;%s: NumEndpoints %d &quot;, __FUNCTION__,
+-	    interface-&gt;altsetting[0].desc.bNumEndpoints);
++		 interface-&gt;altsetting[0].desc.bNumEndpoints);
+ 
+ 	iface_desc = interface-&gt;cur_altsetting;
+ 	for (i = 0; i &lt; iface_desc-&gt;desc.bNumEndpoints; i++) {
+ 		endpoint = &amp;iface_desc-&gt;endpoint[i].desc;
+ 
+ 		at76_dbg(DBG_URB, &quot;%s: %d. endpoint: addr x%x attr x%x&quot;,
+-		    __FUNCTION__,
+-		    i, endpoint-&gt;bEndpointAddress, endpoint-&gt;bmAttributes);
++			 __FUNCTION__,
++			 i, endpoint-&gt;bEndpointAddress, endpoint-&gt;bmAttributes);
+ 
+ 		if ((endpoint-&gt;bEndpointAddress &amp; 0x80) &amp;&amp;
+ 		    ((endpoint-&gt;bmAttributes &amp; 3) == 0x02)) {
+@@ -2288,15 +2303,18 @@ static int at76_alloc_urbs(struct at76_priv *priv,
+ 			}
+ 			buffer_size = sizeof(struct at76_tx_buffer) +
+ 			    MAX_PADDING_SIZE;
+-			priv-&gt;bulk_out_endpointAddr = endpoint-&gt;bEndpointAddress;
+-			priv-&gt;bulk_out_buffer = kmalloc(buffer_size, GFP_KERNEL);
++			priv-&gt;bulk_out_endpointAddr =
++			    endpoint-&gt;bEndpointAddress;
++			priv-&gt;bulk_out_buffer =
++			    kmalloc(buffer_size, GFP_KERNEL);
+ 			if (!priv-&gt;bulk_out_buffer) {
+ 				err(&quot;couldn't allocate bulk_out_buffer&quot;);
+ 				return -ENOMEM;
+ 			}
+ 			usb_fill_bulk_urb(priv-&gt;write_urb, udev,
+ 					  usb_sndbulkpipe(udev,
+-						      endpoint-&gt;bEndpointAddress),
++							  endpoint-&gt;
++							  bEndpointAddress),
+ 					  priv-&gt;bulk_out_buffer, buffer_size,
+ 					  at76_write_bulk_callback, priv);
+ 		}
+@@ -2410,8 +2428,8 @@ static int at76_iw_handler_set_freq(struct net_device *netdev,
+ 	struct at76_priv *priv = netdev_priv(netdev);
+ 	int chan = -1;
+ 	int ret = -EIWCOMMIT;
+-	at76_dbg(DBG_IOCTL, &quot;%s: SIOCSIWFREQ - freq.m %d freq.e %d&quot;, netdev-&gt;name,
+-	    freq-&gt;m, freq-&gt;e);
++	at76_dbg(DBG_IOCTL, &quot;%s: SIOCSIWFREQ - freq.m %d freq.e %d&quot;,
++		 netdev-&gt;name, freq-&gt;m, freq-&gt;e);
+ 
+ 	if ((freq-&gt;e == 0) &amp;&amp; (freq-&gt;m &lt;= 1000)) {
+ 		/* Setting by channel number */
+@@ -2448,7 +2466,8 @@ static int at76_iw_handler_set_freq(struct net_device *netdev,
+ 
+ 	if (ret == -EIWCOMMIT) {
+ 		priv-&gt;channel = chan;
+-		at76_dbg(DBG_IOCTL, &quot;%s: SIOCSIWFREQ - ch %d&quot;, netdev-&gt;name, chan);
++		at76_dbg(DBG_IOCTL, &quot;%s: SIOCSIWFREQ - ch %d&quot;, netdev-&gt;name,
++			 chan);
+ 	}
+ 
+ 	return ret;
+@@ -2467,7 +2486,8 @@ static int at76_iw_handler_get_freq(struct net_device *netdev,
+ 		at76_dbg(DBG_IOCTL, &quot;%s: SIOCGIWFREQ - freq %ld x 10e%d&quot;,
+ 			 netdev-&gt;name, channel_frequency[priv-&gt;channel - 1], 6);
+ 	}
+-	at76_dbg(DBG_IOCTL, &quot;%s: SIOCGIWFREQ - ch %d&quot;, netdev-&gt;name, priv-&gt;channel);
++	at76_dbg(DBG_IOCTL, &quot;%s: SIOCGIWFREQ - ch %d&quot;, netdev-&gt;name,
++		 priv-&gt;channel);
+ 
+ 	return 0;
+ }
+@@ -2486,7 +2506,7 @@ static int at76_iw_handler_set_mode(struct net_device *netdev,
+ 		ret = -EINVAL;
+ 	} else {
+ 		priv-&gt;iw_mode = *mode;
+-		if( priv-&gt;iw_mode != IW_MODE_INFRA)
++		if (priv-&gt;iw_mode != IW_MODE_INFRA)
+ 			priv-&gt;pm_mode = AT76_PM_OFF;
+ 	}
+ 	return ret;
+@@ -2494,7 +2514,7 @@ static int at76_iw_handler_set_mode(struct net_device *netdev,
+ 
+ static int at76_iw_handler_get_mode(struct net_device *netdev,
+ 				    struct iw_request_info *info,
+-				    __u32 * mode, char *extra)
++				    __u32 *mode, char *extra)
+ {
+ 	struct at76_priv *priv = netdev_priv(netdev);
+ 
+@@ -2810,7 +2830,8 @@ static int at76_iw_handler_get_scan(struct net_device *netdev,
+ 		iwe-&gt;u.data.flags = 1;
+ 
+ 		curr_pos = iwe_stream_add_point(curr_pos,
+-			extra + IW_SCAN_MAX_DATA, iwe, curr_bss-&gt;ssid);
++						extra + IW_SCAN_MAX_DATA, iwe,
++						curr_bss-&gt;ssid);
+ 
+ 		iwe-&gt;cmd = SIOCGIWMODE;
+ 		iwe-&gt;u.mode = (curr_bss-&gt;capa &amp; WLAN_CAPABILITY_IBSS) ?
+@@ -2957,7 +2978,8 @@ static int at76_iw_handler_set_rate(struct net_device *netdev,
+ 	struct at76_priv *priv = netdev_priv(netdev);
+ 	int ret = -EIWCOMMIT;
+ 
+-	at76_dbg(DBG_IOCTL, &quot;%s: SIOCSIWRATE - %d&quot;, netdev-&gt;name, bitrate-&gt;value);
++	at76_dbg(DBG_IOCTL, &quot;%s: SIOCSIWRATE - %d&quot;, netdev-&gt;name,
++		 bitrate-&gt;value);
+ 
+ 	switch (bitrate-&gt;value) {
+ 	case -1:
+@@ -3067,7 +3089,8 @@ static int at76_iw_handler_set_frag(struct net_device *netdev,
+ 	int fthr = frag-&gt;value;
+ 
+ 	at76_dbg(DBG_IOCTL, &quot;%s: SIOCSIWFRAG - value %d, disabled %s&quot;,
+-		 netdev-&gt;name, frag-&gt;value, (frag-&gt;disabled) ? &quot;true&quot; : &quot;false&quot;);
++		 netdev-&gt;name, frag-&gt;value,
++		 (frag-&gt;disabled) ? &quot;true&quot; : &quot;false&quot;);
+ 
+ 	if (frag-&gt;disabled)
+ 		fthr = MAX_FRAG_THRESHOLD;
+@@ -3075,7 +3098,7 @@ static int at76_iw_handler_set_frag(struct net_device *netdev,
+ 	if ((fthr &lt; MIN_FRAG_THRESHOLD) || (fthr &gt; MAX_FRAG_THRESHOLD)) {
+ 		ret = -EINVAL;
+ 	} else {
+-		priv-&gt;frag_threshold = fthr &amp; ~0x1; /* get an even value */
++		priv-&gt;frag_threshold = fthr &amp; ~0x1;	/* get an even value */
+ 	}
+ 
+ 	return ret;
+@@ -3092,7 +3115,8 @@ static int at76_iw_handler_get_frag(struct net_device *netdev,
+ 	frag-&gt;fixed = 1;
+ 
+ 	at76_dbg(DBG_IOCTL, &quot;%s: SIOCGIWFRAG - value %d, disabled %s&quot;,
+-		 netdev-&gt;name, frag-&gt;value, (frag-&gt;disabled) ? &quot;true&quot; : &quot;false&quot;);
++		 netdev-&gt;name, frag-&gt;value,
++		 (frag-&gt;disabled) ? &quot;true&quot; : &quot;false&quot;);
+ 
+ 	return 0;
+ }
+@@ -3155,8 +3179,7 @@ static int at76_iw_handler_get_retry(struct net_device *netdev,
+ 
+ static int at76_iw_handler_set_encode(struct net_device *netdev,
+ 				      struct iw_request_info *info,
+-				      struct iw_point *encoding,
+-				      char *extra)
++				      struct iw_point *encoding, char *extra)
+ {
+ 	struct at76_priv *priv = netdev_priv(netdev);
+ 	int index = (encoding-&gt;flags &amp; IW_ENCODE_INDEX) - 1;
+@@ -3165,11 +3188,12 @@ static int at76_iw_handler_set_encode(struct net_device *netdev,
+ 	at76_dbg(DBG_IOCTL, &quot;%s: SIOCSIWENCODE - enc.flags %08x &quot;
+ 		 &quot;pointer %p len %d&quot;, netdev-&gt;name, encoding-&gt;flags,
+ 		 encoding-&gt;pointer, encoding-&gt;length);
+-	at76_dbg(DBG_IOCTL, &quot;%s: SIOCSIWENCODE - old wepstate: enabled %s key_id %d &quot;
+-		 &quot;auth_mode %s&quot;,
+-		 netdev-&gt;name, (priv-&gt;wep_enabled) ? &quot;true&quot; : &quot;false&quot;,
+-		 priv-&gt;wep_key_id,
+-		 (priv-&gt;auth_mode == WLAN_AUTH_SHARED_KEY) ? &quot;restricted&quot; : &quot;open&quot;);
++	at76_dbg(DBG_IOCTL,
++		 &quot;%s: SIOCSIWENCODE - old wepstate: enabled %s key_id %d &quot;
++		 &quot;auth_mode %s&quot;, netdev-&gt;name,
++		 (priv-&gt;wep_enabled) ? &quot;true&quot; : &quot;false&quot;, priv-&gt;wep_key_id,
++		 (priv-&gt;auth_mode ==
++		  WLAN_AUTH_SHARED_KEY) ? &quot;restricted&quot; : &quot;open&quot;);
+ 
+ 	/* take the old default key if index is invalid */
+ 	if ((index &lt; 0) || (index &gt;= WEP_KEYS))
+@@ -3194,19 +3218,20 @@ static int at76_iw_handler_set_encode(struct net_device *netdev,
+ 	if (encoding-&gt;flags &amp; IW_ENCODE_OPEN)
+ 		priv-&gt;auth_mode = WLAN_AUTH_OPEN;
+ 
+-	at76_dbg(DBG_IOCTL, &quot;%s: SIOCSIWENCODE - new wepstate: enabled %s key_id %d &quot;
+-		 &quot;key_len %d auth_mode %s&quot;,
+-		 netdev-&gt;name, (priv-&gt;wep_enabled) ? &quot;true&quot; : &quot;false&quot;,
+-		 priv-&gt;wep_key_id + 1, priv-&gt;wep_keys_len[priv-&gt;wep_key_id],
+-		 (priv-&gt;auth_mode == WLAN_AUTH_SHARED_KEY) ? &quot;restricted&quot; : &quot;open&quot;);
++	at76_dbg(DBG_IOCTL,
++		 &quot;%s: SIOCSIWENCODE - new wepstate: enabled %s key_id %d &quot;
++		 &quot;key_len %d auth_mode %s&quot;, netdev-&gt;name,
++		 (priv-&gt;wep_enabled) ? &quot;true&quot; : &quot;false&quot;, priv-&gt;wep_key_id + 1,
++		 priv-&gt;wep_keys_len[priv-&gt;wep_key_id],
++		 (priv-&gt;auth_mode ==
++		  WLAN_AUTH_SHARED_KEY) ? &quot;restricted&quot; : &quot;open&quot;);
+ 
+ 	return -EIWCOMMIT;
+ }
+ 
+ static int at76_iw_handler_get_encode(struct net_device *netdev,
+ 				      struct iw_request_info *info,
+-				      struct iw_point *encoding,
+-				      char *extra)
++				      struct iw_point *encoding, char *extra)
+ {
+ 	struct at76_priv *priv = netdev_priv(netdev);
+ 	int index = (encoding-&gt;flags &amp; IW_ENCODE_INDEX) - 1;
+@@ -3230,14 +3255,15 @@ static int at76_iw_handler_get_encode(struct net_device *netdev,
+ 	}
+ 
+ 	at76_dbg(DBG_IOCTL, &quot;%s: SIOCGIWENCODE - enc.flags %08x &quot;
+-		&quot;pointer %p len %d&quot;, netdev-&gt;name, encoding-&gt;flags,
+-		encoding-&gt;pointer, encoding-&gt;length);
+-	at76_dbg(DBG_IOCTL, &quot;%s: SIOCGIWENCODE - wepstate: enabled %s key_id %d &quot;
+-		&quot;key_len %d auth_mode %s&quot;,
+-		netdev-&gt;name, (priv-&gt;wep_enabled) ? &quot;true&quot; : &quot;false&quot;,
+-		priv-&gt;wep_key_id + 1, priv-&gt;wep_keys_len[priv-&gt;wep_key_id],
+-		(priv-&gt;auth_mode == WLAN_AUTH_SHARED_KEY) ?
+-			&quot;restricted&quot; : &quot;open&quot;);
++		 &quot;pointer %p len %d&quot;, netdev-&gt;name, encoding-&gt;flags,
++		 encoding-&gt;pointer, encoding-&gt;length);
++	at76_dbg(DBG_IOCTL,
++		 &quot;%s: SIOCGIWENCODE - wepstate: enabled %s key_id %d &quot;
++		 &quot;key_len %d auth_mode %s&quot;, netdev-&gt;name,
++		 (priv-&gt;wep_enabled) ? &quot;true&quot; : &quot;false&quot;, priv-&gt;wep_key_id + 1,
++		 priv-&gt;wep_keys_len[priv-&gt;wep_key_id],
++		 (priv-&gt;auth_mode ==
++		  WLAN_AUTH_SHARED_KEY) ? &quot;restricted&quot; : &quot;open&quot;);
+ 
+ 	return 0;
+ }
+@@ -3249,9 +3275,10 @@ static int at76_iw_handler_set_power(struct net_device *netdev,
+ 	int err = -EIWCOMMIT;
+ 	struct at76_priv *priv = netdev_priv(netdev);
+ 
+-	at76_dbg(DBG_IOCTL, &quot;%s: SIOCSIWPOWER - disabled %s flags x%x value x%x&quot;,
+-		 netdev-&gt;name, (prq-&gt;disabled) ? &quot;true&quot; : &quot;false&quot;,
+-		 prq-&gt;flags, prq-&gt;value);
++	at76_dbg(DBG_IOCTL,
++		 &quot;%s: SIOCSIWPOWER - disabled %s flags x%x value x%x&quot;,
++		 netdev-&gt;name, (prq-&gt;disabled) ? &quot;true&quot; : &quot;false&quot;, prq-&gt;flags,
++		 prq-&gt;value);
+ 
+ 	if (prq-&gt;disabled) {
+ 		priv-&gt;pm_mode = AT76_PM_OFF;
+@@ -3291,7 +3318,8 @@ static int at76_iw_handler_get_power(struct net_device *netdev,
+ 	}
+ 	power-&gt;flags |= IW_POWER_ALL_R;
+ 
+-	at76_dbg(DBG_IOCTL, &quot;%s: SIOCGIWPOWER - disabled %s flags x%x value x%x&quot;,
++	at76_dbg(DBG_IOCTL,
++		 &quot;%s: SIOCGIWPOWER - disabled %s flags x%x value x%x&quot;,
+ 		 netdev-&gt;name, (power-&gt;disabled) ? &quot;true&quot; : &quot;false&quot;,
+ 		 power-&gt;flags, power-&gt;value);
+ 
+@@ -3338,19 +3366,19 @@ static int at76_iw_set_debug(struct net_device *netdev,
+ 		}
+ 
+ 		dbg(&quot;%s: AT76_SET_DEBUG input %d: %s -&gt; x%x&quot;,
+-		       netdev-&gt;name, data-&gt;length, extra, val);
++		    netdev-&gt;name, data-&gt;length, extra, val);
+ 	} else {
+ 		val = DBG_DEFAULTS;
+ 	}
+ 
+ 	dbg(&quot;%s: AT76_SET_DEBUG, old 0x%x  new 0x%x&quot;,
+-	       netdev-&gt;name, at76_debug, val);
++	    netdev-&gt;name, at76_debug, val);
+ 
+ 	/* jal: some more output to pin down lockups */
+ 	dbg(&quot;%s: netif running %d queue_stopped %d carrier_ok %d&quot;,
+-	       netdev-&gt;name,
+-	       netif_running(netdev),
+-	       netif_queue_stopped(netdev), netif_carrier_ok(netdev));
++	    netdev-&gt;name,
++	    netif_running(netdev),
++	    netif_queue_stopped(netdev), netif_carrier_ok(netdev));
+ 
+ 	at76_debug = val;
+ 
+@@ -3431,7 +3459,8 @@ static int at76_set_iroaming(struct at76_priv *priv, int onoff)
+ 	priv-&gt;mib_buf.data[0] = (priv-&gt;international_roaming ? 1 : 0);
+ 	ret = at76_set_mib(priv, &amp;priv-&gt;mib_buf);
+ 	if (ret &lt; 0) {
+-		err(&quot;%s: set_mib (intl_roaming_enable) failed: %d&quot;, priv-&gt;netdev-&gt;name, ret);
++		err(&quot;%s: set_mib (intl_roaming_enable) failed: %d&quot;,
++		    priv-&gt;netdev-&gt;name, ret);
+ 	}
+ 
+ 	return ret;
+@@ -3466,8 +3495,7 @@ static int at76_iw_set_intl_roaming(struct net_device *netdev,
+ /*******************************************************************************
+  * structure that advertises the iw handlers of this driver
+  */
+-static const iw_handler	at76_handlers[] =
+-{
++static const iw_handler at76_handlers[] = {
+ 	AT76_SET_HANDLER(SIOCSIWCOMMIT, at76_iw_handler_commit),
+ 	AT76_SET_HANDLER(SIOCGIWNAME, at76_iw_handler_get_name),
+ 	AT76_SET_HANDLER(SIOCSIWFREQ, at76_iw_handler_set_freq),
+@@ -3544,14 +3572,13 @@ static const struct iw_priv_args at76_priv_args[] = {
+ 	 &quot;intl_roaming&quot;},
+ };
+ 
+-static const struct iw_handler_def at76_handler_def =
+-{
+-	.num_standard	= ARRAY_SIZE(at76_handlers),
+-	.num_private	= ARRAY_SIZE(at76_priv_handlers),
++static const struct iw_handler_def at76_handler_def = {
++	.num_standard = ARRAY_SIZE(at76_handlers),
++	.num_private = ARRAY_SIZE(at76_priv_handlers),
+ 	.num_private_args = ARRAY_SIZE(at76_priv_args),
+-	.standard	= at76_handlers,
+-	.private	= at76_priv_handlers,
+-	.private_args	= at76_priv_args,
++	.standard = at76_handlers,
++	.private = at76_priv_handlers,
++	.private_args = at76_priv_args,
+ 	.get_wireless_stats = at76_get_wireless_stats,
+ };
+ 
+@@ -3638,14 +3665,14 @@ static int at76_tx(struct sk_buff *skb, struct net_device *netdev)
+ 		return 0;
+ 	}
+ 
+-	at76_ledtrig_tx_activity(); /* tell the ledtrigger we send a packet */
++	at76_ledtrig_tx_activity();	/* tell the ledtrigger we send a packet */
+ 
+ 	/* we can get rid of memcpy, if we set netdev-&gt;hard_header_len
+ 	   to 8 + sizeof(struct ieee80211_hdr_3addr), because then we have
+ 	   enough space
+ 	   at76_dbg(DBG_TX, &quot;skb-&gt;data - skb-&gt;head = %d&quot;, skb-&gt;data - skb-&gt;head); */
+ 
+-	if (ntohs(*(__be16 *) (skb-&gt;data + 2 * ETH_ALEN)) &lt;= 1518) {
++	if (ntohs(*(__be16 *)(skb-&gt;data + 2 * ETH_ALEN)) &lt;= 1518) {
+ 		/* this is a 802.3 packet */
+ 		if (skb-&gt;data[2 * ETH_ALEN + 2] == rfc1042sig[0] &amp;&amp;
+ 		    skb-&gt;data[2 * ETH_ALEN + 2 + 1] == rfc1042sig[1]) {
+@@ -3653,7 +3680,7 @@ static int at76_tx(struct sk_buff *skb, struct net_device *netdev)
+ 			memcpy(payload, skb-&gt;data + 2 * ETH_ALEN + 2,
+ 			       skb-&gt;len - 2 * ETH_ALEN - 2);
+ 			wlen = sizeof(struct ieee80211_hdr_3addr) + skb-&gt;len -
+-				   2 * ETH_ALEN - 2;
++			    2 * ETH_ALEN - 2;
+ 		} else {
+ 			err(&quot;%s: %s: no support for non-SNAP 802.2 packets &quot;
+ 			    &quot;(DSAP x%02x SSAP x%02x cntrl x%02x)&quot;,
+@@ -3720,9 +3747,10 @@ static int at76_tx(struct sk_buff *skb, struct net_device *netdev)
+ 	netdev-&gt;trans_start = jiffies;
+ 
+ 	usb_fill_bulk_urb(priv-&gt;write_urb, priv-&gt;udev,
+-			 usb_sndbulkpipe(priv-&gt;udev, priv-&gt;bulk_out_endpointAddr),
+-			 tx_buffer, submit_len,
+-			 at76_write_bulk_callback, priv);
++			  usb_sndbulkpipe(priv-&gt;udev,
++					  priv-&gt;bulk_out_endpointAddr),
++			  tx_buffer, submit_len, at76_write_bulk_callback,
++			  priv);
+ 	ret = usb_submit_urb(priv-&gt;write_urb, GFP_ATOMIC);
+ 	if (ret) {
+ 		stats-&gt;tx_errors++;
+@@ -3730,8 +3758,10 @@ static int at76_tx(struct sk_buff *skb, struct net_device *netdev)
+ 		if (ret == -EINVAL)
+ 			err(&quot;-EINVAL: urb %p urb-&gt;hcpriv %p urb-&gt;complete %p&quot;,
+ 			    priv-&gt;write_urb,
+-			    priv-&gt;write_urb ? priv-&gt;write_urb-&gt;hcpriv : (void *)-1,
+-			    priv-&gt;write_urb ? priv-&gt;write_urb-&gt;complete : (void *)-1);
++			    priv-&gt;write_urb ? priv-&gt;write_urb-&gt;
++			    hcpriv : (void *)-1,
++			    priv-&gt;write_urb ? priv-&gt;write_urb-&gt;
++			    complete : (void *)-1);
+ 		goto err;
+ 	}
+ 
+@@ -3769,7 +3799,8 @@ static int at76_submit_rx_urb(struct at76_priv *priv)
+ 	if (skb == NULL) {
+ 		skb = dev_alloc_skb(sizeof(struct at76_rx_buffer));
+ 		if (skb == NULL) {
+-			err(&quot;%s: unable to allocate rx skbuff.&quot;, priv-&gt;netdev-&gt;name);
++			err(&quot;%s: unable to allocate rx skbuff.&quot;,
++			    priv-&gt;netdev-&gt;name);
+ 			ret = -ENOMEM;
+ 			goto exit;
+ 		}
+@@ -3781,15 +3812,18 @@ static int at76_submit_rx_urb(struct at76_priv *priv)
+ 
+ 	size = skb_tailroom(skb);
+ 	usb_fill_bulk_urb(priv-&gt;read_urb, priv-&gt;udev,
+-			 usb_rcvbulkpipe(priv-&gt;udev, priv-&gt;bulk_in_endpointAddr),
+-			 skb_put(skb, size), size,
+-			 at76_read_bulk_callback, priv);
++			  usb_rcvbulkpipe(priv-&gt;udev,
++					  priv-&gt;bulk_in_endpointAddr),
++			  skb_put(skb, size), size, at76_read_bulk_callback,
++			  priv);
+ 	ret = usb_submit_urb(priv-&gt;read_urb, GFP_ATOMIC);
+ 	if (ret &lt; 0) {
+ 		if (ret == -ENODEV)
+-			at76_dbg(DBG_DEVSTART, &quot;usb_submit_urb returned -ENODEV&quot;);
++			at76_dbg(DBG_DEVSTART,
++				 &quot;usb_submit_urb returned -ENODEV&quot;);
+ 		else
+-			err(&quot;%s: rx, usb_submit_urb failed: %d&quot;, priv-&gt;netdev-&gt;name, ret);
++			err(&quot;%s: rx, usb_submit_urb failed: %d&quot;,
++			    priv-&gt;netdev-&gt;name, ret);
+ 	}
+ 
+       exit:
+@@ -3800,8 +3834,9 @@ static int at76_submit_rx_urb(struct at76_priv *priv)
+ 			if (--priv-&gt;nr_submit_rx_tries &gt; 0)
+ 				schedule_work(&amp;priv-&gt;work_submit_rx);
+ 			else {
+-				err(&quot;%s: giving up to submit rx urb after %d failures -&quot;
+-				    &quot; please unload the driver and/or power cycle the device&quot;,
++				err(&quot;%s: giving up to submit rx urb after %d &quot;
++				    &quot;failures - please unload the driver &quot;
++				    &quot;and/or power cycle the device&quot;,
+ 				    priv-&gt;netdev-&gt;name, NR_SUBMIT_RX_TRIES);
+ 			}
+ 		}
+@@ -3898,7 +3933,7 @@ static int at76_stop(struct net_device *netdev)
+ }
+ 
+ static void at76_ethtool_get_drvinfo(struct net_device *netdev,
+-					 struct ethtool_drvinfo *info)
++				     struct ethtool_drvinfo *info)
+ {
+ 	struct at76_priv *priv = netdev_priv(netdev);
+ 
+@@ -3961,8 +3996,7 @@ static int at76_init_new_device(struct at76_priv *priv,
+ 
+ 	if ((req_fw_version.major == 0) &amp;&amp;
+ 	    (req_fw_version.minor == 0) &amp;&amp;
+-	    (req_fw_version.patch == 0) &amp;&amp;
+-	    (req_fw_version.build == 0)) {
++	    (req_fw_version.patch == 0) &amp;&amp; (req_fw_version.build == 0)) {
+ 		err(&quot;firmware version consists of all zeroes&quot;);
+ 		err(&quot;this probably means that the ext. fw was not loaded correctly&quot;);
+ 		ret = -ENODEV;
+@@ -3977,8 +4011,7 @@ static int at76_init_new_device(struct at76_priv *priv,
+ 
+ 	info(&quot;firmware version %d.%d.%d #%d (fcs_len %d)&quot;,
+ 	     req_fw_version.major, req_fw_version.minor,
+-	     req_fw_version.patch, req_fw_version.build,
+-	     priv-&gt;rx_data_fcs_len);
++	     req_fw_version.patch, req_fw_version.build, priv-&gt;rx_data_fcs_len);
+ 
+ 	/* MAC address */
+ 	ret = at76_get_hw_config(priv);
+@@ -3991,7 +4024,8 @@ static int at76_init_new_device(struct at76_priv *priv,
+ 	/* init. netdev-&gt;dev_addr */
+ 	memcpy(netdev-&gt;dev_addr, priv-&gt;mac_addr, ETH_ALEN);
+ 	info(&quot;device's MAC %s, regulatory domain %s (id %d)&quot;,
+-	     mac2str(priv-&gt;mac_addr), priv-&gt;domain-&gt;name, priv-&gt;regulatory_domain);
++	     mac2str(priv-&gt;mac_addr), priv-&gt;domain-&gt;name,
++	     priv-&gt;regulatory_domain);
+ 
+ 	/* initializing */
+ 	priv-&gt;international_roaming = IR_OFF;
+@@ -4010,7 +4044,7 @@ static int at76_init_new_device(struct at76_priv *priv,
+ 	priv-&gt;scan_max_time = scan_max_time;
+ 	priv-&gt;scan_mode = SCAN_TYPE_ACTIVE;
+ 
+-	netdev-&gt;flags &amp;= ~IFF_MULTICAST; /* not yet or never */
++	netdev-&gt;flags &amp;= ~IFF_MULTICAST;	/* not yet or never */
+ 	netdev-&gt;open = at76_open;
+ 	netdev-&gt;stop = at76_stop;
+ 	netdev-&gt;get_stats = at76_get_stats;
+@@ -4109,15 +4143,17 @@ static int at76_essid_matched(struct at76_priv *priv, struct bss_info *ptr)
+ 	/* common criteria for both modi */
+ 
+ 	int ret = (priv-&gt;essid_size == 0 /* ANY ssid */  ||
+-		      (priv-&gt;essid_size == ptr-&gt;ssid_len &amp;&amp;
+-		       !memcmp(priv-&gt;essid, ptr-&gt;ssid, ptr-&gt;ssid_len)));
++		   (priv-&gt;essid_size == ptr-&gt;ssid_len &amp;&amp;
++		    !memcmp(priv-&gt;essid, ptr-&gt;ssid, ptr-&gt;ssid_len)));
+ 	if (!ret)
+-		at76_dbg(DBG_BSS_MATCH, &quot;%s bss table entry %p: essid didn't match&quot;,
++		at76_dbg(DBG_BSS_MATCH,
++			 &quot;%s bss table entry %p: essid didn't match&quot;,
+ 			 priv-&gt;netdev-&gt;name, ptr);
+ 	return ret;
+ }
+ 
+-static inline int at76_mode_matched(struct at76_priv *priv, struct bss_info *ptr)
++static inline int at76_mode_matched(struct at76_priv *priv,
++				    struct bss_info *ptr)
+ {
+ 	int ret;
+ 
+@@ -4126,7 +4162,8 @@ static inline int at76_mode_matched(struct at76_priv *priv, struct bss_info *ptr
+ 	else
+ 		ret = ptr-&gt;capa &amp; WLAN_CAPABILITY_ESS;
+ 	if (!ret)
+-		at76_dbg(DBG_BSS_MATCH, &quot;%s bss table entry %p: mode didn't match&quot;,
++		at76_dbg(DBG_BSS_MATCH,
++			 &quot;%s bss table entry %p: mode didn't match&quot;,
+ 			 priv-&gt;netdev-&gt;name, ptr);
+ 	return ret;
+ }
+@@ -4153,7 +4190,8 @@ static int at76_rates_matched(struct at76_priv *priv, struct bss_info *ptr)
+ 	/* if we use short preamble, the bss must support it */
+ 	if (priv-&gt;preamble_type == PREAMBLE_TYPE_SHORT &amp;&amp;
+ 	    !(ptr-&gt;capa &amp; WLAN_CAPABILITY_SHORT_PREAMBLE)) {
+-		at76_dbg(DBG_BSS_MATCH, &quot;%s: %p does not support short preamble&quot;,
++		at76_dbg(DBG_BSS_MATCH,
++			 &quot;%s: %p does not support short preamble&quot;,
+ 			 priv-&gt;netdev-&gt;name, ptr);
+ 		return 0;
+ 	} else
+@@ -4164,7 +4202,8 @@ static inline int at76_wep_matched(struct at76_priv *priv, struct bss_info *ptr)
+ {
+ 	if (!priv-&gt;wep_enabled &amp;&amp; ptr-&gt;capa &amp; WLAN_CAPABILITY_PRIVACY) {
+ 		/* we have disabled WEP, but the BSS signals privacy */
+-		at76_dbg(DBG_BSS_MATCH, &quot;%s: bss table entry %p: requires encryption&quot;,
++		at76_dbg(DBG_BSS_MATCH,
++			 &quot;%s: bss table entry %p: requires encryption&quot;,
+ 			 priv-&gt;netdev-&gt;name, ptr);
+ 		return 0;
+ 	}
+@@ -4180,9 +4219,11 @@ static inline int at76_bssid_matched(struct at76_priv *priv,
+ 	    !compare_ether_addr(ptr-&gt;bssid, priv-&gt;wanted_bssid)) {
+ 		return 1;
+ 	} else {
+-		at76_dbg(DBG_BSS_MATCH, &quot;%s: requested bssid - %s does not match&quot;,
++		at76_dbg(DBG_BSS_MATCH,
++			 &quot;%s: requested bssid - %s does not match&quot;,
+ 			 priv-&gt;netdev-&gt;name, mac2str(priv-&gt;wanted_bssid));
+-		at76_dbg(DBG_BSS_MATCH, &quot;      AP bssid - %s of bss table entry %p&quot;,
++		at76_dbg(DBG_BSS_MATCH,
++			 &quot;      AP bssid - %s of bss table entry %p&quot;,
+ 			 mac2str(ptr-&gt;bssid), ptr);
+ 		return 0;
+ 	}
+@@ -4228,7 +4269,7 @@ static struct bss_info *at76_match_bss(struct at76_priv *priv,
+ static void at76_work_join(struct work_struct *work)
+ {
+ 	struct at76_priv *priv = container_of(work, struct at76_priv,
+-					     work_join);
++					      work_join);
+ 	int ret;
+ 	unsigned long flags;
+ 
+@@ -4286,7 +4327,8 @@ static void at76_work_join(struct work_struct *work)
+ 			/* send auth req */
+ 			priv-&gt;istate = AUTHENTICATING;
+ 			at76_auth_req(priv, priv-&gt;curr_bss, 1, NULL);
+-			at76_dbg(DBG_MGMT_TIMER, &quot;%s:%d: starting mgmt_timer + HZ&quot;,
++			at76_dbg(DBG_MGMT_TIMER,
++				 &quot;%s:%d: starting mgmt_timer + HZ&quot;,
+ 				 __FUNCTION__, __LINE__);
+ 			mod_timer(&amp;priv-&gt;mgmt_timer, jiffies + HZ);
+ 		}
+@@ -4311,14 +4353,14 @@ static void at76_work_join(struct work_struct *work)
+ static void at76_work_mgmt_timeout(struct work_struct *work)
+ {
+ 	struct at76_priv *priv = container_of(work, struct at76_priv,
+-					     work_mgmt_timeout);
++					      work_mgmt_timeout);
+ 
+ 	mutex_lock(&amp;priv-&gt;mtx);
+ 
+ 	/* timeouts are normal in SCANNING state, otherwise report */
+ 	if ((priv-&gt;istate != SCANNING) || (at76_debug &amp; DBG_MGMT_TIMER))
+-		at76_dbg(DBG_PROGRESS, &quot;%s: timeout, state %d&quot;, priv-&gt;netdev-&gt;name,
+-			 priv-&gt;istate);
++		at76_dbg(DBG_PROGRESS, &quot;%s: timeout, state %d&quot;,
++			 priv-&gt;netdev-&gt;name, priv-&gt;istate);
+ 
+ 	switch (priv-&gt;istate) {
+ 
+@@ -4349,7 +4391,8 @@ static void at76_work_mgmt_timeout(struct work_struct *work)
+ 	case AUTHENTICATING:
+ 		if (priv-&gt;retries-- &gt;= 0) {
+ 			at76_auth_req(priv, priv-&gt;curr_bss, 1, NULL);
+-			at76_dbg(DBG_MGMT_TIMER, &quot;%s:%d: starting mgmt_timer + HZ&quot;,
++			at76_dbg(DBG_MGMT_TIMER,
++				 &quot;%s:%d: starting mgmt_timer + HZ&quot;,
+ 				 __FUNCTION__, __LINE__);
+ 			mod_timer(&amp;priv-&gt;mgmt_timer, jiffies + HZ);
+ 		} else {
+@@ -4362,7 +4405,8 @@ static void at76_work_mgmt_timeout(struct work_struct *work)
+ 	case ASSOCIATING:
+ 		if (priv-&gt;retries-- &gt;= 0) {
+ 			at76_assoc_req(priv, priv-&gt;curr_bss);
+-			at76_dbg(DBG_MGMT_TIMER, &quot;%s:%d: starting mgmt_timer + HZ&quot;,
++			at76_dbg(DBG_MGMT_TIMER,
++				 &quot;%s:%d: starting mgmt_timer + HZ&quot;,
+ 				 __FUNCTION__, __LINE__);
+ 			mod_timer(&amp;priv-&gt;mgmt_timer, jiffies + HZ);
+ 		} else {
+@@ -4394,7 +4438,8 @@ static void at76_work_mgmt_timeout(struct work_struct *work)
+ 	case DISASSOCIATING:
+ 		if (priv-&gt;retries-- &gt;= 0) {
+ 			at76_disassoc_req(priv, priv-&gt;curr_bss);
+-			at76_dbg(DBG_MGMT_TIMER, &quot;%s:%d: starting mgmt_timer + HZ&quot;,
++			at76_dbg(DBG_MGMT_TIMER,
++				 &quot;%s:%d: starting mgmt_timer + HZ&quot;,
+ 				 __FUNCTION__, __LINE__);
+ 			mod_timer(&amp;priv-&gt;mgmt_timer, jiffies + HZ);
+ 		} else {
+@@ -4416,7 +4461,7 @@ static void at76_work_mgmt_timeout(struct work_struct *work)
+ static void at76_work_new_bss(struct work_struct *work)
+ {
+ 	struct at76_priv *priv = container_of(work, struct at76_priv,
+-					     work_new_bss);
++					      work_new_bss);
+ 	int ret;
+ 	struct net_device *netdev = priv-&gt;netdev;
+ 	struct mib_mac_mgmt mac_mgmt;
+@@ -4424,7 +4469,7 @@ static void at76_work_new_bss(struct work_struct *work)
+ 	mutex_lock(&amp;priv-&gt;mtx);
+ 
+ 	ret = at76_get_mib(priv-&gt;udev, MIB_MAC_MGMT, &amp;mac_mgmt,
+-		      sizeof(struct mib_mac_mgmt));
++			   sizeof(struct mib_mac_mgmt));
+ 	if (ret &lt; 0) {
+ 		err(&quot;%s: at76_get_mib failed: %d&quot;, netdev-&gt;name, ret);
+ 		goto new_bss_clean;
+@@ -4442,7 +4487,8 @@ static void at76_work_new_bss(struct work_struct *work)
+ 	priv-&gt;mib_buf.index = IBSS_CHANGE_OK_OFFSET;
+ 	ret = at76_set_mib(priv, &amp;priv-&gt;mib_buf);
+ 	if (ret &lt; 0)
+-		err(&quot;%s: set_mib (ibss change ok) failed: %d&quot;, netdev-&gt;name, ret);
++		err(&quot;%s: set_mib (ibss change ok) failed: %d&quot;, netdev-&gt;name,
++		    ret);
+ 
+       new_bss_clean:
+ 	mutex_unlock(&amp;priv-&gt;mtx);
+@@ -4461,34 +4507,30 @@ static int at76_startup_device(struct at76_priv *priv)
+ 		memcpy(ossid, priv-&gt;essid, priv-&gt;essid_size);
+ 		ossid[priv-&gt;essid_size] = '\0';
+ 
+-		dbg(&quot;%s param: ssid %s (%s) mode %s ch %d wep %s key %d keylen %d&quot;,
+-		       priv-&gt;netdev-&gt;name, ossid,
+-		       hex2str(priv-&gt;essid, IW_ESSID_MAX_SIZE),
+-		       priv-&gt;iw_mode == IW_MODE_ADHOC ? &quot;adhoc&quot; : &quot;infra&quot;,
+-		       priv-&gt;channel,
+-		       priv-&gt;wep_enabled ? &quot;enabled&quot; : &quot;disabled&quot;,
+-		       priv-&gt;wep_key_id, priv-&gt;wep_keys_len[priv-&gt;wep_key_id]);
++		dbg(&quot;%s param: ssid %s (%s) mode %s ch %d wep %s key %d &quot;
++		    &quot;keylen %d&quot;, priv-&gt;netdev-&gt;name, ossid,
++		    hex2str(priv-&gt;essid, IW_ESSID_MAX_SIZE),
++		    priv-&gt;iw_mode == IW_MODE_ADHOC ? &quot;adhoc&quot; : &quot;infra&quot;,
++		    priv-&gt;channel, priv-&gt;wep_enabled ? &quot;enabled&quot; : &quot;disabled&quot;,
++		    priv-&gt;wep_key_id, priv-&gt;wep_keys_len[priv-&gt;wep_key_id]);
+ 		dbg(&quot;%s param: preamble %s rts %d retry %d frag %d &quot;
+-		       &quot;txrate %s auth_mode %d&quot;,
+-		       priv-&gt;netdev-&gt;name,
+-		       priv-&gt;preamble_type == PREAMBLE_TYPE_SHORT ? &quot;short&quot; : &quot;long&quot;,
+-		       priv-&gt;rts_threshold, priv-&gt;short_retry_limit,
+-		       priv-&gt;frag_threshold,
+-		       priv-&gt;txrate == TX_RATE_1MBIT ? &quot;1MBit&quot; :
+-		       priv-&gt;txrate == TX_RATE_2MBIT ? &quot;2MBit&quot; :
+-		       priv-&gt;txrate == TX_RATE_5_5MBIT ? &quot;5.5MBit&quot; :
+-		       priv-&gt;txrate == TX_RATE_11MBIT ? &quot;11MBit&quot; :
+-		       priv-&gt;txrate == TX_RATE_AUTO ? &quot;auto&quot; : &quot;&lt;invalid&gt;&quot;,
+-		       priv-&gt;auth_mode);
++		    &quot;txrate %s auth_mode %d&quot;, priv-&gt;netdev-&gt;name,
++		    priv-&gt;preamble_type ==
++		    PREAMBLE_TYPE_SHORT ? &quot;short&quot; : &quot;long&quot;, priv-&gt;rts_threshold,
++		    priv-&gt;short_retry_limit, priv-&gt;frag_threshold,
++		    priv-&gt;txrate == TX_RATE_1MBIT ? &quot;1MBit&quot; : priv-&gt;txrate ==
++		    TX_RATE_2MBIT ? &quot;2MBit&quot; : priv-&gt;txrate ==
++		    TX_RATE_5_5MBIT ? &quot;5.5MBit&quot; : priv-&gt;txrate ==
++		    TX_RATE_11MBIT ? &quot;11MBit&quot; : priv-&gt;txrate ==
++		    TX_RATE_AUTO ? &quot;auto&quot; : &quot;&lt;invalid&gt;&quot;, priv-&gt;auth_mode);
+ 		dbg(&quot;%s param: pm_mode %d pm_period %d auth_mode %s &quot;
+-		       &quot;scan_times %d %d scan_mode %s international_roaming %d&quot;,
+-		       priv-&gt;netdev-&gt;name,
+-		       priv-&gt;pm_mode, priv-&gt;pm_period,
+-		       priv-&gt;auth_mode == WLAN_AUTH_OPEN ?
+-		       &quot;open&quot; : &quot;shared_secret&quot;,
+-		       priv-&gt;scan_min_time, priv-&gt;scan_max_time,
+-		       priv-&gt;scan_mode == SCAN_TYPE_ACTIVE ? &quot;active&quot; : &quot;passive&quot;,
+-		       priv-&gt;international_roaming);
++		    &quot;scan_times %d %d scan_mode %s international_roaming %d&quot;,
++		    priv-&gt;netdev-&gt;name, priv-&gt;pm_mode, priv-&gt;pm_period,
++		    priv-&gt;auth_mode ==
++		    WLAN_AUTH_OPEN ? &quot;open&quot; : &quot;shared_secret&quot;,
++		    priv-&gt;scan_min_time, priv-&gt;scan_max_time,
++		    priv-&gt;scan_mode == SCAN_TYPE_ACTIVE ? &quot;active&quot; : &quot;passive&quot;,
++		    priv-&gt;international_roaming);
+ 	}
+ 
+ 	memset(ccfg, 0, sizeof(struct at76_card_config));
+@@ -4528,7 +4570,8 @@ static int at76_startup_device(struct at76_priv *priv)
+ 	ret = at76_set_card_command(priv-&gt;udev, CMD_STARTUP, &amp;priv-&gt;card_config,
+ 				    sizeof(struct at76_card_config));
+ 	if (ret &lt; 0) {
+-		err(&quot;%s: at76_set_card_command failed: %d&quot;, priv-&gt;netdev-&gt;name, ret);
++		err(&quot;%s: at76_set_card_command failed: %d&quot;, priv-&gt;netdev-&gt;name,
++		    ret);
+ 		return ret;
+ 	}
+ 
+@@ -4540,22 +4583,29 @@ static int at76_startup_device(struct at76_priv *priv)
+ 	if (at76_set_radio(priv, 1) == 1)
+ 		at76_wait_completion(priv, CMD_RADIO);
+ 
+-	if ((ret = at76_set_preamble(priv, priv-&gt;preamble_type)) &lt; 0)
++	ret = at76_set_preamble(priv, priv-&gt;preamble_type);
++	if (ret &lt; 0)
+ 		return ret;
+ 
+-	if ((ret = at76_set_frag(priv, priv-&gt;frag_threshold)) &lt; 0)
++	ret = at76_set_frag(priv, priv-&gt;frag_threshold);
++	if (ret &lt; 0)
+ 		return ret;
+ 
+-	if ((ret = at76_set_rts(priv, priv-&gt;rts_threshold)) &lt; 0)
++	ret = at76_set_rts(priv, priv-&gt;rts_threshold);
++	if (ret &lt; 0)
+ 		return ret;
+ 
+-	if ((ret = at76_set_autorate_fallback(priv, priv-&gt;txrate == TX_RATE_AUTO ? 1 : 0)) &lt; 0)
++	ret = at76_set_autorate_fallback(priv,
++					 priv-&gt;txrate == TX_RATE_AUTO ? 1 : 0);
++	if (ret &lt; 0)
+ 		return ret;
+ 
+-	if ((ret = at76_set_pm_mode(priv)) &lt; 0)
++	ret = at76_set_pm_mode(priv);
++	if (ret &lt; 0)
+ 		return ret;
+ 
+-	if ((ret = at76_set_iroaming(priv, priv-&gt;international_roaming)) &lt; 0)
++	ret = at76_set_iroaming(priv, priv-&gt;international_roaming);
++	if (ret &lt; 0)
+ 		return ret;
+ 
+ 	at76_set_monitor_mode(priv);
+@@ -4576,7 +4626,7 @@ static int at76_startup_device(struct at76_priv *priv)
+ static void at76_work_restart(struct work_struct *work)
+ {
+ 	struct at76_priv *priv = container_of(work, struct at76_priv,
+-					     work_restart);
++					      work_restart);
+ 
+ 	mutex_lock(&amp;priv-&gt;mtx);
+ 
+@@ -4598,7 +4648,7 @@ static void at76_work_restart(struct work_struct *work)
+ static void at76_work_scan(struct work_struct *work)
+ {
+ 	struct at76_priv *priv = container_of(work, struct at76_priv,
+-					     work_scan);
++					      work_scan);
+ 	int ret;
+ 
+ 	mutex_lock(&amp;priv-&gt;mtx);
+@@ -4614,7 +4664,8 @@ static void at76_work_scan(struct work_struct *work)
+ 		err(&quot;%s: %s: start_scan failed with %d&quot;,
+ 		    priv-&gt;netdev-&gt;name, __FUNCTION__, ret);
+ 	} else {
+-		at76_dbg(DBG_MGMT_TIMER, &quot;%s:%d: starting mgmt_timer for %d ticks&quot;,
++		at76_dbg(DBG_MGMT_TIMER,
++			 &quot;%s:%d: starting mgmt_timer for %d ticks&quot;,
+ 			 __FUNCTION__, __LINE__, SCAN_POLL_INTERVAL);
+ 		mod_timer(&amp;priv-&gt;mgmt_timer, jiffies + SCAN_POLL_INTERVAL);
+ 	}
+@@ -4625,7 +4676,7 @@ static void at76_work_scan(struct work_struct *work)
+ static void at76_work_set_promisc(struct work_struct *work)
+ {
+ 	struct at76_priv *priv = container_of(work, struct at76_priv,
+-					     work_set_promisc);
++					      work_set_promisc);
+ 	int ret = 0;
+ 
+ 	mutex_lock(&amp;priv-&gt;mtx);
+@@ -4647,7 +4698,7 @@ static void at76_work_set_promisc(struct work_struct *work)
+ static void at76_work_submit_rx(struct work_struct *work)
+ {
+ 	struct at76_priv *priv = container_of(work, struct at76_priv,
+-					     work_submit_rx);
++					      work_submit_rx);
+ 
+ 	mutex_lock(&amp;priv-&gt;mtx);
+ 	at76_submit_rx_urb(priv);
+@@ -4664,11 +4715,11 @@ static void at76_rx_mgmt_assoc(struct at76_priv *priv,
+ 	u16 assoc_id = le16_to_cpu(resp-&gt;aid);
+ 	u16 status = le16_to_cpu(resp-&gt;status);
+ 	u16 capa = le16_to_cpu(resp-&gt;capability);
+-	at76_dbg(DBG_RX_MGMT, &quot;%s: rx AssocResp bssid %s capa x%04x status x%04x &quot;
+-		 &quot;assoc_id x%04x rates %s&quot;,
+-		 priv-&gt;netdev-&gt;name, mac2str(mgmt-&gt;addr3), capa, status,
+-		 assoc_id, hex2str(resp-&gt;info_element-&gt;data,
+-				   resp-&gt;info_element-&gt;len));
++	at76_dbg(DBG_RX_MGMT,
++		 &quot;%s: rx AssocResp bssid %s capa x%04x status x%04x &quot;
++		 &quot;assoc_id x%04x rates %s&quot;, priv-&gt;netdev-&gt;name,
++		 mac2str(mgmt-&gt;addr3), capa, status, assoc_id,
++		 hex2str(resp-&gt;info_element-&gt;data, resp-&gt;info_element-&gt;len));
+ 	if (priv-&gt;istate == ASSOCIATING) {
+ 		at76_assert(priv-&gt;curr_bss != NULL);
+ 		if (priv-&gt;curr_bss == NULL)
+@@ -4705,9 +4756,10 @@ static void at76_rx_mgmt_reassoc(struct at76_priv *priv,
+ 	u16 status = le16_to_cpu(resp-&gt;status);
+ 	u16 assoc_id = le16_to_cpu(resp-&gt;aid);
+ 
+-	at76_dbg(DBG_RX_MGMT, &quot;%s: rx ReAssocResp bssid %s capa x%04x status x%04x &quot;
+-		 &quot;assoc_id x%04x rates %s&quot;,
+-		 priv-&gt;netdev-&gt;name, mac2str(mgmt-&gt;addr3), capa, status, assoc_id,
++	at76_dbg(DBG_RX_MGMT,
++		 &quot;%s: rx ReAssocResp bssid %s capa x%04x status x%04x &quot;
++		 &quot;assoc_id x%04x rates %s&quot;, priv-&gt;netdev-&gt;name,
++		 mac2str(mgmt-&gt;addr3), capa, status, assoc_id,
+ 		 hex2str(resp-&gt;info_element-&gt;data, resp-&gt;info_element-&gt;len));
+ 	if (priv-&gt;istate == REASSOCIATING) {
+ 		at76_assert(priv-&gt;new_bss != NULL);
+@@ -4752,10 +4804,10 @@ static void at76_rx_mgmt_disassoc(struct at76_priv *priv,
+ 	    (struct ieee80211_disassoc *)buf-&gt;packet;
+ 	struct ieee80211_hdr_3addr *mgmt = &amp;resp-&gt;header;
+ 
+-	at76_dbg(DBG_RX_MGMT, &quot;%s: rx DisAssoc bssid %s reason x%04x destination %s&quot;,
++	at76_dbg(DBG_RX_MGMT,
++		 &quot;%s: rx DisAssoc bssid %s reason x%04x destination %s&quot;,
+ 		 priv-&gt;netdev-&gt;name, mac2str(mgmt-&gt;addr3),
+-		 le16_to_cpu(resp-&gt;reason),
+-		 mac2str(mgmt-&gt;addr1));
++		 le16_to_cpu(resp-&gt;reason), mac2str(mgmt-&gt;addr1));
+ 	if (priv-&gt;istate == SCANNING || priv-&gt;istate == INIT)
+ 		return;
+ 
+@@ -4795,7 +4847,8 @@ static void at76_rx_mgmt_disassoc(struct at76_priv *priv,
+ 	/* ignore DisAssoc to other STA or from other BSSID */
+ }
+ 
+-static void at76_rx_mgmt_auth(struct at76_priv *priv, struct at76_rx_buffer *buf)
++static void at76_rx_mgmt_auth(struct at76_priv *priv,
++			      struct at76_rx_buffer *buf)
+ {
+ 	struct ieee80211_auth *resp = (struct ieee80211_auth *)buf-&gt;packet;
+ 	struct ieee80211_hdr_3addr *mgmt = &amp;resp-&gt;header;
+@@ -4803,15 +4856,14 @@ static void at76_rx_mgmt_auth(struct at76_priv *priv, struct at76_rx_buffer *buf
+ 	int alg = le16_to_cpu(resp-&gt;algorithm);
+ 	int status = le16_to_cpu(resp-&gt;status);
+ 
+-	at76_dbg(DBG_RX_MGMT, &quot;%s: rx AuthFrame bssid %s alg %d seq_nr %d status %d &quot;
+-		 &quot;destination %s&quot;,
+-		 priv-&gt;netdev-&gt;name, mac2str(mgmt-&gt;addr3),
++	at76_dbg(DBG_RX_MGMT,
++		 &quot;%s: rx AuthFrame bssid %s alg %d seq_nr %d status %d &quot;
++		 &quot;destination %s&quot;, priv-&gt;netdev-&gt;name, mac2str(mgmt-&gt;addr3),
+ 		 alg, seq_nr, status, mac2str(mgmt-&gt;addr1));
+ 
+ 	if (alg == WLAN_AUTH_SHARED_KEY &amp;&amp; seq_nr == 2) {
+ 		at76_dbg(DBG_RX_MGMT, &quot;%s: AuthFrame challenge %s ...&quot;,
+-			 priv-&gt;netdev-&gt;name,
+-			 hex2str(resp-&gt;info_element, 18));
++			 priv-&gt;netdev-&gt;name, hex2str(resp-&gt;info_element, 18));
+ 	}
+ 	if (priv-&gt;istate != AUTHENTICATING) {
+ 		info(&quot;%s: ignored AuthFrame in state %d&quot;,
+@@ -4844,14 +4896,16 @@ static void at76_rx_mgmt_auth(struct at76_priv *priv, struct at76_rx_buffer *buf
+ 			priv-&gt;retries = ASSOC_RETRIES;
+ 			priv-&gt;istate = ASSOCIATING;
+ 			at76_assoc_req(priv, priv-&gt;curr_bss);
+-			at76_dbg(DBG_MGMT_TIMER, &quot;%s:%d: starting mgmt_timer + HZ&quot;,
++			at76_dbg(DBG_MGMT_TIMER,
++				 &quot;%s:%d: starting mgmt_timer + HZ&quot;,
+ 				 __FUNCTION__, __LINE__);
+ 			mod_timer(&amp;priv-&gt;mgmt_timer, jiffies + HZ);
+ 			return;
+ 		}
+ 
+ 		at76_assert(seq_nr == 2);
+-		at76_auth_req(priv, priv-&gt;curr_bss, seq_nr + 1, resp-&gt;info_element);
++		at76_auth_req(priv, priv-&gt;curr_bss, seq_nr + 1,
++			      resp-&gt;info_element);
+ 		at76_dbg(DBG_MGMT_TIMER, &quot;%s:%d: starting mgmt_timer + HZ&quot;,
+ 			 __FUNCTION__, __LINE__);
+ 		mod_timer(&amp;priv-&gt;mgmt_timer, jiffies + HZ);
+@@ -4869,13 +4923,11 @@ static void at76_rx_mgmt_deauth(struct at76_priv *priv,
+ 	at76_dbg(DBG_RX_MGMT | DBG_PROGRESS,
+ 		 &quot;%s: rx DeAuth bssid %s reason x%04x destination %s&quot;,
+ 		 priv-&gt;netdev-&gt;name, mac2str(mgmt-&gt;addr3),
+-		 le16_to_cpu(resp-&gt;reason),
+-		 mac2str(mgmt-&gt;addr1));
++		 le16_to_cpu(resp-&gt;reason), mac2str(mgmt-&gt;addr1));
+ 	if (priv-&gt;istate == DISASSOCIATING ||
+ 	    priv-&gt;istate == AUTHENTICATING ||
+ 	    priv-&gt;istate == ASSOCIATING ||
+-	    priv-&gt;istate == REASSOCIATING  ||
+-	    priv-&gt;istate == CONNECTED) {
++	    priv-&gt;istate == REASSOCIATING || priv-&gt;istate == CONNECTED) {
+ 		at76_assert(priv-&gt;curr_bss != NULL);
+ 		if (priv-&gt;curr_bss == NULL)
+ 			return;
+@@ -5000,14 +5052,16 @@ static void at76_rx_mgmt_beacon(struct at76_priv *priv,
+ 	 * bytes are useful, hence the have_ssid etc optimizations. */
+ 
+ 	while (keep_going &amp;&amp;
+-	       ((&amp;tlv-&gt;data[tlv-&gt;len] - (u8 *)bdata-&gt;info_element) &lt;= varpar_len)) {
++	       ((&amp;tlv-&gt;data[tlv-&gt;len] - (u8 *)bdata-&gt;info_element) &lt;=
++		varpar_len)) {
+ 
+ 		switch (tlv-&gt;id) {
+ 
+ 		case MFIE_TYPE_SSID:
+ 			len = min_t(int, IW_ESSID_MAX_SIZE, tlv-&gt;len);
+ 			if (!have_ssid &amp;&amp; ((new_entry) ||
+-					   !at76_is_cloaked_ssid(tlv-&gt;data, len))) {
++					   !at76_is_cloaked_ssid(tlv-&gt;data,
++								 len))) {
+ 				/* we copy only if this is a new entry,
+ 				   or the incoming SSID is not a cloaked SSID. This
+ 				   will protect us from overwriting a real SSID read
+@@ -5073,7 +5127,7 @@ static void at76_rx_mgmt_beacon(struct at76_priv *priv,
+ 	at76_dbg(DBG_RX_BEACON, &quot;%s: Finished processing beacon data&quot;,
+ 		 priv-&gt;netdev-&gt;name);
+ 
+-	match-&gt;last_rx = jiffies; /* record last rx of beacon */
++	match-&gt;last_rx = jiffies;	/* record last rx of beacon */
+ 
+       rx_mgmt_beacon_end:
+ 	spin_unlock_irqrestore(&amp;priv-&gt;bss_list_spinlock, flags);
+@@ -5083,7 +5137,8 @@ static void at76_rx_mgmt_beacon(struct at76_priv *priv,
+ static void at76_calc_level(struct at76_priv *priv, struct at76_rx_buffer *buf,
+ 			    struct iw_quality *qual)
+ {
+-	int max_rssi = 42;	/* just a guess for now, might be different for other chips */
++	/* just a guess for now, might be different for other chips */
++	int max_rssi = 42;
+ 
+ 	qual-&gt;level = (buf-&gt;rssi * 100 / max_rssi);
+ 	if (qual-&gt;level &gt; 100)
+@@ -5093,7 +5148,7 @@ static void at76_calc_level(struct at76_priv *priv, struct at76_rx_buffer *buf,
+ 
+ /* calc the link quality from a given rx_buffer */
+ static void at76_calc_qual(struct at76_priv *priv, struct at76_rx_buffer *buf,
+-			   struct iw_quality* qual)
++			   struct iw_quality *qual)
+ {
+ 	if ((priv-&gt;fwe-&gt;board_type == BOARDTYPE_503_INTERSIL_3861) ||
+ 	    (priv-&gt;fwe-&gt;board_type == BOARDTYPE_503_INTERSIL_3863)) {
+@@ -5151,8 +5206,10 @@ static void at76_rx_mgmt(struct at76_priv *priv, struct at76_rx_buffer *buf)
+ 	/* update wstats */
+ 	if (priv-&gt;istate != INIT &amp;&amp; priv-&gt;istate != SCANNING) {
+ 		/* jal: this is a dirty hack needed by Tim in ad-hoc mode */
+-		if (priv-&gt;iw_mode == IW_MODE_ADHOC || (priv-&gt;curr_bss != NULL &amp;&amp;
+-		     !compare_ether_addr(mgmt-&gt;addr3, priv-&gt;curr_bss-&gt;bssid))) {
++		if (priv-&gt;iw_mode == IW_MODE_ADHOC ||
++		    (priv-&gt;curr_bss != NULL
++		     &amp;&amp; !compare_ether_addr(mgmt-&gt;addr3,
++					    priv-&gt;curr_bss-&gt;bssid))) {
+ 			/* Data packets always seem to have a 0 link level, so we
+ 			   only read link quality info from management packets.
+ 			   Atmel driver actually averages the present, and previous
+@@ -5253,14 +5310,14 @@ static void at76_ieee80211_to_eth(struct sk_buff *skb, int iw_mode)
+ 	} else if (!memcmp(skb-&gt;data, snapsig, sizeof(snapsig))) {
+ 		/* SNAP frame - collapse it */
+ 		skb_pull(skb, sizeof(rfc1042sig) + 2);
+-		proto = *(__be16 *) (skb-&gt;data - 2);
++		proto = *(__be16 *)(skb-&gt;data - 2);
+ 	} else {
+ #ifdef IEEE_STANDARD
+ 		/* According to all standards, we should assume the data
+ 		 * portion contains 802.2 LLC information, so we should give it
+ 		 * an 802.3 header (which has the same implications) */
+ 		proto = htons(skb-&gt;len);
+-#else /* IEEE_STANDARD */
++#else				/* IEEE_STANDARD */
+ 		/* Unfortunately, it appears no actual 802.11 implementations
+ 		 * follow any standards specs.  They all appear to put a
+ 		 * 16-bit ethertype after the 802.11 header instead, so we take
+@@ -5273,7 +5330,7 @@ static void at76_ieee80211_to_eth(struct sk_buff *skb, int iw_mode)
+ 		   IEEE_STANDARD ... */
+ 		proto = *(__be16 *)(skb-&gt;data);
+ 		skb_pull(skb, 2);
+-#endif /* IEEE_STANDARD */
++#endif				/* IEEE_STANDARD */
+ 	}
+ 
+ 	skb_set_mac_header(skb, -(int)sizeof(struct ethhdr));
+@@ -5337,11 +5394,10 @@ static struct sk_buff *at76_check_for_rx_frags(struct at76_priv *priv)
+ 	struct rx_data_buf *bptr, *optr;
+ 	unsigned long oldest = ~0UL;
+ 
+-	at76_dbg(DBG_RX_FRAGS, &quot;%s: rx data frame_ctl %04x addr2 %s seq/frag %d/%d &quot;
+-		 &quot;length %d data %d: %s ...&quot;,
+-		 priv-&gt;netdev-&gt;name, frame_ctl,
+-		 mac2str(i802_11_hdr-&gt;addr2),
+-		 seqnr, fragnr, length, data_len,
++	at76_dbg(DBG_RX_FRAGS,
++		 &quot;%s: rx data frame_ctl %04x addr2 %s seq/frag %d/%d &quot;
++		 &quot;length %d data %d: %s ...&quot;, priv-&gt;netdev-&gt;name, frame_ctl,
++		 mac2str(i802_11_hdr-&gt;addr2), seqnr, fragnr, length, data_len,
+ 		 hex2str(data, 32));
+ 
+ 	at76_dbg(DBG_RX_FRAGS_SKB, &quot;%s: incoming skb: head %p data %p &quot;
+@@ -5357,7 +5413,8 @@ static struct sk_buff *at76_check_for_rx_frags(struct at76_priv *priv)
+ 
+ 	if (fragnr == 0 &amp;&amp; !(frame_ctl &amp; IEEE80211_FCTL_MOREFRAGS)) {
+ 		/* unfragmented packet received */
+-		if (length &lt; rx_copybreak &amp;&amp; (skb = dev_alloc_skb(length)) != NULL) {
++		if (length &lt; rx_copybreak
++		    &amp;&amp; (skb = dev_alloc_skb(length)) != NULL) {
+ 			memcpy(skb_put(skb, length),
+ 			       priv-&gt;rx_skb-&gt;data + AT76_RX_HDRLEN, length);
+ 		} else {
+@@ -5397,16 +5454,16 @@ static struct sk_buff *at76_check_for_rx_frags(struct at76_priv *priv)
+ 	optr = NULL;
+ 	for (i = 0; i &lt; NR_RX_DATA_BUF; i++, bptr++) {
+ 		if (bptr-&gt;skb != NULL) {
+-			if (!compare_ether_addr(i802_11_hdr-&gt;addr2, bptr-&gt;sender))
++			if (!compare_ether_addr(i802_11_hdr-&gt;addr2,
++						bptr-&gt;sender))
+ 				break;
+-			else
+-				if (optr == NULL) {
++			else if (optr == NULL) {
++				optr = bptr;
++				oldest = bptr-&gt;last_rx;
++			} else {
++				if (bptr-&gt;last_rx &lt; oldest)
+ 					optr = bptr;
+-					oldest = bptr-&gt;last_rx;
+-				} else {
+-					if (bptr-&gt;last_rx &lt; oldest)
+-						optr = bptr;
+-				}
++			}
+ 		} else {
+ 			optr = bptr;
+ 			oldest = 0UL;
+@@ -5426,32 +5483,35 @@ static struct sk_buff *at76_check_for_rx_frags(struct at76_priv *priv)
+ 			if (((bptr-&gt;fragnr + 1) &amp; 0xf) == fragnr) {
+ 				bptr-&gt;last_rx = jiffies;
+ 				/* the next following fragment number -&gt;
+-				    add the data at the end */
++				   add the data at the end */
+ 				/* is &amp; 0xf necessary above ??? */
+ 
+ 				/* for test only ??? */
+ 				left = skb_tailroom(bptr-&gt;skb);
+ 				if (left &lt; data_len) {
+ 					info(&quot;%s: only %d byte free (need %d)&quot;,
+-					    priv-&gt;netdev-&gt;name, left, data_len);
++					     priv-&gt;netdev-&gt;name, left,
++					     data_len);
+ 				} else
+ 					memcpy(skb_put(bptr-&gt;skb, data_len),
+ 					       data, data_len);
+ 				bptr-&gt;fragnr = fragnr;
+-				if (!(frame_ctl &amp;
+-				      IEEE80211_FCTL_MOREFRAGS)) {
++				if (!(frame_ctl &amp; IEEE80211_FCTL_MOREFRAGS)) {
+ 					/* this was the last fragment - send it */
+ 					skb = bptr-&gt;skb;
+-					bptr-&gt;skb = NULL; /* free the entry */
+-					at76_dbg(DBG_RX_FRAGS, &quot;%s: last frag of seq %d&quot;,
++					bptr-&gt;skb = NULL;	/* free the entry */
++					at76_dbg(DBG_RX_FRAGS,
++						 &quot;%s: last frag of seq %d&quot;,
+ 						 priv-&gt;netdev-&gt;name, seqnr);
+ 					return skb;
+ 				} else
+ 					return NULL;
+ 			} else {
+ 				/* wrong fragment number -&gt; ignore it */
+-				at76_dbg(DBG_RX_FRAGS, &quot;%s: frag nr does not match: %d+1 != %d&quot;,
+-					 priv-&gt;netdev-&gt;name, bptr-&gt;fragnr, fragnr);
++				at76_dbg(DBG_RX_FRAGS,
++					 &quot;%s: frag nr does not match: %d+1 != %d&quot;,
++					 priv-&gt;netdev-&gt;name, bptr-&gt;fragnr,
++					 fragnr);
+ 				return NULL;
+ 			}
+ 		} else {
+@@ -5460,9 +5520,11 @@ static struct sk_buff *at76_check_for_rx_frags(struct at76_priv *priv)
+ 				/* it's the start of a new chain - replace the
+ 				   old one by this */
+ 				/* bptr-&gt;sender has the correct value already */
+-				at76_dbg(DBG_RX_FRAGS, &quot;%s: start of new seq %d, &quot;
+-					 &quot;removing old seq %d&quot;, priv-&gt;netdev-&gt;name,
+-					 seqnr, bptr-&gt;seqnr);
++				at76_dbg(DBG_RX_FRAGS,
++					 &quot;%s: start of new seq %d, &quot;
++					 &quot;removing old seq %d&quot;,
++					 priv-&gt;netdev-&gt;name, seqnr,
++					 bptr-&gt;seqnr);
+ 				bptr-&gt;seqnr = seqnr;
+ 				bptr-&gt;fragnr = 0;
+ 				bptr-&gt;last_rx = jiffies;
+@@ -5473,9 +5535,11 @@ static struct sk_buff *at76_check_for_rx_frags(struct at76_priv *priv)
+ 			} else {
+ 				/* it from the middle of a new chain -&gt;
+ 				   delete the old entry and skip the new one */
+-				at76_dbg(DBG_RX_FRAGS, &quot;%s: middle of new seq %d (%d) &quot;
+-					 &quot;removing old seq %d&quot;, priv-&gt;netdev-&gt;name,
+-					 seqnr, fragnr, bptr-&gt;seqnr);
++				at76_dbg(DBG_RX_FRAGS,
++					 &quot;%s: middle of new seq %d (%d) &quot;
++					 &quot;removing old seq %d&quot;,
++					 priv-&gt;netdev-&gt;name, seqnr, fragnr,
++					 bptr-&gt;seqnr);
+ 				dev_kfree_skb(bptr-&gt;skb);
+ 				bptr-&gt;skb = NULL;
+ 			}
+@@ -5487,7 +5551,8 @@ static struct sk_buff *at76_check_for_rx_frags(struct at76_priv *priv)
+ 
+ 		if (fragnr != 0) {
+ 			/* this is not the begin of a fragment chain ... */
+-			at76_dbg(DBG_RX_FRAGS, &quot;%s: no chain for non-first fragment (%d)&quot;,
++			at76_dbg(DBG_RX_FRAGS,
++				 &quot;%s: no chain for non-first fragment (%d)&quot;,
+ 				 priv-&gt;netdev-&gt;name, fragnr);
+ 			return NULL;
+ 		}
+@@ -5501,16 +5566,18 @@ static struct sk_buff *at76_check_for_rx_frags(struct at76_priv *priv)
+ 			optr-&gt;skb = priv-&gt;rx_skb;
+ 			priv-&gt;rx_skb = skb;
+ 
+-			at76_dbg(DBG_RX_FRAGS, &quot;%s: free old contents: sender %s seq/frag %d/%d&quot;,
++			at76_dbg(DBG_RX_FRAGS,
++				 &quot;%s: free old contents: sender %s seq/frag %d/%d&quot;,
+ 				 priv-&gt;netdev-&gt;name, mac2str(optr-&gt;sender),
+ 				 optr-&gt;seqnr, optr-&gt;fragnr);
+ 
+ 		} else {
+ 			/* take the skb from priv-&gt;rx_skb */
+ 			optr-&gt;skb = priv-&gt;rx_skb;
+-			priv-&gt;rx_skb = NULL; /* let at76_submit_rx_urb() allocate a new skb */
++			priv-&gt;rx_skb = NULL;	/* let at76_submit_rx_urb() allocate a new skb */
+ 
+-			at76_dbg(DBG_RX_FRAGS, &quot;%s: use a free entry&quot;, priv-&gt;netdev-&gt;name);
++			at76_dbg(DBG_RX_FRAGS, &quot;%s: use a free entry&quot;,
++				 priv-&gt;netdev-&gt;name);
+ 		}
+ 		memcpy(optr-&gt;sender, i802_11_hdr-&gt;addr2, ETH_ALEN);
+ 		optr-&gt;seqnr = seqnr;
+@@ -5582,7 +5649,8 @@ static void at76_rx_monitor_mode(struct at76_priv *priv)
+ 
+ 	if (length &lt; priv-&gt;rx_data_fcs_len) {
+ 		/* buffer contains no data */
+-		at76_dbg(DBG_MONITOR_MODE, &quot;%s: MONITOR MODE: rx skb without data&quot;,
++		at76_dbg(DBG_MONITOR_MODE,
++			 &quot;%s: MONITOR MODE: rx skb without data&quot;,
+ 			 priv-&gt;netdev-&gt;name);
+ 		return;
+ 	}
+@@ -5628,10 +5696,9 @@ static void at76_rx_monitor_mode(struct at76_priv *priv)
+ 	stats-&gt;rx_bytes += length;
+ }
+ 
+-/**
+- * at76_iwspy_update - check if we spy on the sender address of buf and update stats
+- */
+-static void at76_iwspy_update(struct at76_priv *priv, struct at76_rx_buffer *buf)
++/* check if we spy on the sender address in buf and update stats */
++static void at76_iwspy_update(struct at76_priv *priv,
++			      struct at76_rx_buffer *buf)
+ {
+ 	struct ieee80211_hdr_3addr *hdr =
+ 	    (struct ieee80211_hdr_3addr *)buf-&gt;packet;
+@@ -5696,11 +5763,10 @@ static void at76_rx_tasklet(unsigned long param)
+ 		return;
+ 	}
+ 
+-	at76_dbg(DBG_RX_ATMEL_HDR, &quot;%s: rx frame: rate %d rssi %d noise %d link %d %s&quot;,
+-		 priv-&gt;netdev-&gt;name,
+-		 buf-&gt;rx_rate, buf-&gt;rssi, buf-&gt;noise_level,
+-		 buf-&gt;link_quality,
+-		 hex2str(i802_11_hdr, 48));
++	at76_dbg(DBG_RX_ATMEL_HDR,
++		 &quot;%s: rx frame: rate %d rssi %d noise %d link %d %s&quot;,
++		 priv-&gt;netdev-&gt;name, buf-&gt;rx_rate, buf-&gt;rssi, buf-&gt;noise_level,
++		 buf-&gt;link_quality, hex2str(i802_11_hdr, 48));
+ 	if (priv-&gt;istate == MONITORING) {
+ 		at76_rx_monitor_mode(priv);
+ 		goto finish;
+@@ -5930,14 +5996,13 @@ static int at76_probe(struct usb_interface *interface,
+ 	if ((fwe-&gt;fw_version.major &gt; 0 || fwe-&gt;fw_version.minor &gt;= 100)
+ 	    || (op_mode == OPMODE_NORMAL_NIC_WITH_FLASH)) {
+ 		ret = at76_get_mib(udev, MIB_FW_VERSION,
+-				   &amp;req_fw_version,
+-				   sizeof(req_fw_version));
++				   &amp;req_fw_version, sizeof(req_fw_version));
+ 		if ((ret &lt; 0)
+ 		    || ((req_fw_version.major == 0)
+ 			&amp;&amp; (req_fw_version.minor == 0)
+ 			&amp;&amp; (req_fw_version.patch == 0)
+ 			&amp;&amp; (req_fw_version.build == 0)))
+-		need_ext_fw = 1;
++			need_ext_fw = 1;
+ 	} else {
+ 		/* No way to check firmware version, reload to be sure */
+ 		need_ext_fw = 1;
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000115.html">[at76c503a-develop] [PATCH 07/12] Simplify capability setting in	(re)accociation requests
+</A></li>
+	<LI>Next message: <A HREF="000117.html">[at76c503a-develop] [PATCH 09/12] Save results of usb_sndbulkpipe()	and usb_rcvbulkpipe()
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#116">[ date ]</a>
+              <a href="thread.html#116">[ thread ]</a>
+              <a href="subject.html#116">[ subject ]</a>
+              <a href="author.html#116">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">More information about the at76c503a-develop
+mailing list</a><br>
+</body></html>

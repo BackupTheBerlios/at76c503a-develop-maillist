@@ -1,0 +1,199 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [at76c503a-develop] [PATCH 17/19] Eliminate priv-&gt;rx_urb,	it shouldn't be there
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/at76c503a-develop/2007-July/index.html" >
+   <LINK REL="made" HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%2017/19%5D%20Eliminate%20priv-%3Erx_urb%2C%0A%09it%20shouldn%27t%20be%20there&In-Reply-To=%3C20070710062150.29117.19462.stgit%40dv.roinet.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000165.html">
+   <LINK REL="Next"  HREF="000153.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[at76c503a-develop] [PATCH 17/19] Eliminate priv-&gt;rx_urb,	it shouldn't be there</H1>
+    <B>Pavel Roskin</B> 
+    <A HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%2017/19%5D%20Eliminate%20priv-%3Erx_urb%2C%0A%09it%20shouldn%27t%20be%20there&In-Reply-To=%3C20070710062150.29117.19462.stgit%40dv.roinet.com%3E"
+       TITLE="[at76c503a-develop] [PATCH 17/19] Eliminate priv-&gt;rx_urb,	it shouldn't be there">proski at gnu.org
+       </A><BR>
+    <I>Tue Jul 10 08:21:50 CEST 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000165.html">[at76c503a-develop] [PATCH 16/19] Make at76_dump_mib_mac_wep() more	readable
+</A></li>
+        <LI>Next message: <A HREF="000153.html">[at76c503a-develop] [PATCH 18/19] Don't fill write_urb in	at76_alloc_urbs()
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#151">[ date ]</a>
+              <a href="thread.html#151">[ thread ]</a>
+              <a href="subject.html#151">[ subject ]</a>
+              <a href="author.html#151">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Pass the urb as data to the tasklet instead of priv.  Remove some
+paranoid sanity checks in at76_rx_tasklet().
+
+Rename at76_submit_rx_urb() to at76_submit_read_urb() to avoid
+confusion.
+
+Signed-off-by: Pavel Roskin &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">proski at gnu.org</A>&gt;
+---
+
+ at76_usb.c |   34 ++++++++++++----------------------
+ at76_usb.h |    1 -
+ 2 files changed, 12 insertions(+), 23 deletions(-)
+
+diff --git a/at76_usb.c b/at76_usb.c
+index c8bc55c..f08e886 100644
+--- a/at76_usb.c
++++ b/at76_usb.c
+@@ -1571,7 +1571,7 @@ static void at76_read_bulk_callback(struct urb *urb)
+ {
+ 	struct at76_priv *priv = urb-&gt;context;
+ 
+-	priv-&gt;rx_urb = urb;
++	priv-&gt;rx_tasklet.data = (unsigned long)urb;
+ 	tasklet_schedule(&amp;priv-&gt;rx_tasklet);
+ 	return;
+ }
+@@ -3782,7 +3782,7 @@ static void at76_tx_timeout(struct net_device *netdev)
+ 	priv-&gt;stats.tx_errors++;
+ }
+ 
+-static int at76_submit_rx_urb(struct at76_priv *priv)
++static int at76_submit_read_urb(struct at76_priv *priv)
+ {
+ 	int ret, size;
+ 	struct sk_buff *skb = priv-&gt;rx_skb;
+@@ -3865,9 +3865,9 @@ static int at76_open(struct net_device *netdev)
+ 	priv-&gt;last_scan = jiffies;
+ 	priv-&gt;nr_submit_rx_tries = NR_SUBMIT_RX_TRIES;	/* init counter */
+ 
+-	ret = at76_submit_rx_urb(priv);
++	ret = at76_submit_read_urb(priv);
+ 	if (ret &lt; 0) {
+-		err(&quot;%s: open: submit_rx_urb failed: %d&quot;, netdev-&gt;name, ret);
++		err(&quot;%s: open: submit_read_urb failed: %d&quot;, netdev-&gt;name, ret);
+ 		goto err;
+ 	}
+ 
+@@ -4696,7 +4696,7 @@ static void at76_work_submit_rx(struct work_struct *work)
+ 					      work_submit_rx);
+ 
+ 	mutex_lock(&amp;priv-&gt;mtx);
+-	at76_submit_rx_urb(priv);
++	at76_submit_read_urb(priv);
+ 	mutex_unlock(&amp;priv-&gt;mtx);
+ }
+ 
+@@ -5562,7 +5562,7 @@ static struct sk_buff *at76_check_for_rx_frags(struct at76_priv *priv)
+ 	} else {
+ 		/* take the skb from priv-&gt;rx_skb */
+ 		optr-&gt;skb = priv-&gt;rx_skb;
+-		/* let at76_submit_rx_urb() allocate a new skb */
++		/* let at76_submit_read_urb() allocate a new skb */
+ 		priv-&gt;rx_skb = NULL;
+ 
+ 		at76_dbg(DBG_RX_FRAGS, &quot;%s: use a free entry&quot;,
+@@ -5710,18 +5710,13 @@ static void at76_iwspy_update(struct at76_priv *priv,
+ 
+ static void at76_rx_tasklet(unsigned long param)
+ {
+-	struct at76_priv *priv = (struct at76_priv *)param;
+-	struct urb *urb;
+-	struct net_device *netdev;
++	struct urb *urb = (struct urb *)param;
++	struct at76_priv *priv = urb-&gt;context;
++	struct net_device *netdev = priv-&gt;netdev;
+ 	struct at76_rx_buffer *buf;
+ 	struct ieee80211_hdr_3addr *i802_11_hdr;
+ 	u16 frame_ctl;
+ 
+-	if (!priv)
+-		return;
+-	urb = priv-&gt;rx_urb;
+-	netdev = priv-&gt;netdev;
+-
+ 	if (priv-&gt;device_unplugged) {
+ 		at76_dbg(DBG_DEVSTART, &quot;device unplugged&quot;);
+ 		if (urb)
+@@ -5729,17 +5724,12 @@ static void at76_rx_tasklet(unsigned long param)
+ 		return;
+ 	}
+ 
+-	if (!urb || !priv-&gt;rx_skb || !netdev || !priv-&gt;rx_skb-&gt;data)
++	if (!priv-&gt;rx_skb || !netdev || !priv-&gt;rx_skb-&gt;data)
+ 		return;
+ 
+ 	buf = (struct at76_rx_buffer *)priv-&gt;rx_skb-&gt;data;
+ 
+-	if (!buf)
+-		return;
+-
+ 	i802_11_hdr = (struct ieee80211_hdr_3addr *)buf-&gt;packet;
+-	if (!i802_11_hdr)
+-		return;
+ 
+ 	frame_ctl = le16_to_cpu(i802_11_hdr-&gt;frame_ctl);
+ 
+@@ -5793,7 +5783,7 @@ static void at76_rx_tasklet(unsigned long param)
+ 		       priv-&gt;netdev-&gt;name, frame_ctl);
+ 	}
+       finish:
+-	at76_submit_rx_urb(priv);
++	at76_submit_read_urb(priv);
+       no_more_urb:
+ 	return;
+ }
+@@ -5850,7 +5840,7 @@ static struct at76_priv *at76_alloc_new_device(struct usb_device *udev)
+ 		priv-&gt;rx_data[i].skb = NULL;
+ 
+ 	priv-&gt;rx_tasklet.func = at76_rx_tasklet;
+-	priv-&gt;rx_tasklet.data = (unsigned long)priv;
++	priv-&gt;rx_tasklet.data = 0;
+ 
+ 	priv-&gt;pm_mode = AT76_PM_OFF;
+ 	priv-&gt;pm_period = 0;
+diff --git a/at76_usb.h b/at76_usb.h
+index af33785..ec022c6 100644
+--- a/at76_usb.h
++++ b/at76_usb.h
+@@ -470,7 +470,6 @@ struct at76_priv {
+ 
+ 	int nr_submit_rx_tries;	/* number of tries to submit an rx urb left */
+ 	struct tasklet_struct rx_tasklet;
+-	struct urb *rx_urb;	/* tmp urb pointer for rx_tasklet */
+ 
+ 	/* the WEP stuff */
+ 	int wep_enabled;	/* 1 if WEP is enabled */
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000165.html">[at76c503a-develop] [PATCH 16/19] Make at76_dump_mib_mac_wep() more	readable
+</A></li>
+	<LI>Next message: <A HREF="000153.html">[at76c503a-develop] [PATCH 18/19] Don't fill write_urb in	at76_alloc_urbs()
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#151">[ date ]</a>
+              <a href="thread.html#151">[ thread ]</a>
+              <a href="subject.html#151">[ subject ]</a>
+              <a href="author.html#151">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">More information about the at76c503a-develop
+mailing list</a><br>
+</body></html>

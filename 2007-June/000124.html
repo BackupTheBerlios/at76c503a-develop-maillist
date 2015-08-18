@@ -1,0 +1,309 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [at76c503a-develop] [PATCH 01/10] Implement &quot;get&quot; counterparts for	iwpriv calls
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/at76c503a-develop/2007-June/index.html" >
+   <LINK REL="made" HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%2001/10%5D%20Implement%20%22get%22%20counterparts%20for%0A%09iwpriv%20calls&In-Reply-To=%3C20070616073826.13212.1752.stgit%40dv.roinet.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000121.html">
+   <LINK REL="Next"  HREF="000125.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[at76c503a-develop] [PATCH 01/10] Implement &quot;get&quot; counterparts for	iwpriv calls</H1>
+    <B>Pavel Roskin</B> 
+    <A HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%2001/10%5D%20Implement%20%22get%22%20counterparts%20for%0A%09iwpriv%20calls&In-Reply-To=%3C20070616073826.13212.1752.stgit%40dv.roinet.com%3E"
+       TITLE="[at76c503a-develop] [PATCH 01/10] Implement &quot;get&quot; counterparts for	iwpriv calls">proski at gnu.org
+       </A><BR>
+    <I>Sat Jun 16 09:38:26 CEST 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000121.html">[at76c503a-develop] Status of the driver
+</A></li>
+        <LI>Next message: <A HREF="000125.html">[at76c503a-develop] [PATCH 03/10] Eliminate macros containing	offsetof for MIB structures
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#124">[ date ]</a>
+              <a href="thread.html#124">[ thread ]</a>
+              <a href="subject.html#124">[ subject ]</a>
+              <a href="author.html#124">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Rename all iwpriv calls to start with &quot;get&quot; or &quot;set&quot; for consistency. 
+Eliminate gap in the ioctl numbers.
+
+Rename &quot;intl_roaming&quot; to &quot;intl_scan&quot;, because it's really affects
+scanning only.
+
+Signed-off-by: Pavel Roskin &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">proski at gnu.org</A>&gt;
+---
+
+ at76_usb.c |  119 +++++++++++++++++++++++++++++++++++++++++++++++++++---------
+ at76_usb.h |   30 +++++++++------
+ 2 files changed, 120 insertions(+), 29 deletions(-)
+
+diff --git a/at76_usb.c b/at76_usb.c
+index 86e20fc..8c28534 100644
+--- a/at76_usb.c
++++ b/at76_usb.c
+@@ -3348,6 +3348,17 @@ static int at76_iw_set_short_preamble(struct net_device *netdev,
+ 	return ret;
+ }
+ 
++static int at76_iw_get_short_preamble(struct net_device *netdev,
++				      struct iw_request_info *info,
++				      union iwreq_data *wrqu, char *extra)
++{
++	struct at76_priv *priv = netdev_priv(netdev);
++	int *param = (int *)extra;
++
++	param[0] = priv-&gt;preamble_type;
++	return 0;
++}
++
+ static int at76_iw_set_debug(struct net_device *netdev,
+ 			     struct iw_request_info *info,
+ 			     struct iw_point *data, char *extra)
+@@ -3382,6 +3393,14 @@ static int at76_iw_set_debug(struct net_device *netdev,
+ 	return 0;
+ }
+ 
++static int at76_iw_get_debug(struct net_device *netdev,
++			     struct iw_request_info *info,
++			     union iwreq_data *wrqu, char *extra)
++{
++	snprintf(wrqu-&gt;name, sizeof(wrqu-&gt;name), &quot;0x%08x&quot;, at76_debug);
++	return 0;
++}
++
+ static int at76_iw_set_powersave_mode(struct net_device *netdev,
+ 				      struct iw_request_info *info, char *name,
+ 				      char *extra)
+@@ -3403,6 +3422,17 @@ static int at76_iw_set_powersave_mode(struct net_device *netdev,
+ 	return ret;
+ }
+ 
++static int at76_iw_get_powersave_mode(struct net_device *netdev,
++				      struct iw_request_info *info,
++				      union iwreq_data *wrqu, char *extra)
++{
++	struct at76_priv *priv = netdev_priv(netdev);
++	int *param = (int *)extra;
++
++	param[0] = priv-&gt;pm_mode;
++	return 0;
++}
++
+ static int at76_iw_set_scan_times(struct net_device *netdev,
+ 				  struct iw_request_info *info, char *name,
+ 				  char *extra)
+@@ -3424,6 +3454,18 @@ static int at76_iw_set_scan_times(struct net_device *netdev,
+ 	return ret;
+ }
+ 
++static int at76_iw_get_scan_times(struct net_device *netdev,
++				  struct iw_request_info *info,
++				  union iwreq_data *wrqu, char *extra)
++{
++	struct at76_priv *priv = netdev_priv(netdev);
++	int *param = (int *)extra;
++
++	param[0] = priv-&gt;scan_min_time;
++	param[1] = priv-&gt;scan_max_time;
++	return 0;
++}
++
+ static int at76_iw_set_scan_mode(struct net_device *netdev,
+ 				 struct iw_request_info *info, char *name,
+ 				 char *extra)
+@@ -3445,6 +3487,17 @@ static int at76_iw_set_scan_mode(struct net_device *netdev,
+ 	return ret;
+ }
+ 
++static int at76_iw_get_scan_mode(struct net_device *netdev,
++				 struct iw_request_info *info,
++				 union iwreq_data *wrqu, char *extra)
++{
++	struct at76_priv *priv = netdev_priv(netdev);
++	int *param = (int *)extra;
++
++	param[0] = priv-&gt;scan_mode;
++	return 0;
++}
++
+ static int at76_set_iroaming(struct at76_priv *priv, int onoff)
+ {
+ 	int ret = 0;
+@@ -3487,6 +3540,17 @@ static int at76_iw_set_intl_roaming(struct net_device *netdev,
+ 	return ret;
+ }
+ 
++static int at76_iw_get_intl_roaming(struct net_device *netdev,
++				    struct iw_request_info *info,
++				    union iwreq_data *wrqu, char *extra)
++{
++	struct at76_priv *priv = netdev_priv(netdev);
++	int *param = (int *)extra;
++
++	param[0] = priv-&gt;international_roaming;
++	return 0;
++}
++
+ #define AT76_SET_HANDLER(h, f) [h - SIOCIWFIRST] = (iw_handler) f
+ 
+ /*******************************************************************************
+@@ -3530,43 +3594,64 @@ static const iw_handler at76_handlers[] = {
+ /*structure that advertises the private iw handlers of this driver */
+ static const iw_handler at76_priv_handlers[] = {
+ 	AT76_SET_PRIV(AT76_SET_SHORT_PREAMBLE, at76_iw_set_short_preamble),
++	AT76_SET_PRIV(AT76_GET_SHORT_PREAMBLE, at76_iw_get_short_preamble),
+ 	AT76_SET_PRIV(AT76_SET_DEBUG, at76_iw_set_debug),
++	AT76_SET_PRIV(AT76_GET_DEBUG, at76_iw_get_debug),
+ 	AT76_SET_PRIV(AT76_SET_POWERSAVE_MODE, at76_iw_set_powersave_mode),
++	AT76_SET_PRIV(AT76_GET_POWERSAVE_MODE, at76_iw_get_powersave_mode),
+ 	AT76_SET_PRIV(AT76_SET_SCAN_TIMES, at76_iw_set_scan_times),
++	AT76_SET_PRIV(AT76_GET_SCAN_TIMES, at76_iw_get_scan_times),
+ 	AT76_SET_PRIV(AT76_SET_SCAN_MODE, at76_iw_set_scan_mode),
++	AT76_SET_PRIV(AT76_GET_SCAN_MODE, at76_iw_get_scan_mode),
+ 	AT76_SET_PRIV(AT76_SET_INTL_ROAMING, at76_iw_set_intl_roaming),
++	AT76_SET_PRIV(AT76_GET_INTL_ROAMING, at76_iw_get_intl_roaming),
+ };
+ 
+ /*******************************************************************************
+  * structure that describes the private ioctls/iw handlers of this driver
+  */
+ static const struct iw_priv_args at76_priv_args[] = {
++	/* 0 - long, 1 - short */
+ 	{AT76_SET_SHORT_PREAMBLE,
+-	 IW_PRIV_TYPE_INT | IW_PRIV_SIZE_FIXED | 1, 0,
+-	 &quot;short_preamble&quot;},	/* 0 - long, 1 -short */
++	 IW_PRIV_TYPE_INT | IW_PRIV_SIZE_FIXED | 1, 0, &quot;set_preamble&quot;},
++
++	{AT76_GET_SHORT_PREAMBLE,
++	 0, IW_PRIV_TYPE_INT | IW_PRIV_SIZE_FIXED | 1, &quot;get_preamble&quot;},
+ 
++	/* we must pass the new debug mask as a string, because iwpriv cannot
++	 * parse hex numbers starting with 0x :-(  */
+ 	{AT76_SET_DEBUG,
+-	 /* we must pass the new debug mask as a string,
+-	  * 'cause iwpriv cannot parse hex numbers
+-	  * starting with 0x :-(  */
+-	 IW_PRIV_TYPE_CHAR | 10, 0,
+-	 &quot;set_debug&quot;},		/* set debug value */
++	 IW_PRIV_TYPE_CHAR | 10, 0, &quot;set_debug&quot;},
++
++	{AT76_GET_DEBUG,
++	 0, IW_PRIV_TYPE_CHAR | IW_PRIV_SIZE_FIXED | 10, &quot;get_debug&quot;},
+ 
++	/* 1 - active, 2 - power save, 3 - smart power save */
+ 	{AT76_SET_POWERSAVE_MODE,
+-	 IW_PRIV_TYPE_INT | IW_PRIV_SIZE_FIXED | 1, 0,
+-	 &quot;powersave_mode&quot;},	/* 1 - active, 2 - power save,
+-				   3 - smart power save */
++	 IW_PRIV_TYPE_INT | IW_PRIV_SIZE_FIXED | 1, 0, &quot;set_powersave&quot;},
++
++	{AT76_GET_POWERSAVE_MODE,
++	 0, IW_PRIV_TYPE_INT | IW_PRIV_SIZE_FIXED | 1, &quot;get_powersave&quot;},
++
++	/* min_channel_time, max_channel_time */
+ 	{AT76_SET_SCAN_TIMES,
+-	 IW_PRIV_TYPE_INT | IW_PRIV_SIZE_FIXED | 2, 0,
+-	 &quot;scan_times&quot;},		/* min_channel_time,
+-				   max_channel_time */
++	 IW_PRIV_TYPE_INT | IW_PRIV_SIZE_FIXED | 2, 0, &quot;set_scan_times&quot;},
++
++	{AT76_GET_SCAN_TIMES,
++	 0, IW_PRIV_TYPE_INT | IW_PRIV_SIZE_FIXED | 2, &quot;get_scan_times&quot;},
++
++	/* 0 - active, 1 - passive scan */
+ 	{AT76_SET_SCAN_MODE,
+-	 IW_PRIV_TYPE_INT | IW_PRIV_SIZE_FIXED | 1, 0,
+-	 &quot;scan_mode&quot;},		/* 0 - active, 1 - passive scan */
++	 IW_PRIV_TYPE_INT | IW_PRIV_SIZE_FIXED | 1, 0, &quot;set_scan_mode&quot;},
++
++	{AT76_GET_SCAN_MODE,
++	 0, IW_PRIV_TYPE_INT | IW_PRIV_SIZE_FIXED | 1, &quot;get_scan_mode&quot;},
+ 
+ 	{AT76_SET_INTL_ROAMING,
+-	 IW_PRIV_TYPE_INT | IW_PRIV_SIZE_FIXED | 1, 0,
+-	 &quot;intl_roaming&quot;},
++	 IW_PRIV_TYPE_INT | IW_PRIV_SIZE_FIXED | 1, 0, &quot;set_intl_scan&quot;},
++
++	{AT76_GET_INTL_ROAMING,
++	 0, IW_PRIV_TYPE_INT | IW_PRIV_SIZE_FIXED | 1, &quot;get_intl_scan&quot;}
+ };
+ 
+ static const struct iw_handler_def at76_handler_def = {
+diff --git a/at76_usb.h b/at76_usb.h
+index 9a8c327..532b2f8 100644
+--- a/at76_usb.h
++++ b/at76_usb.h
+@@ -28,18 +28,24 @@
+ #define DRIVER_VERSION &quot;0.15dev&quot;
+ 
+ /* our private ioctl's */
+-/* set preamble length*/
+-#define AT76_SET_SHORT_PREAMBLE  (SIOCIWFIRSTPRIV + 0x0)
+-/* set debug parameter */
+-#define AT76_SET_DEBUG           (SIOCIWFIRSTPRIV + 0x2)
+-/* set power save mode (incl. the Atmel proprietary smart save mode */
+-#define AT76_SET_POWERSAVE_MODE  (SIOCIWFIRSTPRIV + 0x4)
+-/* set min and max channel times for scan */
+-#define AT76_SET_SCAN_TIMES      (SIOCIWFIRSTPRIV + 0x6)
+-/* set scan mode */
+-#define AT76_SET_SCAN_MODE       (SIOCIWFIRSTPRIV + 0x8)
+-/* set international roaming */
+-#define AT76_SET_INTL_ROAMING    (SIOCIWFIRSTPRIV + 0x10)
++/* preamble length (0 - long, 1 - short) */
++#define AT76_SET_SHORT_PREAMBLE  (SIOCIWFIRSTPRIV + 0)
++#define AT76_GET_SHORT_PREAMBLE  (SIOCIWFIRSTPRIV + 1)
++/* which debug channels are enabled */
++#define AT76_SET_DEBUG           (SIOCIWFIRSTPRIV + 2)
++#define AT76_GET_DEBUG           (SIOCIWFIRSTPRIV + 3)
++/* power save mode (incl. the Atmel proprietary smart save mode) */
++#define AT76_SET_POWERSAVE_MODE  (SIOCIWFIRSTPRIV + 4)
++#define AT76_GET_POWERSAVE_MODE  (SIOCIWFIRSTPRIV + 5)
++/* min and max channel times for scan */
++#define AT76_SET_SCAN_TIMES      (SIOCIWFIRSTPRIV + 6)
++#define AT76_GET_SCAN_TIMES      (SIOCIWFIRSTPRIV + 7)
++/* scan mode (0 - active, 1 - passive) */
++#define AT76_SET_SCAN_MODE       (SIOCIWFIRSTPRIV + 8)
++#define AT76_GET_SCAN_MODE       (SIOCIWFIRSTPRIV + 9)
++/* international roaming (0 - disabled, 1 - enabled */
++#define AT76_SET_INTL_ROAMING    (SIOCIWFIRSTPRIV + 10)
++#define AT76_GET_INTL_ROAMING    (SIOCIWFIRSTPRIV + 11)
+ 
+ #define DEVICE_VENDOR_REQUEST_OUT    0x40
+ #define DEVICE_VENDOR_REQUEST_IN     0xc0
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000121.html">[at76c503a-develop] Status of the driver
+</A></li>
+	<LI>Next message: <A HREF="000125.html">[at76c503a-develop] [PATCH 03/10] Eliminate macros containing	offsetof for MIB structures
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#124">[ date ]</a>
+              <a href="thread.html#124">[ thread ]</a>
+              <a href="subject.html#124">[ subject ]</a>
+              <a href="author.html#124">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">More information about the at76c503a-develop
+mailing list</a><br>
+</body></html>

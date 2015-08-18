@@ -1,0 +1,70 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [at76c503a-develop] [PATCH 3/3] Remove all locking for istate
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/at76c503a-develop/2007-March/index.html" >
+   <LINK REL="made" HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%203/3%5D%20Remove%20all%20locking%20for%20istate&In-Reply-To=%3C20070305102611.GB4735%40bogon.ms20.nix%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000021.html">
+   <LINK REL="Next"  HREF="000022.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[at76c503a-develop] [PATCH 3/3] Remove all locking for istate</H1>
+    <B>Guido Guenther</B> 
+    <A HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%203/3%5D%20Remove%20all%20locking%20for%20istate&In-Reply-To=%3C20070305102611.GB4735%40bogon.ms20.nix%3E"
+       TITLE="[at76c503a-develop] [PATCH 3/3] Remove all locking for istate">agx at sigxcpu.org
+       </A><BR>
+    <I>Mon Mar  5 11:26:11 CET 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000021.html">[at76c503a-develop] [PATCH 3/3] Remove all locking for istate
+</A></li>
+        <LI>Next message: <A HREF="000022.html">[at76c503a-develop] [PATCH] Fix divizion by zero in ad-hoc mode
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#24">[ date ]</a>
+              <a href="thread.html#24">[ thread ]</a>
+              <a href="subject.html#24">[ subject ]</a>
+              <a href="author.html#24">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Pavel,
+On Sun, Mar 04, 2007 at 10:58:44PM -0500, Pavel Roskin wrote:
+&gt;<i> Access to integer variables is already atomic.  The istate locking
+</I>&gt;<i> causes warnings from the lock checker.  If there are any specific
+</I>&gt;<i> scenarios when locking is needed, they should be addressed individually.
+</I>This one and the other ones applied - I always wondered what the locking
+was good for.
+Cheers,
+ -- Guido
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000021.html">[at76c503a-develop] [PATCH 3/3] Remove all locking for istate
+</A></li>
+	<LI>Next message: <A HREF="000022.html">[at76c503a-develop] [PATCH] Fix divizion by zero in ad-hoc mode
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#24">[ date ]</a>
+              <a href="thread.html#24">[ thread ]</a>
+              <a href="subject.html#24">[ subject ]</a>
+              <a href="author.html#24">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">More information about the at76c503a-develop
+mailing list</a><br>
+</body></html>

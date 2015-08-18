@@ -1,0 +1,119 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [at76c503a-develop] [PATCH 06/10] Run at76_usb.h through Lindent
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/at76c503a-develop/2007-June/index.html" >
+   <LINK REL="made" HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%2006/10%5D%20Run%20at76_usb.h%20through%20Lindent&In-Reply-To=%3C20070605010412.32602.4954.stgit%40dv.roinet.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000091.html">
+   <LINK REL="Next"  HREF="000094.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[at76c503a-develop] [PATCH 06/10] Run at76_usb.h through Lindent</H1>
+    <B>Pavel Roskin</B> 
+    <A HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%2006/10%5D%20Run%20at76_usb.h%20through%20Lindent&In-Reply-To=%3C20070605010412.32602.4954.stgit%40dv.roinet.com%3E"
+       TITLE="[at76c503a-develop] [PATCH 06/10] Run at76_usb.h through Lindent">proski at gnu.org
+       </A><BR>
+    <I>Tue Jun  5 03:04:13 CEST 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000091.html">[at76c503a-develop] [PATCH 05/10] Call at76_set_monitor_mode() from	at76_startup_device()
+</A></li>
+        <LI>Next message: <A HREF="000094.html">[at76c503a-develop] [PATCH 07/10] Run unexpand on at76_usb.c to	convert spaces to tabs	when possible
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#93">[ date ]</a>
+              <a href="thread.html#93">[ thread ]</a>
+              <a href="subject.html#93">[ subject ]</a>
+              <a href="author.html#93">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Signed-off-by: Pavel Roskin &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">proski at gnu.org</A>&gt;
+---
+
+ at76_usb.h |   25 ++++++++++++-------------
+ 1 files changed, 12 insertions(+), 13 deletions(-)
+
+diff --git a/at76_usb.h b/at76_usb.h
+index a97c042..6169866 100644
+--- a/at76_usb.h
++++ b/at76_usb.h
+@@ -106,7 +106,6 @@
+ #define IR_OFF        0
+ #define IR_ON         1
+ 
+-
+ /* offsets into the MIBs we use to configure the device */
+ #define TX_AUTORATE_FALLBACK_OFFSET offsetof(struct mib_local,txautorate_fallback)
+ #define FRAGMENTATION_OFFSET        offsetof(struct mib_mac,frag_threshold)
+@@ -365,17 +364,17 @@ struct mib_mdomain {
+ } __attribute__ ((packed));
+ 
+ struct at76_fw_header {
+-	__le32 crc;			/* CRC32 of the whole image */
+-	__le32 board_type;		/* firmware compatibility code */
+-	u8 build;			/* firmware build number */
+-	u8 patch;			/* firmware patch level */
+-	u8 minor;			/* firmware minor version */
+-	u8 major;			/* firmware major version */
+-	__le32 str_offset;		/* offset of the copyright string */
+-	__le32 int_fw_offset;		/* internal firmware image offset */
+-	__le32 int_fw_len;		/* internal firmware image length */
+-	__le32 ext_fw_offset;		/* external firmware image offset */
+-	__le32 ext_fw_len;		/* external firmware image length */
++	__le32 crc;		/* CRC32 of the whole image */
++	__le32 board_type;	/* firmware compatibility code */
++	u8 build;		/* firmware build number */
++	u8 patch;		/* firmware patch level */
++	u8 minor;		/* firmware minor version */
++	u8 major;		/* firmware major version */
++	__le32 str_offset;	/* offset of the copyright string */
++	__le32 int_fw_offset;	/* internal firmware image offset */
++	__le32 int_fw_len;	/* internal firmware image length */
++	__le32 ext_fw_offset;	/* external firmware image offset */
++	__le32 ext_fw_len;	/* external firmware image length */
+ } __attribute__ ((packed));
+ 
+ /* states in infrastructure mode */
+@@ -533,7 +532,7 @@ struct at76_priv {
+ 					   next_mgmt_bulk */
+ 
+ 	struct at76_tx_buffer *next_mgmt_bulk;	/* pending management msg to
+-							   send via bulk out */
++						   send via bulk out */
+ 	enum infra_state istate;
+ 	enum {
+ 		SCAN_IDLE,
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000091.html">[at76c503a-develop] [PATCH 05/10] Call at76_set_monitor_mode() from	at76_startup_device()
+</A></li>
+	<LI>Next message: <A HREF="000094.html">[at76c503a-develop] [PATCH 07/10] Run unexpand on at76_usb.c to	convert spaces to tabs	when possible
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#93">[ date ]</a>
+              <a href="thread.html#93">[ thread ]</a>
+              <a href="subject.html#93">[ subject ]</a>
+              <a href="author.html#93">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">More information about the at76c503a-develop
+mailing list</a><br>
+</body></html>

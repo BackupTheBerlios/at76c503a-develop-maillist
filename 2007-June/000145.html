@@ -1,0 +1,356 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [at76c503a-develop] [PATCH 12/12] Convert management timer/work to	a delayed work
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/at76c503a-develop/2007-June/index.html" >
+   <LINK REL="made" HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%2012/12%5D%20Convert%20management%20timer/work%20to%0A%09a%20delayed%20work&In-Reply-To=%3C20070621035655.18384.58408.stgit%40dv.roinet.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000144.html">
+   <LINK REL="Next"  HREF="000146.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[at76c503a-develop] [PATCH 12/12] Convert management timer/work to	a delayed work</H1>
+    <B>Pavel Roskin</B> 
+    <A HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%2012/12%5D%20Convert%20management%20timer/work%20to%0A%09a%20delayed%20work&In-Reply-To=%3C20070621035655.18384.58408.stgit%40dv.roinet.com%3E"
+       TITLE="[at76c503a-develop] [PATCH 12/12] Convert management timer/work to	a delayed work">proski at gnu.org
+       </A><BR>
+    <I>Thu Jun 21 05:56:56 CEST 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000144.html">[at76c503a-develop] [PATCH 11/12] Rename get_hw_cfg_intersil()	to	at76_get_hw_cfg_intersil()
+</A></li>
+        <LI>Next message: <A HREF="000146.html">[at76c503a-develop] [PATCH 01/12] Fix recent breakage in	at76_set_listen_interval()
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#145">[ date ]</a>
+              <a href="thread.html#145">[ thread ]</a>
+              <a href="subject.html#145">[ subject ]</a>
+              <a href="author.html#145">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>This is likely not the final approch, as the code handles several
+different timeouts and may need to be split.  Anyway, it would be easier
+to split a single delayed work than a timer and a work.
+
+When handling beacons, cancel the work first, as we want the timeout
+handler to be deferred.  The delayed workqueue API doesn't seem to
+provide a nicer way to do it.
+
+Signed-off-by: Pavel Roskin &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">proski at gnu.org</A>&gt;
+---
+
+ at76_usb.c |   65 +++++++++++++++++++++++++++---------------------------------
+ at76_usb.h |    3 +--
+ 2 files changed, 30 insertions(+), 38 deletions(-)
+
+diff --git a/at76_usb.c b/at76_usb.c
+index 16b82c8..4bb671a 100644
+--- a/at76_usb.c
++++ b/at76_usb.c
+@@ -1989,13 +1989,6 @@ static void at76_dump_bss_table(struct at76_priv *priv)
+ 	spin_unlock_irqrestore(&amp;priv-&gt;bss_list_spinlock, flags);
+ }
+ 
+-/* We got a timeout for a infrastructure mgmt packet */
+-static void at76_mgmt_timeout(unsigned long par)
+-{
+-	struct at76_priv *priv = (struct at76_priv *)par;
+-	schedule_work(&amp;priv-&gt;work_mgmt_timeout);
+-}
+-
+ /* Expiry of management timer in istate SCANNING */
+ static void at76_handle_mgmt_timeout_scan(struct at76_priv *priv)
+ {
+@@ -2027,7 +2020,7 @@ static void at76_handle_mgmt_timeout_scan(struct at76_priv *priv)
+ 		at76_dbg(DBG_MGMT_TIMER,
+ 			 &quot;%s:%d: starting mgmt_timer for %d ticks&quot;,
+ 			 __FUNCTION__, __LINE__, SCAN_POLL_INTERVAL);
+-		mod_timer(&amp;priv-&gt;mgmt_timer, jiffies + SCAN_POLL_INTERVAL);
++		schedule_delayed_work(&amp;priv-&gt;dwork_mgmt, SCAN_POLL_INTERVAL);
+ 		return;
+ 	}
+ 
+@@ -2056,7 +2049,7 @@ static void at76_handle_mgmt_timeout_scan(struct at76_priv *priv)
+ 		at76_dbg(DBG_MGMT_TIMER,
+ 			 &quot;%s:%d: starting mgmt_timer for %d ticks&quot;,
+ 			 __FUNCTION__, __LINE__, SCAN_POLL_INTERVAL);
+-		mod_timer(&amp;priv-&gt;mgmt_timer, jiffies + SCAN_POLL_INTERVAL);
++		schedule_delayed_work(&amp;priv-&gt;dwork_mgmt, SCAN_POLL_INTERVAL);
+ 		break;
+ 
+ 	case 2:
+@@ -2068,7 +2061,7 @@ static void at76_handle_mgmt_timeout_scan(struct at76_priv *priv)
+ 		at76_dbg(DBG_MGMT_TIMER,
+ 			 &quot;%s:%d: starting mgmt_timer for %d ticks&quot;,
+ 			 __FUNCTION__, __LINE__, SCAN_POLL_INTERVAL);
+-		mod_timer(&amp;priv-&gt;mgmt_timer, jiffies + SCAN_POLL_INTERVAL);
++		schedule_delayed_work(&amp;priv-&gt;dwork_mgmt, SCAN_POLL_INTERVAL);
+ 		break;
+ 
+ 	case 3:
+@@ -2180,7 +2173,7 @@ static void at76_delete_device(struct at76_priv *priv)
+ 
+ 	at76_free_bss_list(priv);
+ 	del_timer_sync(&amp;priv-&gt;bss_list_timer);
+-	del_timer_sync(&amp;priv-&gt;mgmt_timer);
++	cancel_delayed_work(&amp;priv-&gt;dwork_mgmt);
+ 
+ 	if (priv-&gt;istate == CONNECTED) {
+ 		at76_iwevent_bss_disconnect(priv-&gt;netdev);
+@@ -2328,7 +2321,7 @@ static int at76_iw_handler_commit(struct net_device *netdev,
+ 	if (priv-&gt;istate != INIT) {
+ 		priv-&gt;istate = INIT;
+ 		/* stop pending management stuff */
+-		del_timer_sync(&amp;priv-&gt;mgmt_timer);
++		cancel_delayed_work(&amp;priv-&gt;dwork_mgmt);
+ 
+ 		spin_lock_irqsave(&amp;priv-&gt;mgmt_spinlock, flags);
+ 		if (priv-&gt;next_mgmt_bulk) {
+@@ -2690,7 +2683,7 @@ static int at76_iw_handler_set_scan(struct net_device *netdev,
+ 	priv-&gt;scan_state = SCAN_IN_PROGRESS;
+ 
+ 	/* stop pending management stuff */
+-	del_timer_sync(&amp;priv-&gt;mgmt_timer);
++	cancel_delayed_work(&amp;priv-&gt;dwork_mgmt);
+ 
+ 	spin_lock_irqsave(&amp;priv-&gt;mgmt_spinlock, flags);
+ 	if (priv-&gt;next_mgmt_bulk) {
+@@ -3922,7 +3915,7 @@ static int at76_stop(struct net_device *netdev)
+ 		usb_kill_urb(priv-&gt;read_urb);
+ 	}
+ 
+-	del_timer_sync(&amp;priv-&gt;mgmt_timer);
++	cancel_delayed_work(&amp;priv-&gt;dwork_mgmt);
+ 	cancel_delayed_work(&amp;priv-&gt;dwork_restart);
+ 
+ 	spin_lock_irqsave(&amp;priv-&gt;mgmt_spinlock, flags);
+@@ -4335,7 +4328,7 @@ static void at76_work_join(struct work_struct *work)
+ 			netif_carrier_on(priv-&gt;netdev);
+ 			netif_start_queue(priv-&gt;netdev);
+ 			/* just to be sure */
+-			del_timer_sync(&amp;priv-&gt;mgmt_timer);
++			cancel_delayed_work(&amp;priv-&gt;dwork_mgmt);
+ 		} else {
+ 			/* send auth req */
+ 			priv-&gt;istate = AUTHENTICATING;
+@@ -4343,7 +4336,7 @@ static void at76_work_join(struct work_struct *work)
+ 			at76_dbg(DBG_MGMT_TIMER,
+ 				 &quot;%s:%d: starting mgmt_timer + HZ&quot;,
+ 				 __FUNCTION__, __LINE__);
+-			mod_timer(&amp;priv-&gt;mgmt_timer, jiffies + HZ);
++			schedule_delayed_work(&amp;priv-&gt;dwork_mgmt, HZ);
+ 		}
+ 		goto end_join;
+ 	}
+@@ -4366,7 +4359,7 @@ static void at76_work_join(struct work_struct *work)
+ static void at76_work_mgmt_timeout(struct work_struct *work)
+ {
+ 	struct at76_priv *priv = container_of(work, struct at76_priv,
+-					      work_mgmt_timeout);
++					      dwork_mgmt.work);
+ 
+ 	mutex_lock(&amp;priv-&gt;mtx);
+ 
+@@ -4407,7 +4400,7 @@ static void at76_work_mgmt_timeout(struct work_struct *work)
+ 			at76_dbg(DBG_MGMT_TIMER,
+ 				 &quot;%s:%d: starting mgmt_timer + HZ&quot;,
+ 				 __FUNCTION__, __LINE__);
+-			mod_timer(&amp;priv-&gt;mgmt_timer, jiffies + HZ);
++			schedule_delayed_work(&amp;priv-&gt;dwork_mgmt, HZ);
+ 		} else {
+ 			/* try to get next matching BSS */
+ 			priv-&gt;istate = JOINING;
+@@ -4421,7 +4414,7 @@ static void at76_work_mgmt_timeout(struct work_struct *work)
+ 			at76_dbg(DBG_MGMT_TIMER,
+ 				 &quot;%s:%d: starting mgmt_timer + HZ&quot;,
+ 				 __FUNCTION__, __LINE__);
+-			mod_timer(&amp;priv-&gt;mgmt_timer, jiffies + HZ);
++			schedule_delayed_work(&amp;priv-&gt;dwork_mgmt, HZ);
+ 		} else {
+ 			/* jal: TODO: we may be authenticated to several
+ 			   BSS and may try to associate to the next of them here
+@@ -4445,7 +4438,7 @@ static void at76_work_mgmt_timeout(struct work_struct *work)
+ 		}
+ 		at76_dbg(DBG_MGMT_TIMER, &quot;%s:%d: starting mgmt_timer + HZ&quot;,
+ 			 __FUNCTION__, __LINE__);
+-		mod_timer(&amp;priv-&gt;mgmt_timer, jiffies + HZ);
++		schedule_delayed_work(&amp;priv-&gt;dwork_mgmt, HZ);
+ 		break;
+ 
+ 	case DISASSOCIATING:
+@@ -4454,7 +4447,7 @@ static void at76_work_mgmt_timeout(struct work_struct *work)
+ 			at76_dbg(DBG_MGMT_TIMER,
+ 				 &quot;%s:%d: starting mgmt_timer + HZ&quot;,
+ 				 __FUNCTION__, __LINE__);
+-			mod_timer(&amp;priv-&gt;mgmt_timer, jiffies + HZ);
++			schedule_delayed_work(&amp;priv-&gt;dwork_mgmt, HZ);
+ 		} else {
+ 			/* we scan again ... */
+ 			priv-&gt;istate = SCANNING;
+@@ -4680,7 +4673,7 @@ static void at76_work_scan(struct work_struct *work)
+ 		at76_dbg(DBG_MGMT_TIMER,
+ 			 &quot;%s:%d: starting mgmt_timer for %d ticks&quot;,
+ 			 __FUNCTION__, __LINE__, SCAN_POLL_INTERVAL);
+-		mod_timer(&amp;priv-&gt;mgmt_timer, jiffies + SCAN_POLL_INTERVAL);
++		schedule_delayed_work(&amp;priv-&gt;dwork_mgmt, SCAN_POLL_INTERVAL);
+ 	}
+ 
+ 	mutex_unlock(&amp;priv-&gt;mtx);
+@@ -4751,7 +4744,7 @@ static void at76_rx_mgmt_assoc(struct at76_priv *priv,
+ 			priv-&gt;istate = JOINING;
+ 			schedule_work(&amp;priv-&gt;work_join);
+ 		}
+-		del_timer_sync(&amp;priv-&gt;mgmt_timer);
++		cancel_delayed_work(&amp;priv-&gt;dwork_mgmt);
+ 	} else {
+ 		printk(KERN_INFO &quot;%s: AssocResp in state %d ignored\n&quot;,
+ 		       priv-&gt;netdev-&gt;name, priv-&gt;istate);
+@@ -4800,7 +4793,7 @@ static void at76_rx_mgmt_reassoc(struct at76_priv *priv,
+ 				 priv-&gt;netdev-&gt;name, mac2str(priv-&gt;bssid));
+ 			schedule_work(&amp;priv-&gt;work_assoc_done);
+ 		} else {
+-			del_timer_sync(&amp;priv-&gt;mgmt_timer);
++			cancel_delayed_work(&amp;priv-&gt;dwork_mgmt);
+ 			priv-&gt;istate = JOINING;
+ 			schedule_work(&amp;priv-&gt;work_join);
+ 		}
+@@ -4848,7 +4841,7 @@ static void at76_rx_mgmt_disassoc(struct at76_priv *priv,
+ 				netif_stop_queue(priv-&gt;netdev);
+ 				at76_iwevent_bss_disconnect(priv-&gt;netdev);
+ 			}
+-			del_timer_sync(&amp;priv-&gt;mgmt_timer);
++			cancel_delayed_work(&amp;priv-&gt;dwork_mgmt);
+ 			priv-&gt;istate = JOINING;
+ 			schedule_work(&amp;priv-&gt;work_join);
+ 		} else {
+@@ -4898,7 +4891,7 @@ static void at76_rx_mgmt_auth(struct at76_priv *priv,
+ 		/* this is a AuthFrame from the BSS we are connected or
+ 		   trying to connect to, directed to us */
+ 		if (status != WLAN_STATUS_SUCCESS) {
+-			del_timer_sync(&amp;priv-&gt;mgmt_timer);
++			cancel_delayed_work(&amp;priv-&gt;dwork_mgmt);
+ 			/* try to join next bss */
+ 			priv-&gt;istate = JOINING;
+ 			schedule_work(&amp;priv-&gt;work_join);
+@@ -4912,7 +4905,7 @@ static void at76_rx_mgmt_auth(struct at76_priv *priv,
+ 			at76_dbg(DBG_MGMT_TIMER,
+ 				 &quot;%s:%d: starting mgmt_timer + HZ&quot;,
+ 				 __FUNCTION__, __LINE__);
+-			mod_timer(&amp;priv-&gt;mgmt_timer, jiffies + HZ);
++			schedule_delayed_work(&amp;priv-&gt;dwork_mgmt, HZ);
+ 			return;
+ 		}
+ 
+@@ -4921,7 +4914,7 @@ static void at76_rx_mgmt_auth(struct at76_priv *priv,
+ 			      resp-&gt;info_element);
+ 		at76_dbg(DBG_MGMT_TIMER, &quot;%s:%d: starting mgmt_timer + HZ&quot;,
+ 			 __FUNCTION__, __LINE__);
+-		mod_timer(&amp;priv-&gt;mgmt_timer, jiffies + HZ);
++		schedule_delayed_work(&amp;priv-&gt;dwork_mgmt, HZ);
+ 	}
+ 	/* else: ignore AuthFrames to other recipients */
+ }
+@@ -4955,7 +4948,7 @@ static void at76_rx_mgmt_deauth(struct at76_priv *priv,
+ 			}
+ 			priv-&gt;istate = JOINING;
+ 			schedule_work(&amp;priv-&gt;work_join);
+-			del_timer_sync(&amp;priv-&gt;mgmt_timer);
++			cancel_delayed_work(&amp;priv-&gt;dwork_mgmt);
+ 		}
+ 		/* ignore DeAuth to other STA or from other BSSID */
+ 	} else {
+@@ -4996,8 +4989,12 @@ static void at76_rx_mgmt_beacon(struct at76_priv *priv,
+ 		if (priv-&gt;curr_bss == NULL)
+ 			goto rx_mgmt_beacon_end;
+ 		if (!compare_ether_addr(priv-&gt;curr_bss-&gt;bssid, mgmt-&gt;addr3)) {
+-			mod_timer(&amp;priv-&gt;mgmt_timer,
+-				  jiffies + BEACON_TIMEOUT * HZ);
++			/* We got our AP's beacon, defer the timeout handler.
++			   Kill pending work first, as schedule_delayed_work()
++			   won't do it. */
++			cancel_delayed_work(&amp;priv-&gt;dwork_mgmt);
++			schedule_delayed_work(&amp;priv-&gt;dwork_mgmt,
++					      jiffies + BEACON_TIMEOUT * HZ);
+ 			priv-&gt;curr_bss-&gt;rssi = buf-&gt;rssi;
+ 			priv-&gt;beacons_received++;
+ 			goto rx_mgmt_beacon_end;
+@@ -5844,19 +5841,15 @@ static struct at76_priv *at76_alloc_new_device(struct usb_device *udev)
+ 	mutex_init(&amp;priv-&gt;mtx);
+ 	INIT_WORK(&amp;priv-&gt;work_assoc_done, at76_work_assoc_done);
+ 	INIT_WORK(&amp;priv-&gt;work_join, at76_work_join);
+-	INIT_WORK(&amp;priv-&gt;work_mgmt_timeout, at76_work_mgmt_timeout);
+ 	INIT_WORK(&amp;priv-&gt;work_new_bss, at76_work_new_bss);
+ 	INIT_WORK(&amp;priv-&gt;work_scan, at76_work_scan);
+ 	INIT_WORK(&amp;priv-&gt;work_set_promisc, at76_work_set_promisc);
+ 	INIT_WORK(&amp;priv-&gt;work_submit_rx, at76_work_submit_rx);
+ 	INIT_DELAYED_WORK(&amp;priv-&gt;dwork_restart, at76_work_restart);
++	INIT_DELAYED_WORK(&amp;priv-&gt;dwork_mgmt, at76_work_mgmt_timeout);
+ 
+ 	priv-&gt;open_count = 0;
+ 
+-	init_timer(&amp;priv-&gt;mgmt_timer);
+-	priv-&gt;mgmt_timer.data = (unsigned long)priv;
+-	priv-&gt;mgmt_timer.function = at76_mgmt_timeout;
+-
+ 	spin_lock_init(&amp;priv-&gt;mgmt_spinlock);
+ 	priv-&gt;next_mgmt_bulk = NULL;
+ 	priv-&gt;istate = INIT;
+diff --git a/at76_usb.h b/at76_usb.h
+index 691b837..111a5ee 100644
+--- a/at76_usb.h
++++ b/at76_usb.h
+@@ -468,12 +468,12 @@ struct at76_priv {
+ 	/* work queues */
+ 	struct work_struct work_assoc_done;
+ 	struct work_struct work_join;
+-	struct work_struct work_mgmt_timeout;
+ 	struct work_struct work_new_bss;
+ 	struct work_struct work_scan;
+ 	struct work_struct work_set_promisc;
+ 	struct work_struct work_submit_rx;
+ 	struct delayed_work dwork_restart;
++	struct delayed_work dwork_mgmt;
+ 
+ 	int nr_submit_rx_tries;	/* number of tries to submit an rx urb left */
+ 	struct tasklet_struct rx_tasklet;
+@@ -540,7 +540,6 @@ struct at76_priv {
+ 	} scan_state;
+ 	time_t last_scan;
+ 
+-	struct timer_list mgmt_timer;	/* the timer we use to repeat auth_req etc. */
+ 	int retries;		/* counts backwards while re-trying to send auth/assoc_req's */
+ 	u8 pm_mode;		/* power management mode: AT76_PM_{OFF, ON, SMART} */
+ 	u32 pm_period;		/* power manag. period in us */
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000144.html">[at76c503a-develop] [PATCH 11/12] Rename get_hw_cfg_intersil()	to	at76_get_hw_cfg_intersil()
+</A></li>
+	<LI>Next message: <A HREF="000146.html">[at76c503a-develop] [PATCH 01/12] Fix recent breakage in	at76_set_listen_interval()
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#145">[ date ]</a>
+              <a href="thread.html#145">[ thread ]</a>
+              <a href="subject.html#145">[ subject ]</a>
+              <a href="author.html#145">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">More information about the at76c503a-develop
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,114 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [at76c503a-develop] [PATCH 1/6] Remove priv-&gt;open_count,	it's write-only
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/at76c503a-develop/2007-July/index.html" >
+   <LINK REL="made" HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%201/6%5D%20Remove%20priv-%3Eopen_count%2C%0A%09it%27s%20write-only&In-Reply-To=%3C20070711075541.8445.63608.stgit%40dv.roinet.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000191.html">
+   <LINK REL="Next"  HREF="000170.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[at76c503a-develop] [PATCH 1/6] Remove priv-&gt;open_count,	it's write-only</H1>
+    <B>Pavel Roskin</B> 
+    <A HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%201/6%5D%20Remove%20priv-%3Eopen_count%2C%0A%09it%27s%20write-only&In-Reply-To=%3C20070711075541.8445.63608.stgit%40dv.roinet.com%3E"
+       TITLE="[at76c503a-develop] [PATCH 1/6] Remove priv-&gt;open_count,	it's write-only">proski at gnu.org
+       </A><BR>
+    <I>Wed Jul 11 09:55:41 CEST 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000191.html">[at76c503a-develop] Need release, kernel submission
+</A></li>
+        <LI>Next message: <A HREF="000170.html">[at76c503a-develop] [PATCH 2/6] Improve comments,	reorder some fields in at76_usb.h
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#169">[ date ]</a>
+              <a href="thread.html#169">[ thread ]</a>
+              <a href="subject.html#169">[ subject ]</a>
+              <a href="author.html#169">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Signed-off-by: Pavel Roskin &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">proski at gnu.org</A>&gt;
+---
+
+ at76_usb.c |    7 -------
+ at76_usb.h |    1 -
+ 2 files changed, 0 insertions(+), 8 deletions(-)
+
+diff --git a/at76_usb.c b/at76_usb.c
+index 7bf8304..c0307e6 100644
+--- a/at76_usb.c
++++ b/at76_usb.c
+@@ -3867,8 +3867,6 @@ static int at76_open(struct net_device *netdev)
+ 		goto err;
+ 	}
+ 
+-	priv-&gt;open_count++;
+-
+ 	schedule_delayed_work(&amp;priv-&gt;dwork_restart, 0);
+ 
+ 	at76_dbg(DBG_PROC_ENTRY, &quot;%s(): end&quot;, __func__);
+@@ -3915,9 +3913,6 @@ static int at76_stop(struct net_device *netdev)
+ 	/* free the bss_list */
+ 	at76_free_bss_list(priv);
+ 
+-	at76_assert(priv-&gt;open_count &gt; 0);
+-	priv-&gt;open_count--;
+-
+ 	mutex_unlock(&amp;priv-&gt;mtx);
+ 	at76_dbg(DBG_DEVSTART, &quot;%s: EXIT&quot;, __func__);
+ 
+@@ -5814,8 +5809,6 @@ static struct at76_priv *at76_alloc_new_device(struct usb_device *udev)
+ 	INIT_DELAYED_WORK(&amp;priv-&gt;dwork_restart, at76_work_restart);
+ 	INIT_DELAYED_WORK(&amp;priv-&gt;dwork_mgmt, at76_work_mgmt_timeout);
+ 
+-	priv-&gt;open_count = 0;
+-
+ 	spin_lock_init(&amp;priv-&gt;mgmt_spinlock);
+ 	priv-&gt;next_mgmt_bulk = NULL;
+ 	priv-&gt;istate = INIT;
+diff --git a/at76_usb.h b/at76_usb.h
+index ec022c6..f94f479 100644
+--- a/at76_usb.h
++++ b/at76_usb.h
+@@ -455,7 +455,6 @@ struct at76_priv {
+ 	struct urb *read_urb;
+ 	unsigned int tx_bulk_pipe;	/* bulk out endpoint */
+ 
+-	int open_count;		/* number of times this port has been opened */
+ 	struct mutex mtx;	/* locks this structure */
+ 
+ 	/* work queues */
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000191.html">[at76c503a-develop] Need release, kernel submission
+</A></li>
+	<LI>Next message: <A HREF="000170.html">[at76c503a-develop] [PATCH 2/6] Improve comments,	reorder some fields in at76_usb.h
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#169">[ date ]</a>
+              <a href="thread.html#169">[ thread ]</a>
+              <a href="subject.html#169">[ subject ]</a>
+              <a href="author.html#169">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">More information about the at76c503a-develop
+mailing list</a><br>
+</body></html>

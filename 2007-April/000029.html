@@ -1,0 +1,202 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [at76c503a-develop] [PATCH 2/6] Change buffer pointers to void* or	safer types to avoid	casts
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/at76c503a-develop/2007-April/index.html" >
+   <LINK REL="made" HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%202/6%5D%20Change%20buffer%20pointers%20to%20void%2A%20or%0A%09safer%20types%20to%20avoid%09casts&In-Reply-To=%3C20070413065732.1380.46484.stgit%40dv.roinet.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000028.html">
+   <LINK REL="Next"  HREF="000030.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[at76c503a-develop] [PATCH 2/6] Change buffer pointers to void* or	safer types to avoid	casts</H1>
+    <B>Pavel Roskin</B> 
+    <A HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%202/6%5D%20Change%20buffer%20pointers%20to%20void%2A%20or%0A%09safer%20types%20to%20avoid%09casts&In-Reply-To=%3C20070413065732.1380.46484.stgit%40dv.roinet.com%3E"
+       TITLE="[at76c503a-develop] [PATCH 2/6] Change buffer pointers to void* or	safer types to avoid	casts">proski at gnu.org
+       </A><BR>
+    <I>Fri Apr 13 08:57:32 CEST 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000028.html">[at76c503a-develop] [PATCH 1/6] Move union of struct hwcfg_* to	at76_usb.h, give it a name
+</A></li>
+        <LI>Next message: <A HREF="000030.html">[at76c503a-develop] [PATCH 3/6] Remove unused and write-only fields	from some structures
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#29">[ date ]</a>
+              <a href="thread.html#29">[ thread ]</a>
+              <a href="subject.html#29">[ subject ]</a>
+              <a href="author.html#29">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Signed-off-by: Pavel Roskin &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">proski at gnu.org</A>&gt;
+---
+
+ at76_usb.c |   29 +++++++++++++----------------
+ at76_usb.h |    4 ++--
+ 2 files changed, 15 insertions(+), 18 deletions(-)
+
+diff --git a/at76_usb.c b/at76_usb.c
+index a60cf25..4f495eb 100644
+--- a/at76_usb.c
++++ b/at76_usb.c
+@@ -620,7 +620,7 @@ static int at76_get_op_mode(struct usb_device *udev)
+ 
+ /* this loads a block of the second part of the firmware */
+ static inline int at76_load_ext_fw_block(struct usb_device *udev,
+-				         int i, unsigned char *buf, int bsize)
++				         int i, void *buf, int bsize)
+ {
+ 	return usb_control_msg(udev, usb_sndctrlpipe(udev, 0),
+ 			       0x0e, DEVICE_VENDOR_REQUEST_OUT,
+@@ -628,7 +628,7 @@ static inline int at76_load_ext_fw_block(struct usb_device *udev,
+ }
+ 
+ static inline int at76_get_hw_cfg_rfmd(struct usb_device *udev,
+-				  unsigned char *buf, int buf_size)
++				       union at76_hwcfg *buf, int buf_size)
+ {
+ 	return usb_control_msg(udev, usb_rcvctrlpipe(udev, 0),
+ 			       0x33, INTERFACE_VENDOR_REQUEST_IN,
+@@ -637,9 +637,8 @@ static inline int at76_get_hw_cfg_rfmd(struct usb_device *udev,
+ }
+ 
+ /* Intersil boards use a different &quot;value&quot; for GetHWConfig requests */
+-static inline
+-int get_hw_cfg_intersil(struct usb_device *udev,
+-	       unsigned char *buf, int buf_size)
++static inline int get_hw_cfg_intersil(struct usb_device *udev,
++				      union at76_hwcfg *buf, int buf_size)
+ {
+ 	return usb_control_msg(udev, usb_rcvctrlpipe(udev,0),
+ 			       0x33, INTERFACE_VENDOR_REQUEST_IN,
+@@ -663,7 +662,7 @@ static int at76_get_hw_config(struct at76_priv *dev)
+ 
+ 	case BOARDTYPE_503_INTERSIL_3861:
+ 	case BOARDTYPE_503_INTERSIL_3863:
+-		ret = get_hw_cfg_intersil(dev-&gt;udev, (unsigned char *)&amp;hwcfg-&gt;i, sizeof(hwcfg-&gt;i));
++		ret = get_hw_cfg_intersil(dev-&gt;udev, hwcfg, sizeof(hwcfg-&gt;i));
+ 		if (ret &lt; 0)
+ 			break;
+ 		memcpy(dev-&gt;mac_addr, hwcfg-&gt;i.mac_addr, ETH_ALEN);
+@@ -675,7 +674,7 @@ static int at76_get_hw_config(struct at76_priv *dev)
+ 
+ 	case BOARDTYPE_503_RFMD:
+ 	case BOARDTYPE_503_RFMD_ACC:
+-		ret = at76_get_hw_cfg_rfmd(dev-&gt;udev, (unsigned char *)&amp;hwcfg-&gt;r3, sizeof(hwcfg-&gt;r3));
++		ret = at76_get_hw_cfg_rfmd(dev-&gt;udev, hwcfg, sizeof(hwcfg-&gt;r3));
+ 		if (ret &lt; 0)
+ 			break;
+ 		memcpy(dev-&gt;cr20_values, hwcfg-&gt;r3.cr20_values, 14);
+@@ -691,7 +690,7 @@ static int at76_get_hw_config(struct at76_priv *dev)
+ 	case BOARDTYPE_505_RFMD:
+ 	case BOARDTYPE_505_RFMD_2958:
+ 	case BOARDTYPE_505A_RFMD_2958:
+-		ret = at76_get_hw_cfg_rfmd(dev-&gt;udev, (unsigned char *)&amp;hwcfg-&gt;r5, sizeof(hwcfg-&gt;r5));
++		ret = at76_get_hw_cfg_rfmd(dev-&gt;udev, hwcfg, sizeof(hwcfg-&gt;r5));
+ 		if (ret &lt; 0)
+ 			break;
+ 		memcpy(dev-&gt;cr39_values, hwcfg-&gt;r5.cr39_values, 14);
+@@ -812,7 +811,7 @@ static int at76_download_external_fw(struct usb_device *udev, u8 *buf, int size)
+ }
+ 
+ static int at76_set_card_command(struct usb_device *udev, int cmd,
+-			         unsigned char *buf, int buf_size)
++			         void *buf, int buf_size)
+ {
+ 	int ret;
+ 	struct at76_command *cmd_buf =
+@@ -1536,8 +1535,7 @@ static int at76_start_scan(struct at76_priv *dev, int use_essid, int ir_step)
+ 	         le16_to_cpu(scan.min_channel_time),
+ 	         le16_to_cpu(scan.max_channel_time));
+ 
+-	return at76_set_card_command(dev-&gt;udev, CMD_SCAN,
+-				     (unsigned char *)&amp;scan, sizeof(scan));
++	return at76_set_card_command(dev-&gt;udev, CMD_SCAN, &amp;scan, sizeof(scan));
+ }
+ 
+ static int at76_start_ibss(struct at76_priv *dev)
+@@ -1551,8 +1549,8 @@ static int at76_start_ibss(struct at76_priv *dev)
+ 	bss.bss_type = ADHOC_MODE;
+ 	bss.channel = dev-&gt;channel;
+ 
+-	return at76_set_card_command(dev-&gt;udev, CMD_START_IBSS,
+-				     (unsigned char*)&amp;bss, sizeof(struct at76_start_bss));
++	return at76_set_card_command(dev-&gt;udev, CMD_START_IBSS, &amp;bss,
++				     sizeof(struct at76_start_bss));
+ }
+ 
+ /* idx points into dev-&gt;bss */
+@@ -1573,8 +1571,7 @@ static int at76_join_bss(struct at76_priv *dev, struct bss_info *ptr)
+ 	at76_dbg(DBG_PROGRESS, &quot;%s join addr %s ssid %s type %d ch %d timeout %d&quot;,
+ 	         dev-&gt;netdev-&gt;name, mac2str(join.bssid),
+ 	         join.essid, join.bss_type, join.channel, le16_to_cpu(join.timeout));
+-	return at76_set_card_command(dev-&gt;udev, CMD_JOIN,
+-				     (unsigned char*)&amp;join,
++	return at76_set_card_command(dev-&gt;udev, CMD_JOIN, &amp;join,
+ 				     sizeof(struct at76_join));
+ }
+ 
+@@ -4306,7 +4303,7 @@ static int at76_startup_device(struct at76_priv *dev)
+ 	ccfg-&gt;short_preamble = dev-&gt;preamble_type;
+ 	ccfg-&gt;beacon_period = cpu_to_le16(dev-&gt;beacon_period);
+ 
+-	ret = at76_set_card_command(dev-&gt;udev, CMD_STARTUP, (unsigned char *)&amp;dev-&gt;card_config,
++	ret = at76_set_card_command(dev-&gt;udev, CMD_STARTUP, &amp;dev-&gt;card_config,
+ 			            sizeof(struct at76_card_config));
+ 	if (ret &lt; 0) {
+ 		err(&quot;%s: at76_set_card_command failed: %d&quot;, dev-&gt;netdev-&gt;name, ret);
+diff --git a/at76_usb.h b/at76_usb.h
+index a9bae2e..944e41f 100644
+--- a/at76_usb.h
++++ b/at76_usb.h
+@@ -475,7 +475,7 @@ struct at76_priv {
+ 	struct sk_buff *rx_skb;	/* skbuff for receiving packets */
+ 	__u8 bulk_in_endpointAddr;	/* the address of the bulk in endpoint */
+ 
+-	unsigned char *bulk_out_buffer;	/* the buffer to send data */
++	void *bulk_out_buffer;	/* the buffer to send data */
+ 	int bulk_out_size;	/* the size of the send buffer */
+ 	struct urb *write_urb;	/* the urb used to send data */
+ 	struct urb *read_urb;
+@@ -492,7 +492,7 @@ struct at76_priv {
+ 	struct tasklet_struct tasklet;
+ 	struct urb *rx_urb;	/* tmp urb pointer for rx_tasklet */
+ 
+-	unsigned char *ctrl_buffer;
++	void *ctrl_buffer;
+ 	struct urb *ctrl_urb;
+ 
+ 	u8 op_mode;
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000028.html">[at76c503a-develop] [PATCH 1/6] Move union of struct hwcfg_* to	at76_usb.h, give it a name
+</A></li>
+	<LI>Next message: <A HREF="000030.html">[at76c503a-develop] [PATCH 3/6] Remove unused and write-only fields	from some structures
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#29">[ date ]</a>
+              <a href="thread.html#29">[ thread ]</a>
+              <a href="subject.html#29">[ subject ]</a>
+              <a href="author.html#29">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">More information about the at76c503a-develop
+mailing list</a><br>
+</body></html>

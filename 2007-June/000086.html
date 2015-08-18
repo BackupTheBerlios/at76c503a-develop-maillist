@@ -1,0 +1,83 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [at76c503a-develop] [PATCH 11/11] Failure in init shouldn't call	at76_delete_device(), it's done later
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/at76c503a-develop/2007-June/index.html" >
+   <LINK REL="made" HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%2011/11%5D%20Failure%20in%20init%20shouldn%27t%20call%0A%09at76_delete_device%28%29%2C%20it%27s%20done%20later&In-Reply-To=%3C20070602180054.28397.74547.stgit%40dv.roinet.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000085.html">
+   <LINK REL="Next"  HREF="000087.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[at76c503a-develop] [PATCH 11/11] Failure in init shouldn't call	at76_delete_device(), it's done later</H1>
+    <B>Pavel Roskin</B> 
+    <A HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%2011/11%5D%20Failure%20in%20init%20shouldn%27t%20call%0A%09at76_delete_device%28%29%2C%20it%27s%20done%20later&In-Reply-To=%3C20070602180054.28397.74547.stgit%40dv.roinet.com%3E"
+       TITLE="[at76c503a-develop] [PATCH 11/11] Failure in init shouldn't call	at76_delete_device(), it's done later">proski at gnu.org
+       </A><BR>
+    <I>Sat Jun  2 20:00:54 CEST 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000085.html">[at76c503a-develop] [PATCH 10/11] at76_delete_device() already	calls usb_put_dev(), don't do it again
+</A></li>
+        <LI>Next message: <A HREF="000087.html">[at76c503a-develop] [PATCH 01/11] Rename tasklet to rx_tasklet,	the former is too generic
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#86">[ date ]</a>
+              <a href="thread.html#86">[ thread ]</a>
+              <a href="subject.html#86">[ subject ]</a>
+              <a href="author.html#86">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Signed-off-by: Pavel Roskin &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">proski at gnu.org</A>&gt;
+---
+
+ at76_usb.c |    2 --
+ 1 files changed, 0 insertions(+), 2 deletions(-)
+
+diff --git a/at76_usb.c b/at76_usb.c
+index d1050e0..607c947 100644
+--- a/at76_usb.c
++++ b/at76_usb.c
+@@ -4247,9 +4247,7 @@ static int at76_init_new_device(struct at76_priv *priv)
+ 	/* we let this timer run the whole time this driver instance lives */
+ 	mod_timer(&amp;priv-&gt;bss_list_timer, jiffies + BSS_LIST_TIMEOUT);
+ 
+-	return 0;
+  error:
+-	at76_delete_device(priv);
+ 	return ret;
+ }
+ 
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000085.html">[at76c503a-develop] [PATCH 10/11] at76_delete_device() already	calls usb_put_dev(), don't do it again
+</A></li>
+	<LI>Next message: <A HREF="000087.html">[at76c503a-develop] [PATCH 01/11] Rename tasklet to rx_tasklet,	the former is too generic
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#86">[ date ]</a>
+              <a href="thread.html#86">[ thread ]</a>
+              <a href="subject.html#86">[ subject ]</a>
+              <a href="author.html#86">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">More information about the at76c503a-develop
+mailing list</a><br>
+</body></html>

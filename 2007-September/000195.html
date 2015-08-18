@@ -1,0 +1,112 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [at76c503a-develop] mac80211 conversion of at76_usb
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/at76c503a-develop/2007-September/index.html" >
+   <LINK REL="made" HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20mac80211%20conversion%20of%20at76_usb&In-Reply-To=%3C1188617553.9555.29.camel%40dv%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   
+   <LINK REL="Next"  HREF="000196.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[at76c503a-develop] mac80211 conversion of at76_usb</H1>
+    <B>Pavel Roskin</B> 
+    <A HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20mac80211%20conversion%20of%20at76_usb&In-Reply-To=%3C1188617553.9555.29.camel%40dv%3E"
+       TITLE="[at76c503a-develop] mac80211 conversion of at76_usb">proski at gnu.org
+       </A><BR>
+    <I>Sat Sep  1 05:32:33 CEST 2007</I>
+    <P><UL>
+        
+        <LI>Next message: <A HREF="000196.html">[at76c503a-develop] mac80211 conversion of at76_usb
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#195">[ date ]</a>
+              <a href="thread.html#195">[ thread ]</a>
+              <a href="subject.html#195">[ subject ]</a>
+              <a href="author.html#195">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hello!
+
+We need some coordinated plan for further development of at76_usb.
+
+My git repository is located at <A HREF="http://git.80211libre.org/at76_usb.git">http://git.80211libre.org/at76_usb.git</A>
+It cannot be cloned by cg-clone, but it can be cloned by git-clone and
+used with Cogito (although I would recommend StGIT or plain git
+instead).
+
+I intend to get rid of any private repositories and to move the
+development to the kernel git repository.  But it needs to be done in
+such way that the current mac80211 conversion efforts are not lost.
+
+The files in the wireless-dev/at76 branch are not current.  I don't know
+how they got into the kernel, but it's revision called &quot;Fixes suggested
+by checkpatch.pl&quot; from June 24.  I have tagged it as
+&quot;initial_kernel_git_appearance&quot; in my repository.
+
+It's 57 revisions away from the tip, which is version 0.16.  There are
+no major changes, but some patches are quite intrusive, such as the one
+that eliminates all uses of err().
+
+Kalle started his work on a commit somewhere between
+&quot;initial_kernel_git_appearance&quot; and the tip.  I have tagged that point
+as &quot;kalle_start&quot;.  Then Kalle rebased his changes to the revision in the
+kernel, which is older.
+
+It's very unfortunate, and I'm sorry that I could not prevent that
+useless effort.  I hope no significant changes have been done after the
+rebase.
+
+I suggest following plan:
+
+1) I prepare and submit patches that bring the kernel version to
+&quot;kalle_start&quot;.
+
+2) Kalle reverts the rebase and re-applies the changes made after the
+rebase.
+
+3) Kalle's changes go to a separate branch in my repository.
+
+4) I rebase Kalle's changes on top of the HEAD.
+
+5) Patches leading to 0.16 are submitted to the kernel.
+
+5) The remaining issues with mac80211 are fixed.
+
+6) The mac80211 patches are submitted to the kernel.
+
+-- 
+Regards,
+Pavel Roskin
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	
+	<LI>Next message: <A HREF="000196.html">[at76c503a-develop] mac80211 conversion of at76_usb
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#195">[ date ]</a>
+              <a href="thread.html#195">[ thread ]</a>
+              <a href="subject.html#195">[ subject ]</a>
+              <a href="author.html#195">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">More information about the at76c503a-develop
+mailing list</a><br>
+</body></html>

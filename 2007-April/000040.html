@@ -1,0 +1,87 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [at76c503a-develop] [PATCH 3/4] Fix access beyond end of	channel_frequency for unknown	regdomains
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/at76c503a-develop/2007-April/index.html" >
+   <LINK REL="made" HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%203/4%5D%20Fix%20access%20beyond%20end%20of%0A%09channel_frequency%20for%20unknown%09regdomains&In-Reply-To=%3C20070427071059.11648.64842.stgit%40dv.roinet.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000039.html">
+   <LINK REL="Next"  HREF="000041.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[at76c503a-develop] [PATCH 3/4] Fix access beyond end of	channel_frequency for unknown	regdomains</H1>
+    <B>Pavel Roskin</B> 
+    <A HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%203/4%5D%20Fix%20access%20beyond%20end%20of%0A%09channel_frequency%20for%20unknown%09regdomains&In-Reply-To=%3C20070427071059.11648.64842.stgit%40dv.roinet.com%3E"
+       TITLE="[at76c503a-develop] [PATCH 3/4] Fix access beyond end of	channel_frequency for unknown	regdomains">proski at gnu.org
+       </A><BR>
+    <I>Fri Apr 27 09:10:59 CEST 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000039.html">[at76c503a-develop] [PATCH 2/4] Assorted minor comment changes
+</A></li>
+        <LI>Next message: <A HREF="000041.html">[at76c503a-develop] [PATCH 4/4] Rename &quot;site survey&quot; to &quot;scan&quot;,	because it's a scan and nothing else
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#40">[ date ]</a>
+              <a href="thread.html#40">[ thread ]</a>
+              <a href="subject.html#40">[ subject ]</a>
+              <a href="author.html#40">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>The driver should never access channel_frequency beyond its end, no
+matter what channel_map it gets.  It looks like the overflow is actually
+possible if the returned regdomain is not in fd_tab.
+
+Signed-off-by: Pavel Roskin &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">proski at gnu.org</A>&gt;
+---
+
+ at76_usb.c |    3 +--
+ 1 files changed, 1 insertions(+), 2 deletions(-)
+
+diff --git a/at76_usb.c b/at76_usb.c
+index d0e748d..8364830 100644
+--- a/at76_usb.c
++++ b/at76_usb.c
+@@ -4692,8 +4692,7 @@ static int at76_iw_handler_get_range(struct net_device *netdev,
+ 	range-&gt;num_channels = NUM_CHANNELS;
+ 	range-&gt;num_frequency = 0;
+ 
+-	for (i = 0; i &lt; 32;	/* number of bits in reg_domain.channel_map */
+-	     i++) {
++	for (i = 0; i &lt; NUM_CHANNELS; i++) {
+ 		/* test if channel map bit is raised */
+ 		if (dev-&gt;domain-&gt;channel_map &amp; (0x1 &lt;&lt; i)) {
+ 			range-&gt;num_frequency += 1;
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000039.html">[at76c503a-develop] [PATCH 2/4] Assorted minor comment changes
+</A></li>
+	<LI>Next message: <A HREF="000041.html">[at76c503a-develop] [PATCH 4/4] Rename &quot;site survey&quot; to &quot;scan&quot;,	because it's a scan and nothing else
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#40">[ date ]</a>
+              <a href="thread.html#40">[ thread ]</a>
+              <a href="subject.html#40">[ subject ]</a>
+              <a href="author.html#40">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">More information about the at76c503a-develop
+mailing list</a><br>
+</body></html>

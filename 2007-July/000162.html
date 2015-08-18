@@ -1,0 +1,84 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [at76c503a-develop] [PATCH 14/19] Eliminate unneeded comma operator
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/at76c503a-develop/2007-July/index.html" >
+   <LINK REL="made" HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%2014/19%5D%20Eliminate%20unneeded%20comma%20operator&In-Reply-To=%3C20070710062135.29117.93248.stgit%40dv.roinet.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000155.html">
+   <LINK REL="Next"  HREF="000160.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[at76c503a-develop] [PATCH 14/19] Eliminate unneeded comma operator</H1>
+    <B>Pavel Roskin</B> 
+    <A HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%2014/19%5D%20Eliminate%20unneeded%20comma%20operator&In-Reply-To=%3C20070710062135.29117.93248.stgit%40dv.roinet.com%3E"
+       TITLE="[at76c503a-develop] [PATCH 14/19] Eliminate unneeded comma operator">proski at gnu.org
+       </A><BR>
+    <I>Tue Jul 10 08:21:35 CEST 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000155.html">[at76c503a-develop] [PATCH 13/19] Remove unused priv-&gt;ctrl_urb and	priv-&gt;ctrl_buffer
+</A></li>
+        <LI>Next message: <A HREF="000160.html">[at76c503a-develop] [PATCH 15/19] Make at76_match_mode() more	readable
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#162">[ date ]</a>
+              <a href="thread.html#162">[ thread ]</a>
+              <a href="subject.html#162">[ subject ]</a>
+              <a href="author.html#162">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Signed-off-by: Pavel Roskin &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">proski at gnu.org</A>&gt;
+---
+
+ at76_usb.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/at76_usb.c b/at76_usb.c
+index c3b76a8..ffabc67 100644
+--- a/at76_usb.c
++++ b/at76_usb.c
+@@ -2234,8 +2234,8 @@ static int at76_alloc_urbs(struct at76_priv *priv,
+ 			buffer_size = sizeof(struct at76_tx_buffer) +
+ 			    MAX_PADDING_SIZE;
+ 			priv-&gt;tx_bulk_pipe =
+-			    usb_sndbulkpipe(udev, endpoint-&gt;bEndpointAddress),
+-			    priv-&gt;bulk_out_buffer =
++			    usb_sndbulkpipe(udev, endpoint-&gt;bEndpointAddress);
++			priv-&gt;bulk_out_buffer =
+ 			    kmalloc(buffer_size, GFP_KERNEL);
+ 			if (!priv-&gt;bulk_out_buffer) {
+ 				err(&quot;couldn't allocate bulk_out_buffer&quot;);
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000155.html">[at76c503a-develop] [PATCH 13/19] Remove unused priv-&gt;ctrl_urb and	priv-&gt;ctrl_buffer
+</A></li>
+	<LI>Next message: <A HREF="000160.html">[at76c503a-develop] [PATCH 15/19] Make at76_match_mode() more	readable
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#162">[ date ]</a>
+              <a href="thread.html#162">[ thread ]</a>
+              <a href="subject.html#162">[ subject ]</a>
+              <a href="author.html#162">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">More information about the at76c503a-develop
+mailing list</a><br>
+</body></html>

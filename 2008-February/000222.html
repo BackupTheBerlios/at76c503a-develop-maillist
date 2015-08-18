@@ -1,0 +1,89 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [at76c503a-develop] mac80211-enabled at76_usb is in	wireless-testing
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/at76c503a-develop/2008-February/index.html" >
+   <LINK REL="made" HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20mac80211-enabled%20at76_usb%20is%20in%0A%09wireless-testing&In-Reply-To=%3C20080224235536.yeb82wf1wc84wsg8%40webmail.spamcop.net%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000221.html">
+   <LINK REL="Next"  HREF="000216.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[at76c503a-develop] mac80211-enabled at76_usb is in	wireless-testing</H1>
+    <B>Pavel Roskin</B> 
+    <A HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20mac80211-enabled%20at76_usb%20is%20in%0A%09wireless-testing&In-Reply-To=%3C20080224235536.yeb82wf1wc84wsg8%40webmail.spamcop.net%3E"
+       TITLE="[at76c503a-develop] mac80211-enabled at76_usb is in	wireless-testing">proski at gnu.org
+       </A><BR>
+    <I>Mon Feb 25 05:55:36 CET 2008</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000221.html">[at76c503a-develop] mac80211-enabled at76_usb is	in	wireless-testing
+</A></li>
+        <LI>Next message: <A HREF="000216.html">[at76c503a-develop] [PATCH 1/5] at76_usb: fix missing newlines in	printk, improve some messages
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#222">[ date ]</a>
+              <a href="thread.html#222">[ thread ]</a>
+              <a href="subject.html#222">[ subject ]</a>
+              <a href="author.html#222">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Quoting Milan Plzik &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">milan.plzik at gmail.com</A>&gt;:
+
+&gt;<i>   Uhh, isn't there any possibility to create snapshot of only portion of
+</I>&gt;<i> the repository -- not only for developers, but also if any user would
+</I>&gt;<i> like to test GIT snapshot, it would be quite convenient to download just
+</I>&gt;<i> required files.
+</I>
+That's precisely the purpose of compat-wireless.
+
+But the current driver is just not ready for prime time.  I tried it  
+with WEP, and it was slow to associate, and the ping turnaround was  
+2-4 seconds.  It's like there is a sleep somewhere, of the device is  
+reset for every packet.  Also, the ad-hoc mode is missing.
+
+Once we address those problems, I'll ask the compat-wireless  
+maintainer to include at76_usb.
+
+&gt;<i>   I wanted to do that, and it fits perfectly to my schedule, as I'm
+</I>&gt;<i> finishing some time-consuming jobs and can start to work on this. Thank
+</I>&gt;<i> you for announcement.
+</I>
+I've sent some patches, including one that reformats a lot of code, so  
+you may have some conflicts when merging your changes.  I think it  
+should be trivial, I just want to keep you informed.
+
+-- 
+Regards,
+Pavel Roskin
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000221.html">[at76c503a-develop] mac80211-enabled at76_usb is	in	wireless-testing
+</A></li>
+	<LI>Next message: <A HREF="000216.html">[at76c503a-develop] [PATCH 1/5] at76_usb: fix missing newlines in	printk, improve some messages
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#222">[ date ]</a>
+              <a href="thread.html#222">[ thread ]</a>
+              <a href="subject.html#222">[ subject ]</a>
+              <a href="author.html#222">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">More information about the at76c503a-develop
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,511 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [at76c503a-develop] [PATCH 1/6] Remove unnecessary casts
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/at76c503a-develop/2007-April/index.html" >
+   <LINK REL="made" HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%201/6%5D%20Remove%20unnecessary%20casts&In-Reply-To=%3C20070428060307.22208.20486.stgit%40dv.roinet.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000044.html">
+   <LINK REL="Next"  HREF="000046.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[at76c503a-develop] [PATCH 1/6] Remove unnecessary casts</H1>
+    <B>Pavel Roskin</B> 
+    <A HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%201/6%5D%20Remove%20unnecessary%20casts&In-Reply-To=%3C20070428060307.22208.20486.stgit%40dv.roinet.com%3E"
+       TITLE="[at76c503a-develop] [PATCH 1/6] Remove unnecessary casts">proski at gnu.org
+       </A><BR>
+    <I>Sat Apr 28 08:03:07 CEST 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000044.html">[at76c503a-develop] [PATCH] Ensure that all functions have at76	prefix
+</A></li>
+        <LI>Next message: <A HREF="000046.html">[at76c503a-develop] [PATCH 2/6] Remove last remains of LED support,	it shouldn't be here
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#45">[ date ]</a>
+              <a href="thread.html#45">[ thread ]</a>
+              <a href="subject.html#45">[ subject ]</a>
+              <a href="author.html#45">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Change hex2str() and at76_get_mib() arguments to accept any pointer as
+a buffer.
+
+Signed-off-by: Pavel Roskin &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">proski at gnu.org</A>&gt;
+---
+
+ at76_usb.c |  133 +++++++++++++++++++++++++++++-------------------------------
+ 1 files changed, 64 insertions(+), 69 deletions(-)
+
+diff --git a/at76_usb.c b/at76_usb.c
+index 5b3b235..9750e2f 100644
+--- a/at76_usb.c
++++ b/at76_usb.c
+@@ -243,7 +243,7 @@ struct dfu_ctx {
+ 	struct usb_device *udev;
+ 	u8 dfu_state;
+ 	struct dfu_status dfu_status;
+-	u8 *buf;
++	void *buf;
+ };
+ 
+ static
+@@ -306,11 +306,11 @@ u8 dfu_get_state(struct usb_device *udev, u8 * state)
+ 
+ static inline u32 __at76_get_timeout(struct dfu_status *s)
+ {
+-	unsigned long ret;
++	u32 ret;
+ 
+-	ret = (unsigned long)(s-&gt;bwPollTimeout[2] &lt;&lt; 16);
+-	ret |= (unsigned long)(s-&gt;bwPollTimeout[1] &lt;&lt; 8);
+-	ret |= (unsigned long)(s-&gt;bwPollTimeout[0]);
++	ret = (s-&gt;bwPollTimeout[2] &lt;&lt; 16);
++	ret |= (s-&gt;bwPollTimeout[1] &lt;&lt; 8);
++	ret |= (s-&gt;bwPollTimeout[0]);
+ 	return ret;
+ }
+ 
+@@ -322,7 +322,7 @@ struct dfu_ctx *dfu_alloc_ctx(struct usb_device *udev)
+ 	ctx = kmalloc(sizeof(struct dfu_ctx) + DFU_PACKETSIZE, GFP_KERNEL|GFP_DMA);
+ 	if (ctx) {
+ 		ctx-&gt;udev = udev;
+-		ctx-&gt;buf = (u8 *)&amp;(ctx[1]);
++		ctx-&gt;buf = &amp;(ctx[1]);
+ 	}
+ 	return ctx;
+ }
+@@ -509,19 +509,21 @@ static inline void at76_iwevent_bss_disconnect(struct net_device *dev)
+ }
+ 
+ 
++#define BIN2HEX(x) ((x) &lt; 10 ? '0'+(x) : (x)+'A'-10)
++
+ /* hexdump len many bytes from buf into obuf, separated by delim,
+    add a trailing \0 into obuf */
+-static char *hex2str(char *obuf, u8 *buf, int len, char delim)
++static char *hex2str(char *obuf, void *buf, int len, char delim)
+ {
+-#define BIN2HEX(x) ((x) &lt; 10 ? '0'+(x) : (x)+'A'-10)
+-
++	u8 *ibuf = buf;
+ 	char *ret = obuf;
++
+ 	while (len--) {
+-		*obuf++ = BIN2HEX(*buf &gt;&gt; 4);
+-		*obuf++ = BIN2HEX(*buf &amp; 0xf);
++		*obuf++ = BIN2HEX(*ibuf &gt;&gt; 4);
++		*obuf++ = BIN2HEX(*ibuf &amp; 0xf);
+ 		if (delim != '\0')
+ 			*obuf++ = delim;
+-		buf++;
++		ibuf++;
+ 	}
+ 	if (delim != '\0' &amp;&amp; obuf &gt; ret)
+ 		obuf--;		/* remove last inserted delimiter */
+@@ -727,8 +729,8 @@ static struct reg_domain const *at76_get_reg_domain(u16 code)
+ 	return (i &gt;= tab_len) ? &amp;unknown : &amp;fd_tab[i];
+ }
+ 
+-static inline int at76_get_mib(struct usb_device *udev,
+-			  u16 mib, u8 *buf, int buf_size)
++static inline int at76_get_mib(struct usb_device *udev, u16 mib, void *buf,
++			       int buf_size)
+ {
+ 	return usb_control_msg(udev, usb_rcvctrlpipe(udev, 0),
+ 			       0x33, INTERFACE_VENDOR_REQUEST_IN,
+@@ -800,10 +802,8 @@ static int at76_set_card_command(struct usb_device *udev, int cmd,
+ 			         void *buf, int buf_size)
+ {
+ 	int ret;
+-	struct at76_command *cmd_buf =
+-	    (struct at76_command *)kmalloc(sizeof(struct at76_command) +
+-					       buf_size,
+-					       GFP_KERNEL);
++	struct at76_command *cmd_buf = kmalloc(sizeof(struct at76_command) +
++					       buf_size, GFP_KERNEL);
+ 
+ 	if (cmd_buf) {
+ 		cmd_buf-&gt;cmd = cmd;
+@@ -876,10 +876,8 @@ static int at76_set_mib(struct at76_priv *dev, struct set_mib_buffer *buf)
+ {
+ 	struct usb_device *udev = dev-&gt;udev;
+ 	int ret;
+-	struct at76_command *cmd_buf =
+-	    (struct at76_command *)kmalloc(sizeof(struct at76_command) +
+-					       buf-&gt;size + 4,
+-					       GFP_KERNEL);
++	struct at76_command *cmd_buf = kmalloc(sizeof(struct at76_command) +
++					       buf-&gt;size + 4, GFP_KERNEL);
+ 
+ 	if (cmd_buf) {
+ 		cmd_buf-&gt;cmd = CMD_SET_MIB;
+@@ -1132,7 +1130,7 @@ static int at76_dump_mib_mac_addr(struct at76_priv *dev)
+ 	}
+ 
+ 	ret = at76_get_mib(dev-&gt;udev, MIB_MAC_ADD,
+-		      (u8 *) mac_addr, sizeof(struct mib_mac_addr));
++			   mac_addr, sizeof(struct mib_mac_addr));
+ 	if (ret &lt; 0) {
+ 		err(&quot;%s: at76_get_mib (MAC_ADDR) failed: %d&quot;, dev-&gt;netdev-&gt;name,
+ 		    ret);
+@@ -1142,7 +1140,7 @@ static int at76_dump_mib_mac_addr(struct at76_priv *dev)
+ 	dbg(&quot;%s: MIB MAC_ADDR: mac_addr %s res 0x%x 0x%x group_addr %s status %d %d %d %d&quot;, 
+ 	       dev-&gt;netdev-&gt;name, mac2str(mac_addr-&gt;mac_addr),
+ 		   mac_addr-&gt;res[0], mac_addr-&gt;res[1],
+-	       hex2str(dev-&gt;obuf, (u8 *)mac_addr-&gt;group_addr,
++	       hex2str(dev-&gt;obuf, mac_addr-&gt;group_addr,
+ 		       min((int)(sizeof(dev-&gt;obuf)-1)/2, 4*ETH_ALEN), '\0'),
+ 	       mac_addr-&gt;group_addr_status[0], mac_addr-&gt;group_addr_status[1],
+ 	       mac_addr-&gt;group_addr_status[2], mac_addr-&gt;group_addr_status[3]);
+@@ -1163,8 +1161,8 @@ static int at76_dump_mib_mac_wep(struct at76_priv *dev)
+ 		ret = -ENOMEM;
+ 		goto exit;
+ 	}
+-	ret = at76_get_mib(dev-&gt;udev, MIB_MAC_WEP,
+-		      (u8*)mac_wep, sizeof(struct mib_mac_wep));
++	ret = at76_get_mib(dev-&gt;udev, MIB_MAC_WEP, mac_wep,
++			   sizeof(struct mib_mac_wep));
+ 	if (ret &lt; 0) {
+ 		err(&quot;%s: at76_get_mib (MAC_WEP) failed: %d&quot;, dev-&gt;netdev-&gt;name, ret);
+ 		goto err;
+@@ -1209,8 +1207,8 @@ static int at76_dump_mib_mac_mgmt(struct at76_priv *dev)
+ 		ret = -ENOMEM;
+ 		goto exit;
+ 	}
+-	ret = at76_get_mib(dev-&gt;udev, MIB_MAC_MGMT,
+-		      (u8*)mac_mgmt, sizeof(struct mib_mac_mgmt));
++	ret = at76_get_mib(dev-&gt;udev, MIB_MAC_MGMT, mac_mgmt,
++			   sizeof(struct mib_mac_mgmt));
+ 	if (ret &lt; 0) {
+ 		err(&quot;%s: at76_get_mib failed: %d&quot;, dev-&gt;netdev-&gt;name, ret);
+ 		goto err;
+@@ -1237,7 +1235,7 @@ static int at76_dump_mib_mac_mgmt(struct at76_priv *dev)
+ 	       mac_mgmt-&gt;DTIM_period,
+ 	       mac_mgmt-&gt;CFP_period,
+ 	       mac2str(mac_mgmt-&gt;current_bssid),
+-	       hex2str(dev-&gt;obuf, (u8 *) mac_mgmt-&gt;current_essid,
++	       hex2str(dev-&gt;obuf, mac_mgmt-&gt;current_essid,
+ 		       min((int)(sizeof(dev-&gt;obuf) - 1) / 2,
+ 			   IW_ESSID_MAX_SIZE), '\0'),
+ 	       mac_mgmt-&gt;current_bss_type,
+@@ -1263,8 +1261,7 @@ static int at76_dump_mib_mac(struct at76_priv *dev)
+ 		goto exit;
+ 	}
+ 	
+-	ret = at76_get_mib(dev-&gt;udev, MIB_MAC,
+-		      (u8*)mac, sizeof(struct mib_mac));
++	ret = at76_get_mib(dev-&gt;udev, MIB_MAC, mac, sizeof(struct mib_mac));
+ 	if (ret &lt; 0) {
+ 		err(&quot;%s: at76_get_mib failed: %d&quot;, dev-&gt;netdev-&gt;name, ret);
+ 		goto err;
+@@ -1311,7 +1308,7 @@ static int at76_dump_mib_phy(struct at76_priv *dev)
+ 		goto exit;
+ 	}
+ 
+-	ret = at76_get_mib(dev-&gt;udev, MIB_PHY, (u8*) phy, sizeof(struct mib_phy));
++	ret = at76_get_mib(dev-&gt;udev, MIB_PHY, phy, sizeof(struct mib_phy));
+ 	if (ret &lt; 0) {
+ 		err(&quot;%s: at76_get_mib failed: %d&quot;, dev-&gt;netdev-&gt;name, ret);
+ 		goto err;
+@@ -1350,8 +1347,8 @@ static int at76_dump_mib_local(struct at76_priv *dev)
+ 		goto exit;
+ 	}
+ 
+-	ret = at76_get_mib(dev-&gt;udev, MIB_LOCAL,
+-		      (u8*)local, sizeof(struct mib_local));
++	ret = at76_get_mib(dev-&gt;udev, MIB_LOCAL, local,
++			   sizeof(struct mib_local));
+ 	if (ret &lt; 0) {
+ 		err(&quot;%s: at76_get_mib failed: %d&quot;, dev-&gt;netdev-&gt;name, ret);
+ 		goto err;
+@@ -1380,8 +1377,8 @@ static int at76_get_mib_mdomain(struct at76_priv *dev, struct mib_mdomain *val)
+ 		goto exit;
+ 	}
+ 
+-	ret = at76_get_mib(dev-&gt;udev, MIB_MDOMAIN,
+-		      (u8*)mdomain, sizeof(struct mib_mdomain));
++	ret = at76_get_mib(dev-&gt;udev, MIB_MDOMAIN, mdomain,
++			   sizeof(struct mib_mdomain));
+ 	if (ret &lt; 0) {
+ 		err(&quot;%s: at76_get_mib failed: %d&quot;, dev-&gt;netdev-&gt;name, ret);
+ 		goto err;
+@@ -1427,8 +1424,8 @@ int at76_get_current_bssid(struct at76_priv *dev)
+ 		goto exit;
+ 	}
+ 
+-	ret = at76_get_mib(dev-&gt;udev, MIB_MAC_MGMT,
+-		      (u8*)mac_mgmt, sizeof(struct mib_mac_mgmt));
++	ret = at76_get_mib(dev-&gt;udev, MIB_MAC_MGMT, mac_mgmt,
++			   sizeof(struct mib_mac_mgmt));
+ 	if (ret &lt; 0) {
+ 		err(&quot;%s: at76_get_mib failed: %d&quot;, dev-&gt;netdev-&gt;name, ret);
+ 		goto err;
+@@ -1450,7 +1447,7 @@ static int at76_get_current_channel(struct at76_priv *dev)
+ 		ret = -ENOMEM;
+ 		goto exit;
+ 	}
+-	ret = at76_get_mib(dev-&gt;udev, MIB_PHY, (u8*) phy, sizeof(struct mib_phy));
++	ret = at76_get_mib(dev-&gt;udev, MIB_PHY, phy, sizeof(struct mib_phy));
+ 	if (ret &lt; 0) {
+ 		err(&quot;%s: at76_get_mib(MIB_PHY) failed: %d&quot;, dev-&gt;netdev-&gt;name, ret);
+ 		goto err;
+@@ -1859,7 +1856,7 @@ static int at76_send_mgmt_bulk(struct at76_priv *dev,
+ 		   implement a queue or silently modify the old msg */
+ 		err(&quot;%s: %s removed pending mgmt buffer %s&quot;,
+ 		    dev-&gt;netdev-&gt;name, __FUNCTION__,
+-		    hex2str(dev-&gt;obuf, (u8 *) dev-&gt;next_mgmt_bulk,
++		    hex2str(dev-&gt;obuf, dev-&gt;next_mgmt_bulk,
+ 			    min((int)(sizeof(dev-&gt;obuf)) / 3, 64), ' '));
+ 		kfree(dev-&gt;next_mgmt_bulk);
+ 	}
+@@ -1891,7 +1888,7 @@ static int at76_send_mgmt_bulk(struct at76_priv *dev,
+ 				  le16_to_cpu(txbuf-&gt;wlength) +
+ 				  txbuf-&gt;padding +
+ 				  AT76_TX_HDRLEN,
+-				  (usb_complete_t) at76_write_bulk_callback,
++				  at76_write_bulk_callback,
+ 				  dev);
+ 		ret = usb_submit_urb(dev-&gt;write_urb, GFP_ATOMIC);
+ 		if (ret) {
+@@ -1998,7 +1995,7 @@ static int at76_auth_req(struct at76_priv *dev, struct bss_info *bss, int seq_nr
+ 	if (seq_nr == 3) {
+ 		at76_dbg(DBG_TX_MGMT, &quot;%s: AuthReq challenge: %s ...&quot;,
+ 		         dev-&gt;netdev-&gt;name,
+-		         hex2str(dev-&gt;obuf, (u8 *) req-&gt;info_element,
++		         hex2str(dev-&gt;obuf, req-&gt;info_element,
+ 		             min((int)sizeof(dev-&gt;obuf) / 3, 18), ' '));
+ 	}
+ 
+@@ -2388,7 +2385,7 @@ static void at76_work_new_bss(struct work_struct *work)
+ 
+ 	down(&amp;dev-&gt;sem);
+ 
+-	ret = at76_get_mib(dev-&gt;udev, MIB_MAC_MGMT, (u8*)&amp;mac_mgmt,
++	ret = at76_get_mib(dev-&gt;udev, MIB_MAC_MGMT, &amp;mac_mgmt,
+ 		      sizeof(struct mib_mac_mgmt));
+ 	if (ret &lt; 0) {
+ 		err(&quot;%s: at76_get_mib failed: %d&quot;, netdev-&gt;name, ret);
+@@ -2859,7 +2856,7 @@ static void at76_rx_mgmt_auth(struct at76_priv *dev, struct at76_rx_buffer *buf)
+ 	if (alg == WLAN_AUTH_SHARED_KEY &amp;&amp; seq_nr == 2) {
+ 		at76_dbg(DBG_RX_MGMT, &quot;%s: AuthFrame challenge %s ...&quot;,
+ 		         dev-&gt;netdev-&gt;name,
+-		         hex2str(dev-&gt;obuf, (u8 *) resp-&gt;info_element,
++		         hex2str(dev-&gt;obuf, resp-&gt;info_element,
+ 			    min((int)sizeof(dev-&gt;obuf) / 3, 18), ' '));
+ 	}
+ 	if (dev-&gt;istate != AUTHENTICATING) {
+@@ -3215,7 +3212,7 @@ static void at76_rx_mgmt(struct at76_priv *dev, struct at76_rx_buffer *buf)
+ 
+ 	at76_dbg(DBG_RX_MGMT_CONTENT, &quot;%s rx mgmt subtype x%x %s&quot;,
+ 		 dev-&gt;netdev-&gt;name, subtype,
+-		 hex2str(dev-&gt;obuf, (u8 *) mgmt,
++		 hex2str(dev-&gt;obuf, mgmt,
+ 		     min((sizeof(dev-&gt;obuf) - 1) / 2,
+ 		         (size_t) le16_to_cpu(buf-&gt;wlength)), '\0'));
+ 
+@@ -3474,7 +3471,7 @@ static void at76_ieee80211_fixup(struct sk_buff *skb, int iw_mode)
+    _no_ FCS at the end */
+ static struct sk_buff *at76_check_for_rx_frags(struct at76_priv *dev)
+ {
+-	struct sk_buff *skb = (struct sk_buff *)dev-&gt;rx_skb;
++	struct sk_buff *skb = dev-&gt;rx_skb;
+ 	struct at76_rx_buffer *buf = (struct at76_rx_buffer *)skb-&gt;data;
+ 	struct ieee80211_hdr_3addr *i802_11_hdr =
+ 	    (struct ieee80211_hdr_3addr *)buf-&gt;packet;
+@@ -3683,7 +3680,7 @@ static struct sk_buff *at76_check_for_rx_frags(struct at76_priv *dev)
+ /* rx interrupt: we expect the complete data buffer in dev-&gt;rx_skb */
+ static void at76_rx_data(struct at76_priv *dev)
+ {
+-	struct net_device *netdev = (struct net_device *)dev-&gt;netdev;
++	struct net_device *netdev = dev-&gt;netdev;
+ 	struct net_device_stats *stats = &amp;dev-&gt;stats;
+ 	struct sk_buff *skb = dev-&gt;rx_skb;
+ 	struct at76_rx_buffer *buf = (struct at76_rx_buffer *)skb-&gt;data;
+@@ -3756,7 +3753,7 @@ static int at76_submit_rx_urb(struct at76_priv *dev)
+ 	usb_fill_bulk_urb(dev-&gt;read_urb, dev-&gt;udev,
+ 		         usb_rcvbulkpipe(dev-&gt;udev, dev-&gt;bulk_in_endpointAddr),
+ 		         skb_put(skb, size), size,
+-		         (usb_complete_t)at76_read_bulk_callback, dev);
++		         at76_read_bulk_callback, dev);
+ 	ret = usb_submit_urb(dev-&gt;read_urb, GFP_ATOMIC);
+ 	if (ret &lt; 0) {
+ 		if (ret == -ENODEV)
+@@ -3794,7 +3791,7 @@ exit:
+  * solve everything.. (alex) */
+ static void at76_read_bulk_callback(struct urb *urb)
+ {
+-	struct at76_priv *priv = (struct at76_priv *)urb-&gt;context;
++	struct at76_priv *priv = urb-&gt;context;
+ 
+ 	priv-&gt;rx_urb = urb;
+ 	tasklet_schedule(&amp;priv-&gt;tasklet);
+@@ -3806,7 +3803,7 @@ static void at76_rx_monitor_mode(struct at76_priv *dev)
+ 	struct at76_rx_radiotap *rt;
+ 	u8 *payload;
+ 	int skblen;
+-	struct net_device *netdev = (struct net_device *)dev-&gt;netdev;
++	struct net_device *netdev = dev-&gt;netdev;
+ 	struct at76_rx_buffer *buf =
+ 	    (struct at76_rx_buffer *)dev-&gt;rx_skb-&gt;data;
+ 	/* length including the IEEE802.11 header and the trailing FCS,
+@@ -3876,7 +3873,7 @@ static void at76_rx_tasklet(unsigned long param)
+ 	if (!dev)
+ 		return;
+ 	urb = dev-&gt;rx_urb;
+-	netdev = (struct net_device *)dev-&gt;netdev;
++	netdev = dev-&gt;netdev;
+ 
+ 	if (dev-&gt;device_unplugged) {
+ 		at76_dbg(DBG_DEVSTART, &quot;device unplugged&quot;);
+@@ -3914,7 +3911,7 @@ static void at76_rx_tasklet(unsigned long param)
+ 		 dev-&gt;netdev-&gt;name,
+ 		 buf-&gt;rx_rate, buf-&gt;rssi, buf-&gt;noise_level,
+ 		 buf-&gt;link_quality,
+-		 hex2str(dev-&gt;obuf,(u8 *)i802_11_hdr,
++		 hex2str(dev-&gt;obuf, i802_11_hdr,
+ 			 min((int)(sizeof(dev-&gt;obuf)-1)/2,48),'\0'));
+ 	if (dev-&gt;istate == MONITORING) {
+ 		at76_rx_monitor_mode(dev);
+@@ -3959,7 +3956,7 @@ finish:
+ 
+ static void at76_write_bulk_callback(struct urb *urb)
+ {
+-	struct at76_priv *dev = (struct at76_priv *)urb-&gt;context;
++	struct at76_priv *dev = urb-&gt;context;
+ 	struct net_device_stats *stats = &amp;dev-&gt;stats;
+ 	unsigned long flags;
+ 	struct at76_tx_buffer *mgmt_buf;
+@@ -3993,7 +3990,7 @@ static void at76_write_bulk_callback(struct urb *urb)
+ 				  dev-&gt;bulk_out_buffer,
+ 				  le16_to_cpu(mgmt_buf-&gt;wlength) +
+ 				  mgmt_buf-&gt;padding + AT76_TX_HDRLEN,
+-				  (usb_complete_t) at76_write_bulk_callback,
++				  at76_write_bulk_callback,
+ 				  dev);
+ 		ret = usb_submit_urb(dev-&gt;write_urb, GFP_ATOMIC);
+ 		if (ret) {
+@@ -4013,8 +4010,7 @@ static int at76_tx(struct sk_buff *skb, struct net_device *netdev)
+ 	int ret = 0;
+ 	int wlen;
+ 	int submit_len;
+-	struct at76_tx_buffer *tx_buffer =
+-	    (struct at76_tx_buffer *)dev-&gt;bulk_out_buffer;
++	struct at76_tx_buffer *tx_buffer = dev-&gt;bulk_out_buffer;
+ 	struct ieee80211_hdr_3addr *i802_11_hdr =
+ 	    (struct ieee80211_hdr_3addr *)&amp;(tx_buffer-&gt;packet);
+ 	u8 *payload = tx_buffer-&gt;packet + sizeof(struct ieee80211_hdr_3addr);
+@@ -4115,7 +4111,7 @@ static int at76_tx(struct sk_buff *skb, struct net_device *netdev)
+ 		         dev-&gt;netdev-&gt;name,
+ 		         le16_to_cpu(tx_buffer-&gt;wlength),
+ 		         tx_buffer-&gt;padding, tx_buffer-&gt;tx_rate,
+-		         hex2str(dev-&gt;obuf, (u8 *) i802_11_hdr,
++		         hex2str(dev-&gt;obuf, i802_11_hdr,
+ 			    min((sizeof(dev-&gt;obuf) - 1) / 2,
+ 				sizeof(struct ieee80211_hdr_3addr)), '\0'));
+ 		at76_dbg(DBG_TX_DATA_CONTENT, &quot;%s payload %s&quot;, dev-&gt;netdev-&gt;name,
+@@ -4130,7 +4126,7 @@ static int at76_tx(struct sk_buff *skb, struct net_device *netdev)
+ 	usb_fill_bulk_urb(dev-&gt;write_urb, dev-&gt;udev,
+ 		         usb_sndbulkpipe(dev-&gt;udev, dev-&gt;bulk_out_endpointAddr),
+ 		         tx_buffer, submit_len,
+-		         (usb_complete_t)at76_write_bulk_callback, dev);
++		         at76_write_bulk_callback, dev);
+ 	ret = usb_submit_urb(dev-&gt;write_urb, GFP_ATOMIC);
+ 	if (ret) {
+ 		stats-&gt;tx_errors++;
+@@ -5665,9 +5661,9 @@ static const struct iw_handler_def at76_handler_def =
+ 	.num_standard	= ARRAY_SIZE(at76_handlers),
+ 	.num_private	= ARRAY_SIZE(at76_priv_handlers),
+ 	.num_private_args = ARRAY_SIZE(at76_priv_args),
+-	.standard	= (iw_handler *) at76_handlers,
+-	.private	= (iw_handler *) at76_priv_handlers,
+-	.private_args	= (struct iw_priv_args *) at76_priv_args,
++	.standard	= at76_handlers,
++	.private	= at76_priv_handlers,
++	.private_args	= at76_priv_args,
+  	.get_wireless_stats = at76_get_wireless_stats,
+ };
+ 
+@@ -5817,7 +5813,7 @@ static int at76_alloc_urbs(struct at76_priv *dev)
+ 				          usb_sndbulkpipe(udev,
+ 						      endpoint-&gt;bEndpointAddress),
+ 				          dev-&gt;bulk_out_buffer, buffer_size,
+-				          (usb_complete_t)at76_write_bulk_callback, dev);
++				          at76_write_bulk_callback, dev);
+ 		}
+ 	}
+ 
+@@ -5940,7 +5936,8 @@ static int at76_init_new_device(struct at76_priv *dev)
+ 		goto error;
+ 
+ 	/* get firmware version */
+-	ret = at76_get_mib(dev-&gt;udev, MIB_FW_VERSION, (u8*)&amp;dev-&gt;fw_version, sizeof(dev-&gt;fw_version));
++	ret = at76_get_mib(dev-&gt;udev, MIB_FW_VERSION, &amp;dev-&gt;fw_version,
++			   sizeof(dev-&gt;fw_version));
+ 	if ((ret &lt; 0) || ((dev-&gt;fw_version.major == 0) &amp;&amp; 
+ 			  (dev-&gt;fw_version.minor == 0) &amp;&amp; 
+ 			  (dev-&gt;fw_version.patch == 0) &amp;&amp; 
+@@ -6008,8 +6005,7 @@ static int at76_init_new_device(struct at76_priv *dev)
+ 	netdev-&gt;hard_start_xmit = at76_tx;
+ 	netdev-&gt;tx_timeout = at76_tx_timeout;
+ 	netdev-&gt;watchdog_timeo = 2 * HZ;
+-	netdev-&gt;wireless_handlers =
+-	    (struct iw_handler_def *)&amp;at76_handler_def;
++	netdev-&gt;wireless_handlers = &amp;at76_handler_def;
+ 	netdev-&gt;set_multicast_list = at76_set_multicast;
+ 	netdev-&gt;set_mac_address = at76_set_mac_address;
+ 
+@@ -6183,9 +6179,8 @@ static int at76_do_probe(struct usb_device *udev, u8 *fw_data, int fw_size,
+ 		if (version &gt;= ((0 &lt;&lt; 24) | (100 &lt;&lt; 16))
+ 		    || (op_mode == OPMODE_NORMAL_NIC_WITH_FLASH)) {
+ 			ret =
+-			    at76_get_mib(udev, MIB_FW_VERSION,
+-				    (u8 *) &amp; dev-&gt;fw_version,
+-				    sizeof(dev-&gt;fw_version));
++			    at76_get_mib(udev, MIB_FW_VERSION, &amp;dev-&gt;fw_version,
++					 sizeof(dev-&gt;fw_version));
+ 		} else {
+ 			/* force fw download only if the device has no flash inside */
+ 			force_fw_dwl = 1;
+@@ -6272,7 +6267,7 @@ static void at76_disconnect(struct usb_interface *interface)
+ 	priv = usb_get_intfdata(interface);
+ 	usb_set_intfdata(interface, NULL);
+ 
+-	info(&quot;%s disconnecting&quot;, ((struct at76_priv *)priv)-&gt;netdev-&gt;name);
++	info(&quot;%s disconnecting&quot;, priv-&gt;netdev-&gt;name);
+ 	at76_delete_device(priv);
+ 	info(DRIVER_NAME &quot; disconnected&quot;);
+ }
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000044.html">[at76c503a-develop] [PATCH] Ensure that all functions have at76	prefix
+</A></li>
+	<LI>Next message: <A HREF="000046.html">[at76c503a-develop] [PATCH 2/6] Remove last remains of LED support,	it shouldn't be here
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#45">[ date ]</a>
+              <a href="thread.html#45">[ thread ]</a>
+              <a href="subject.html#45">[ subject ]</a>
+              <a href="author.html#45">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">More information about the at76c503a-develop
+mailing list</a><br>
+</body></html>

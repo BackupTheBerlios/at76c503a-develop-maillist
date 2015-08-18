@@ -1,0 +1,1028 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [at76c503a-develop] [PATCH 1/4] Split workqueues into separate	handlers
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/at76c503a-develop/2007-April/index.html" >
+   <LINK REL="made" HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%201/4%5D%20Split%20workqueues%20into%20separate%0A%09handlers&In-Reply-To=%3C20070427071048.11648.35614.stgit%40dv.roinet.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000037.html">
+   <LINK REL="Next"  HREF="000039.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[at76c503a-develop] [PATCH 1/4] Split workqueues into separate	handlers</H1>
+    <B>Pavel Roskin</B> 
+    <A HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%201/4%5D%20Split%20workqueues%20into%20separate%0A%09handlers&In-Reply-To=%3C20070427071048.11648.35614.stgit%40dv.roinet.com%3E"
+       TITLE="[at76c503a-develop] [PATCH 1/4] Split workqueues into separate	handlers">proski at gnu.org
+       </A><BR>
+    <I>Fri Apr 27 09:10:49 CEST 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000037.html">[at76c503a-develop] [PATCH] Standardize on radiotap headers for	monitor mode
+</A></li>
+        <LI>Next message: <A HREF="000039.html">[at76c503a-develop] [PATCH 2/4] Assorted minor comment changes
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#38">[ date ]</a>
+              <a href="thread.html#38">[ thread ]</a>
+              <a href="subject.html#38">[ subject ]</a>
+              <a href="author.html#38">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>at76_defer_event() is too large and unmanageable.  Use separate work
+queues for every task.  This is a formal split with minimal formating
+and comment changes.  Many layers of indirection can and should be
+eliminated later.  Timers should be combined into delayed works.
+
+Signed-off-by: Pavel Roskin &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">proski at gnu.org</A>&gt;
+---
+
+ at76_usb.c |  665 +++++++++++++++++++++++++++++++-----------------------------
+ at76_usb.h |   30 +--
+ 2 files changed, 356 insertions(+), 339 deletions(-)
+
+diff --git a/at76_usb.c b/at76_usb.c
+index d507694..704a28e 100644
+--- a/at76_usb.c
++++ b/at76_usb.c
+@@ -190,7 +190,6 @@ static int monitor_scan_max_time = 600;
+ static void at76_iwspy_update(struct at76_priv *dev, struct at76_rx_buffer *buf);
+ static void at76_read_bulk_callback(struct urb *urb);
+ static void at76_write_bulk_callback(struct urb *urb);
+-static void at76_defer_event(struct at76_priv *dev, int flag);
+ static struct bss_info *at76_match_bss(struct at76_priv *dev,
+ 				       struct bss_info *curr);
+ static int at76_auth_req(struct at76_priv *dev, struct bss_info *bss, int seq_nr,
+@@ -1567,14 +1566,14 @@ static int at76_join_bss(struct at76_priv *dev, struct bss_info *ptr)
+ static void at76_fw_dl_timeout(unsigned long par)
+ {
+ 	struct at76_priv *dev = (struct at76_priv *)par;
+-	at76_defer_event(dev, AT76_DEVENT_RESET_DEVICE);
++	schedule_work(&amp;dev-&gt;work_reset_device);
+ }
+ 
+ /* the restart timer timed out */
+ static void at76_restart_timeout(unsigned long par)
+ {
+ 	struct at76_priv *dev = (struct at76_priv *)par;
+-	at76_defer_event(dev, AT76_DEVENT_RESTART);
++	schedule_work(&amp;dev-&gt;work_restart);
+ }
+ 
+ /* we got to check the bss_list for old entries */
+@@ -1611,7 +1610,7 @@ static void at76_bss_list_timeout(unsigned long par)
+ static void at76_mgmt_timeout(unsigned long par)
+ {
+ 	struct at76_priv *dev = (struct at76_priv *)par;
+-	at76_defer_event(dev, AT76_DEVENT_MGMT_TIMEOUT);
++	schedule_work(&amp;dev-&gt;work_mgmt_timeout);
+ }
+ 
+ /*
+@@ -1680,7 +1679,7 @@ static void at76_handle_mgmt_timeout_scan(struct at76_priv *dev)
+ 				dev-&gt;istate = JOINING;
+ 				/* call join_bss immediately after
+ 				   re-run of all other threads in at76_devent */
+-				at76_defer_event(dev,AT76_DEVENT_JOIN);
++				schedule_work(&amp;dev-&gt;work_join);
+ 				break;
+ 
+ 			default:
+@@ -1744,7 +1743,7 @@ static void at76_handle_mgmt_timeout(struct at76_priv *dev)
+ 			netif_stop_queue(dev-&gt;netdev);
+ 			at76_iwevent_bss_disconnect(dev-&gt;netdev);
+ 			dev-&gt;istate = SCANNING;
+-			at76_defer_event(dev, AT76_DEVENT_SCAN);
++			schedule_work(&amp;dev-&gt;work_scan);
+ 		}
+ 		break;
+ 
+@@ -1757,7 +1756,7 @@ static void at76_handle_mgmt_timeout(struct at76_priv *dev)
+ 		} else {
+ 			/* try to get next matching BSS */
+ 			dev-&gt;istate = JOINING;
+-			at76_defer_event(dev, AT76_DEVENT_JOIN);
++			schedule_work(&amp;dev-&gt;work_join);
+ 		}
+ 		break;
+ 
+@@ -1774,7 +1773,7 @@ static void at76_handle_mgmt_timeout(struct at76_priv *dev)
+ 
+ 			/* try to get next matching BSS */
+ 			dev-&gt;istate = JOINING;
+-			at76_defer_event(dev, AT76_DEVENT_JOIN);
++			schedule_work(&amp;dev-&gt;work_join);
+ 		}
+ 		break;
+ 
+@@ -1802,7 +1801,7 @@ static void at76_handle_mgmt_timeout(struct at76_priv *dev)
+ 		} else {
+ 			/* we scan again ... */
+ 			dev-&gt;istate = SCANNING;
+-			at76_defer_event(dev, AT76_DEVENT_SCAN);
++			schedule_work(&amp;dev-&gt;work_scan);
+ 		}
+ 		break;
+ 
+@@ -2167,375 +2166,386 @@ static int at76_reassoc_req(struct at76_priv *dev, struct bss_info *curr_bss,
+ 
+ }
+ 
+-/* shamelessly copied from usbnet.c (oku) */
+-static void at76_defer_event(struct at76_priv *dev, int flag)
++/* Called after successful association */
++static void handle_assoc_done(struct work_struct *work)
+ {
+-	set_bit(flag, &amp;dev-&gt;devent_flags);
+-	if (!schedule_work(&amp;dev-&gt;devent_queue))
+-		at76_dbg(DBG_DEVENT, &quot;%s: devent %d may have been dropped&quot;,
+-		         dev-&gt;netdev-&gt;name, flag);
+-	else
+-		at76_dbg(DBG_DEVENT, &quot;%s: devent %d scheduled&quot;,
+-		         dev-&gt;netdev-&gt;name, flag);
++	struct at76_priv *dev = container_of(work, struct at76_priv,
++					     work_assoc_done);
++
++	down(&amp;dev-&gt;sem);
++
++	at76_assert(dev-&gt;istate == ASSOCIATING || dev-&gt;istate == REASSOCIATING);
++	if (dev-&gt;iw_mode == IW_MODE_INFRA) {
++		at76_assert(dev-&gt;curr_bss != NULL);
++		if (dev-&gt;curr_bss != NULL &amp;&amp; dev-&gt;pm_mode != AT76_PM_OFF) {
++			/* calculate the listen interval in units of
++			   beacon intervals of the curr_bss */
++			u32 pm_period_beacon = (dev-&gt;pm_period &gt;&gt; 10) /
++						dev-&gt;curr_bss-&gt;beacon_interval;
++
++			pm_period_beacon = max(pm_period_beacon, 2u);
++			pm_period_beacon = min(pm_period_beacon, 0xffffu);
++
++			at76_dbg(DBG_PM, &quot;%s: pm_mode %d assoc id x%x listen int %d&quot;,
++			         dev-&gt;netdev-&gt;name, dev-&gt;pm_mode,
++			         dev-&gt;curr_bss-&gt;assoc_id, pm_period_beacon);
++
++			at76_set_associd(dev, dev-&gt;curr_bss-&gt;assoc_id);
++			at76_set_listen_interval(dev, (u16)pm_period_beacon);
++#ifdef DEBUG
++			at76_dump_mib_mac(dev);
++			at76_dump_mib_mac_mgmt(dev);
++#endif
++		}
++	}
++	at76_set_pm_mode(dev);
++
++	netif_carrier_on(dev-&gt;netdev);
++	netif_wake_queue(dev-&gt;netdev);
++	dev-&gt;istate = CONNECTED;
++	at76_iwevent_bss_connect(dev-&gt;netdev, dev-&gt;curr_bss-&gt;bssid);
++	at76_dbg(DBG_PROGRESS, &quot;%s: connected to BSSID %s&quot;,
++	         dev-&gt;netdev-&gt;name, mac2str(dev-&gt;curr_bss-&gt;bssid));
++
++	up(&amp;dev-&gt;sem);
+ }
+ 
+-static void at76_devent(struct work_struct *work)
++/* Download external firmware */
++static void handle_external_fw(struct work_struct *work)
+ {
+-	struct at76_priv *dev = container_of(work, struct at76_priv, devent_queue);
++	struct at76_priv *dev = container_of(work, struct at76_priv,
++					     work_external_fw);
+ 	int ret;
+-	unsigned long flags;
+-
+-	/* on errors, bits aren't cleared, but no reschedule
+-	   is done. So work will be done next time something
+-	   else has to be done. This is ugly. TODO! (oku) */
+-
+-	at76_dbg(DBG_DEVENT, &quot;%s: %s entry flags: 0x%lx&quot;, dev-&gt;netdev-&gt;name,
+-	         __FUNCTION__, dev-&gt;devent_flags);
++	u8 op_mode;
+ 
+ 	down(&amp;dev-&gt;sem);
+ 
+-	if (test_bit(AT76_DEVENT_CTRL_HALT, &amp;dev-&gt;devent_flags)) {
+-		/* FIXME: this never worked... but it seems
+-		   that it's rarely necessary, if at all (oku) */
+-		ret = usb_clear_halt(dev-&gt;udev,
+-				     usb_sndctrlpipe (dev-&gt;udev, 0));
+-		if (ret &lt; 0)
+-			err(&quot;usb_clear_halt() failed: %d&quot;, ret);
+-		else {
+-			clear_bit(AT76_DEVENT_CTRL_HALT, &amp;dev-&gt;devent_flags);
+-			info(&quot;usb_clear_halt() successful&quot;);
+-		}
++	op_mode = at76_get_op_mode(dev-&gt;udev);
++	at76_dbg(DBG_DEVSTART, &quot;opmode %d&quot;, op_mode);
++
++	if (op_mode != OPMODE_NORMAL_NIC_WITHOUT_FLASH) {
++		err(&quot;unexpected opmode %d&quot;, op_mode);
++		goto end_external_fw;
+ 	}
+-	if (test_bit(AT76_DEVENT_NEW_BSS, &amp;dev-&gt;devent_flags)) {
+-		struct net_device *netdev = dev-&gt;netdev;
+-		struct mib_mac_mgmt mac_mgmt;
+ 
+-		ret = at76_get_mib(dev-&gt;udev, MIB_MAC_MGMT, (u8*)&amp;mac_mgmt,
+-			      sizeof(struct mib_mac_mgmt));
++	if (dev-&gt;extfw &amp;&amp; dev-&gt;extfw_size) {
++		ret = at76_download_external_fw(dev-&gt;udev, dev-&gt;extfw,
++					        dev-&gt;extfw_size);
+ 		if (ret &lt; 0) {
+-			err(&quot;%s: at76_get_mib failed: %d&quot;, netdev-&gt;name, ret);
+-			goto new_bss_clean;
++			err(&quot;Downloading external firmware failed: %d&quot;, ret);
++			goto end_external_fw;
+ 		}
+-
+-		at76_dbg(DBG_PROGRESS, &quot;ibss_change = 0x%2x&quot;, mac_mgmt.ibss_change);
+-		memcpy(dev-&gt;bssid, mac_mgmt.current_bssid, ETH_ALEN);
+-		at76_dbg(DBG_PROGRESS, &quot;using BSSID %s&quot;, mac2str(dev-&gt;bssid));
+-   
+-		at76_iwevent_bss_connect(dev-&gt;netdev, dev-&gt;bssid);
+-
+-		memset(&amp;dev-&gt;mib_buf, 0, sizeof(struct set_mib_buffer));
+-		dev-&gt;mib_buf.type = MIB_MAC_MGMT;
+-		dev-&gt;mib_buf.size = 1;
+-		dev-&gt;mib_buf.index = IBSS_CHANGE_OK_OFFSET;
+-		ret = at76_set_mib(dev, &amp;dev-&gt;mib_buf);
+-		if (ret &lt; 0) {
+-			err(&quot;%s: set_mib (ibss change ok) failed: %d&quot;, netdev-&gt;name, ret);
+-			goto new_bss_clean;
++		if (dev-&gt;board_type == BOARDTYPE_505A_RFMD_2958) {
++			info(&quot;200 ms delay for board type 7&quot;);
++			/* can we do this with dev-&gt;sem down? */
++			set_current_state(TASK_INTERRUPTIBLE);
++			schedule_timeout(HZ / 5 + 1);
+ 		}
+-		clear_bit(AT76_DEVENT_NEW_BSS, &amp;dev-&gt;devent_flags);
+-	new_bss_clean:;
+ 	}
++	dev-&gt;istate = INIT;
++	if ((ret = at76_init_new_device(dev)) &lt; 0)
++		err(&quot;Downloading external firmware failed: %d&quot;, ret);
++
++  end_external_fw:
++	up(&amp;dev-&gt;sem);
++}
++
++/* Download internal firmware */
++static void handle_internal_fw(struct work_struct *work)
++{
++	struct at76_priv *dev = container_of(work, struct at76_priv,
++					     work_internal_fw);
++	int ret;
+ 
+-	if (test_bit(AT76_DEVENT_SET_PROMISC, &amp;dev-&gt;devent_flags)) {
+-		info(&quot;%s: AT76_DEVENT_SET_PROMISC&quot;, dev-&gt;netdev-&gt;name);
++	down(&amp;dev-&gt;sem);
++
++	ret = at76_usbdfu_download(dev-&gt;udev, dev-&gt;intfw,
++			           dev-&gt;intfw_size,
++			           dev-&gt;board_type ==
++			           BOARDTYPE_505A_RFMD_2958 ? 2000 : 0);
+ 
+-		set_promisc(dev, dev-&gt;promisc);
+-		clear_bit(AT76_DEVENT_SET_PROMISC, &amp;dev-&gt;devent_flags);
++	if (ret &lt; 0) {
++		err(&quot;downloading internal fw failed with %d&quot;, ret);
++		goto end_internal_fw;
+ 	}
+ 
+-	/* check this _before_ AT76_DEVENT_JOIN, 'cause _JOIN sets _STARTIBSS bit */
+-	if (test_bit(AT76_DEVENT_STARTIBSS, &amp;dev-&gt;devent_flags)) {
+-		clear_bit(AT76_DEVENT_STARTIBSS, &amp;dev-&gt;devent_flags);
+-		at76_assert(dev-&gt;istate == STARTIBSS);
+-		ret = at76_start_ibss(dev);
+-		if (ret &lt; 0) {
+-			err(&quot;%s: start_ibss failed: %d&quot;, dev-&gt;netdev-&gt;name, ret);
+-			goto end_startibss;
+-		}
++	at76_dbg(DBG_DEVSTART, &quot;sending REMAP&quot;);
+ 
+-		ret = at76_wait_completion(dev, CMD_START_IBSS);
+-		if (ret != CMD_STATUS_COMPLETE) {
+-			err(&quot;%s start_ibss failed to complete,%d&quot;,
+-			    dev-&gt;netdev-&gt;name, ret);
+-			goto end_startibss;
++	/* no REMAP for 505A (see SF driver) */
++	if (dev-&gt;board_type != BOARDTYPE_505A_RFMD_2958)
++		if ((ret = at76_remap(dev-&gt;udev)) &lt; 0) {
++			err(&quot;sending REMAP failed with %d&quot;, ret);
++			goto end_internal_fw;
+ 		}
+ 
+-		ret = at76_get_current_bssid(dev);
+-		if (ret &lt; 0)
+-			goto end_startibss;
++	at76_dbg(DBG_DEVSTART, &quot;sleeping for 2 seconds&quot;);
++	dev-&gt;istate = EXTFW_DOWNLOAD;
++	mod_timer(&amp;dev-&gt;fw_dl_timer, jiffies + 2 * HZ + 1);
+ 
+-		ret = at76_get_current_channel(dev);
+-		if (ret &lt; 0)
+-			goto end_startibss;
+-
+-		/* not sure what this is good for ??? */
+-		memset(&amp;dev-&gt;mib_buf, 0, sizeof(struct set_mib_buffer));
+-		dev-&gt;mib_buf.type = MIB_MAC_MGMT;
+-		dev-&gt;mib_buf.size = 1;
+-		dev-&gt;mib_buf.index = IBSS_CHANGE_OK_OFFSET;
+-		ret = at76_set_mib(dev, &amp;dev-&gt;mib_buf);
+-		if (ret &lt; 0) {
+-			err(&quot;%s: set_mib (ibss change ok) failed: %d&quot;, dev-&gt;netdev-&gt;name, ret);
+-			goto end_startibss;
+-		}
++  end_internal_fw:
++	up(&amp;dev-&gt;sem);
++}
+ 
+-		netif_carrier_on(dev-&gt;netdev);
+-		netif_start_queue(dev-&gt;netdev);
+-	}
+-end_startibss:
++/* Try joining a BSS */
++static void handle_join(struct work_struct *work)
++{
++	struct at76_priv *dev = container_of(work, struct at76_priv,
++					     work_join);
++	int ret;
++	unsigned long flags;
++
++	down(&amp;dev-&gt;sem);
++
++	if (dev-&gt;istate == INIT)
++		goto end_join;
++
++	at76_assert(dev-&gt;istate == JOINING);
++	/* dev-&gt;curr_bss == NULL signals a new round,
++	   starting with list_entry(dev-&gt;bss_list.next, ...) */
++
++	/* secure the access to dev-&gt;curr_bss ! */
++	spin_lock_irqsave(&amp;dev-&gt;bss_list_spinlock, flags);
++	dev-&gt;curr_bss = at76_match_bss(dev, dev-&gt;curr_bss);
++	spin_unlock_irqrestore(&amp;dev-&gt;bss_list_spinlock, flags);
+ 
+-	/* check this _before_ AT76_DEVENT_SCAN, 'cause _SCAN sets _JOIN bit */
+-	if (test_bit(AT76_DEVENT_JOIN, &amp;dev-&gt;devent_flags)) {
+-		clear_bit(AT76_DEVENT_JOIN, &amp;dev-&gt;devent_flags);
+-		if (dev-&gt;istate == INIT) {
++	if (dev-&gt;curr_bss != NULL) {
++		if ((ret = at76_join_bss(dev, dev-&gt;curr_bss)) &lt; 0) {
++			err(&quot;%s: join_bss failed with %d&quot;,
++			    dev-&gt;netdev-&gt;name, ret);
+ 			goto end_join;
+ 		}
+-		at76_assert(dev-&gt;istate == JOINING);
+-		/* dev-&gt;curr_bss == NULL signals a new round,
+-		   starting with list_entry(dev-&gt;bss_list.next, ...) */
+-
+-		/* secure the access to dev-&gt;curr_bss ! */
+-		spin_lock_irqsave(&amp;dev-&gt;bss_list_spinlock, flags);
+-		dev-&gt;curr_bss = at76_match_bss(dev, dev-&gt;curr_bss);
+-		spin_unlock_irqrestore(&amp;dev-&gt;bss_list_spinlock, flags);
+-
+-		if (dev-&gt;curr_bss != NULL) {
+-			if ((ret = at76_join_bss(dev, dev-&gt;curr_bss)) &lt; 0) {
+-				err(&quot;%s: join_bss failed with %d&quot;,
+-				    dev-&gt;netdev-&gt;name, ret);
+-				goto end_join;
+-			}
+ 
+-			ret = at76_wait_completion(dev, CMD_JOIN);
+-			if (ret != CMD_STATUS_COMPLETE) {
+-				if (ret != CMD_STATUS_TIME_OUT)
+-					err(&quot;%s join_bss completed with %d&quot;,
+-					    dev-&gt;netdev-&gt;name, ret);
+-				else
+-					info(&quot;%s join_bss ssid %s timed out&quot;,
+-					     dev-&gt;netdev-&gt;name,
+-					     mac2str(dev-&gt;curr_bss-&gt;bssid));
+-
+-				/* retry next BSS immediately */
+-				at76_defer_event(dev, AT76_DEVENT_JOIN);
+-				goto end_join;
+-			}
++		ret = at76_wait_completion(dev, CMD_JOIN);
++		if (ret != CMD_STATUS_COMPLETE) {
++			if (ret != CMD_STATUS_TIME_OUT)
++				err(&quot;%s join_bss completed with %d&quot;,
++				    dev-&gt;netdev-&gt;name, ret);
++			else
++				info(&quot;%s join_bss ssid %s timed out&quot;,
++				     dev-&gt;netdev-&gt;name,
++				     mac2str(dev-&gt;curr_bss-&gt;bssid));
+ 
+-			/* here we have joined the (I)BSS */
+-			if (dev-&gt;iw_mode == IW_MODE_ADHOC) {
+-				struct bss_info *bptr = dev-&gt;curr_bss;
+-				dev-&gt;istate = CONNECTED;
+-				/* get ESSID, BSSID and channel for dev-&gt;curr_bss */
+-				dev-&gt;essid_size = bptr-&gt;ssid_len;
+-				memcpy(dev-&gt;essid, bptr-&gt;ssid, bptr-&gt;ssid_len);
+-				memcpy(dev-&gt;bssid, bptr-&gt;bssid, ETH_ALEN);
+-				dev-&gt;channel = bptr-&gt;channel;
+-				at76_iwevent_bss_connect(dev-&gt;netdev, bptr-&gt;bssid);
+-				netif_carrier_on(dev-&gt;netdev);
+-				netif_start_queue(dev-&gt;netdev);
+-				/* just to be sure */
+-				del_timer_sync(&amp;dev-&gt;mgmt_timer);
+-			} else {
+-				/* send auth req */
+-				dev-&gt;istate = AUTHENTICATING;
+-				at76_auth_req(dev, dev-&gt;curr_bss, 1, NULL);
+-				at76_dbg(DBG_MGMT_TIMER, &quot;%s:%d: starting mgmt_timer + HZ&quot;,
+-				         __FUNCTION__, __LINE__);
+-				mod_timer(&amp;dev-&gt;mgmt_timer, jiffies + HZ);
+-			}
++			/* retry next BSS immediately */
++			schedule_work(&amp;dev-&gt;work_join);
+ 			goto end_join;
+ 		}
+ 
+-		/* here we haven't found a matching (i)bss ... */
++		/* here we have joined the (I)BSS */
+ 		if (dev-&gt;iw_mode == IW_MODE_ADHOC) {
+-			dev-&gt;istate = STARTIBSS;
+-			at76_defer_event(dev, AT76_DEVENT_STARTIBSS);
+-			goto end_join;
++			struct bss_info *bptr = dev-&gt;curr_bss;
++			dev-&gt;istate = CONNECTED;
++			/* get ESSID, BSSID and channel for dev-&gt;curr_bss */
++			dev-&gt;essid_size = bptr-&gt;ssid_len;
++			memcpy(dev-&gt;essid, bptr-&gt;ssid, bptr-&gt;ssid_len);
++			memcpy(dev-&gt;bssid, bptr-&gt;bssid, ETH_ALEN);
++			dev-&gt;channel = bptr-&gt;channel;
++			at76_iwevent_bss_connect(dev-&gt;netdev, bptr-&gt;bssid);
++			netif_carrier_on(dev-&gt;netdev);
++			netif_start_queue(dev-&gt;netdev);
++			/* just to be sure */
++			del_timer_sync(&amp;dev-&gt;mgmt_timer);
++		} else {
++			/* send auth req */
++			dev-&gt;istate = AUTHENTICATING;
++			at76_auth_req(dev, dev-&gt;curr_bss, 1, NULL);
++			at76_dbg(DBG_MGMT_TIMER, &quot;%s:%d: starting mgmt_timer + HZ&quot;,
++			         __FUNCTION__, __LINE__);
++			mod_timer(&amp;dev-&gt;mgmt_timer, jiffies + HZ);
+ 		}
+-		/* haven't found a matching BSS in infra mode - try again */
+-		dev-&gt;istate = SCANNING;
+-		at76_defer_event(dev, AT76_DEVENT_SCAN);
+-	} /* if (test_bit(AT76_DEVENT_JOIN, &amp;dev-&gt;devent_flags)) */
+-end_join:
++		goto end_join;
++	}
+ 
+-	if (test_bit(AT76_DEVENT_MGMT_TIMEOUT, &amp;dev-&gt;devent_flags)) {
+-		clear_bit(AT76_DEVENT_MGMT_TIMEOUT, &amp;dev-&gt;devent_flags);
+-		at76_handle_mgmt_timeout(dev);
++	/* here we haven't found a matching (i)bss ... */
++	if (dev-&gt;iw_mode == IW_MODE_ADHOC) {
++		dev-&gt;istate = STARTIBSS;
++		schedule_work(&amp;dev-&gt;work_start_ibss);
++		goto end_join;
+ 	}
++	/* haven't found a matching BSS in infra mode - try again */
++	dev-&gt;istate = SCANNING;
++	schedule_work(&amp;dev-&gt;work_scan);
+ 
+-	if (test_bit(AT76_DEVENT_SCAN, &amp;dev-&gt;devent_flags)) {
+-		clear_bit(AT76_DEVENT_SCAN, &amp;dev-&gt;devent_flags);
++  end_join:
++	up(&amp;dev-&gt;sem);
++}
+ 
+-		at76_assert(dev-&gt;istate == SCANNING);
+-		/* only clear the bss list when a scan is actively initiated,
+-		 * otherwise simply rely on at76_bss_list_timeout */
+-		if (dev-&gt;site_survey_state == SITE_SURVEY_IN_PROGRESS)
+-			at76_free_bss_list(dev);
++static void handle_mgmt_timeout(struct work_struct *work)
++{
++	struct at76_priv *dev = container_of(work, struct at76_priv,
++					     work_mgmt_timeout);
+ 
+-		dev-&gt;scan_runs = 2;
+-		if ((ret = at76_start_scan(dev, 0, 1)) &lt; 0) {
+-			err(&quot;%s: %s: start_scan failed with %d&quot;,
+-			    dev-&gt;netdev-&gt;name, __FUNCTION__, ret);
+-		} else {
+-			at76_dbg(DBG_MGMT_TIMER, &quot;%s:%d: starting mgmt_timer for %d ticks&quot;,
+-			         __FUNCTION__, __LINE__, SCAN_POLL_INTERVAL);
+-			mod_timer(&amp;dev-&gt;mgmt_timer, jiffies + SCAN_POLL_INTERVAL);
+-		}
++	down(&amp;dev-&gt;sem);
++	at76_handle_mgmt_timeout(dev);
++	up(&amp;dev-&gt;sem);
++}
+ 
+-	} /* if (test_bit(AT76_DEVENT_SCAN, &amp;dev-&gt;devent_flags)) */
++static void handle_new_bss(struct work_struct *work)
++{
++	struct at76_priv *dev = container_of(work, struct at76_priv,
++					     work_new_bss);
++	int ret;
++	struct net_device *netdev = dev-&gt;netdev;
++	struct mib_mac_mgmt mac_mgmt;
+ 
++	down(&amp;dev-&gt;sem);
+ 
+-	if (test_bit(AT76_DEVENT_SUBMIT_RX, &amp;dev-&gt;devent_flags)) {
+-		clear_bit(AT76_DEVENT_SUBMIT_RX, &amp;dev-&gt;devent_flags);
+-		at76_submit_rx_urb(dev);
++	ret = at76_get_mib(dev-&gt;udev, MIB_MAC_MGMT, (u8*)&amp;mac_mgmt,
++		      sizeof(struct mib_mac_mgmt));
++	if (ret &lt; 0) {
++		err(&quot;%s: at76_get_mib failed: %d&quot;, netdev-&gt;name, ret);
++		goto new_bss_clean;
+ 	}
+ 
+-	if (test_bit(AT76_DEVENT_RESTART, &amp;dev-&gt;devent_flags)) {
+-		clear_bit(AT76_DEVENT_RESTART, &amp;dev-&gt;devent_flags);
+-#if 0
+-		at76_assert(dev-&gt;istate == INIT);
+-#endif
+-		at76_startup_device(dev);
++	at76_dbg(DBG_PROGRESS, &quot;ibss_change = 0x%2x&quot;, mac_mgmt.ibss_change);
++	memcpy(dev-&gt;bssid, mac_mgmt.current_bssid, ETH_ALEN);
++	at76_dbg(DBG_PROGRESS, &quot;using BSSID %s&quot;, mac2str(dev-&gt;bssid));
+ 
+-		at76_set_monitor_mode(dev);
++	at76_iwevent_bss_connect(dev-&gt;netdev, dev-&gt;bssid);
+ 
+-		netif_carrier_off(dev-&gt;netdev);	/* disable running netdev watchdog */
+-		netif_stop_queue(dev-&gt;netdev);	/* stop tx data packets */
+-		if (dev-&gt;iw_mode != IW_MODE_MONITOR) {
+-			dev-&gt;istate = SCANNING;
+-			at76_defer_event(dev, AT76_DEVENT_SCAN);
+-		} else {
+-			dev-&gt;istate = MONITORING;
+-			at76_start_scan(dev, 0, 0);
+-			at76_dbg(DBG_MGMT_TIMER,
+-			         &quot;%s:%d: starting mgmt_timer for %d ticks&quot;,
+-			         __FUNCTION__, __LINE__, SCAN_POLL_INTERVAL);
+-			mod_timer(&amp;dev-&gt;mgmt_timer,
+-				  jiffies + SCAN_POLL_INTERVAL);
+-		}
+-	}
++	memset(&amp;dev-&gt;mib_buf, 0, sizeof(struct set_mib_buffer));
++	dev-&gt;mib_buf.type = MIB_MAC_MGMT;
++	dev-&gt;mib_buf.size = 1;
++	dev-&gt;mib_buf.index = IBSS_CHANGE_OK_OFFSET;
++	ret = at76_set_mib(dev, &amp;dev-&gt;mib_buf);
++	if (ret &lt; 0)
++		err(&quot;%s: set_mib (ibss change ok) failed: %d&quot;, netdev-&gt;name, ret);
+ 
+-	/* start processing network packets and setup PM in infra mode: */
+-	if (test_bit(AT76_DEVENT_ASSOC_DONE, &amp;dev-&gt;devent_flags)) {
+-		clear_bit(AT76_DEVENT_ASSOC_DONE, &amp;dev-&gt;devent_flags);
+-		at76_assert(dev-&gt;istate == ASSOCIATING ||
+-		       dev-&gt;istate == REASSOCIATING);
+-		if (dev-&gt;iw_mode == IW_MODE_INFRA) {
+-			at76_assert(dev-&gt;curr_bss != NULL);
+-			if (dev-&gt;curr_bss != NULL &amp;&amp; dev-&gt;pm_mode != AT76_PM_OFF) {
+-				/* calc the listen interval in units of
+-				   beacon intervals of the curr_bss */
+-				u32 pm_period_beacon =
+-				    (dev-&gt;pm_period &gt;&gt; 10) /
+-				    dev-&gt;curr_bss-&gt;beacon_interval;
+-
+-				pm_period_beacon = max(pm_period_beacon, 2u);
+-				pm_period_beacon = min(pm_period_beacon, 0xffffu);
+-
+-				at76_dbg(DBG_PM, &quot;%s: pm_mode %d assoc id x%x listen int %d&quot;,
+-				         dev-&gt;netdev-&gt;name, dev-&gt;pm_mode,
+-				         dev-&gt;curr_bss-&gt;assoc_id, pm_period_beacon);
+-
+-				at76_set_associd(dev, dev-&gt;curr_bss-&gt;assoc_id);
+-				at76_set_listen_interval(dev, (u16)pm_period_beacon);
+-#ifdef DEBUG
+-				at76_dump_mib_mac(dev);
+-				at76_dump_mib_mac_mgmt(dev);
+-#endif
+-			}
+-		}
+-		at76_set_pm_mode(dev);
++  new_bss_clean:
++	up(&amp;dev-&gt;sem);
++}
+ 
+-		netif_carrier_on(dev-&gt;netdev);
+-		netif_wake_queue(dev-&gt;netdev);
+-		dev-&gt;istate = CONNECTED;
+-		at76_iwevent_bss_connect(dev-&gt;netdev, dev-&gt;curr_bss-&gt;bssid);
+-		at76_dbg(DBG_PROGRESS, &quot;%s: connected to BSSID %s&quot;,
+-		         dev-&gt;netdev-&gt;name, mac2str(dev-&gt;curr_bss-&gt;bssid));
+-	}
++static void handle_reset_device(struct work_struct *work)
++{
++	struct at76_priv *dev = container_of(work, struct at76_priv,
++					     work_reset_device);
+ 
+-	if (test_bit(AT76_DEVENT_RESET_DEVICE, &amp;dev-&gt;devent_flags)) {
++	down(&amp;dev-&gt;sem);
++	usb_reset_device(dev-&gt;udev);
++	dev-&gt;istate = WAIT_FOR_DISCONNECT;
++	up(&amp;dev-&gt;sem);
++}
+ 
+-		clear_bit(AT76_DEVENT_RESET_DEVICE, &amp;dev-&gt;devent_flags);
++static void handle_restart(struct work_struct *work)
++{
++	struct at76_priv *dev = container_of(work, struct at76_priv,
++					     work_restart);
+ 
+-		at76_dbg(DBG_DEVSTART, &quot;resetting the device&quot;);
++	down(&amp;dev-&gt;sem);
+ 
+-		usb_reset_device(dev-&gt;udev);
++	at76_startup_device(dev);
++	at76_set_monitor_mode(dev);
+ 
+-		dev-&gt;istate = WAIT_FOR_DISCONNECT;
++	netif_carrier_off(dev-&gt;netdev);	/* disable running netdev watchdog */
++	netif_stop_queue(dev-&gt;netdev);	/* stop tx data packets */
++	if (dev-&gt;iw_mode != IW_MODE_MONITOR) {
++		dev-&gt;istate = SCANNING;
++		schedule_work(&amp;dev-&gt;work_scan);
++	} else {
++		dev-&gt;istate = MONITORING;
++		at76_start_scan(dev, 0, 0);
++		at76_dbg(DBG_MGMT_TIMER,
++		         &quot;%s:%d: starting mgmt_timer for %d ticks&quot;,
++		         __FUNCTION__, __LINE__, SCAN_POLL_INTERVAL);
++		mod_timer(&amp;dev-&gt;mgmt_timer,
++			  jiffies + SCAN_POLL_INTERVAL);
+ 	}
+ 
+-	if (test_bit(AT76_DEVENT_EXTERNAL_FW, &amp;dev-&gt;devent_flags)) {
+-		u8 op_mode;
++	up(&amp;dev-&gt;sem);
++}
+ 
+-		clear_bit(AT76_DEVENT_EXTERNAL_FW, &amp;dev-&gt;devent_flags);
++static void handle_scan(struct work_struct *work)
++{
++	struct at76_priv *dev = container_of(work, struct at76_priv,
++					     work_scan);
++	int ret;
+ 
+-		op_mode = at76_get_op_mode(dev-&gt;udev);
+-		at76_dbg(DBG_DEVSTART, &quot;opmode %d&quot;, op_mode);
++	down(&amp;dev-&gt;sem);
+ 
+-		if (op_mode != OPMODE_NORMAL_NIC_WITHOUT_FLASH) {
+-			err(&quot;unexpected opmode %d&quot;, op_mode);
+-			goto end_external_fw;
+-		}
++	at76_assert(dev-&gt;istate == SCANNING);
++	/* only clear the bss list when a scan is actively initiated,
++	 * otherwise simply rely on at76_bss_list_timeout */
++	if (dev-&gt;site_survey_state == SITE_SURVEY_IN_PROGRESS)
++		at76_free_bss_list(dev);
+ 
+-		if (dev-&gt;extfw &amp;&amp; dev-&gt;extfw_size) {
+-			ret = at76_download_external_fw(dev-&gt;udev, dev-&gt;extfw,
+-						        dev-&gt;extfw_size);
+-			if (ret &lt; 0) {
+-				err(&quot;Downloading external firmware failed: %d&quot;, ret);
+-				goto end_external_fw;
+-			}
+-			if (dev-&gt;board_type == BOARDTYPE_505A_RFMD_2958) {
+-				info(&quot;200 ms delay for board type 7&quot;);
+-				/* jal: can I do this in at76_devent ??? */
+-				set_current_state(TASK_INTERRUPTIBLE);
+-				schedule_timeout(HZ / 5 + 1);
+-			}
+-		}
+-		dev-&gt;istate = INIT;
+-		if((ret = at76_init_new_device(dev)) &lt; 0) {
+-			err(&quot;Downloading external firmware failed: %d&quot;, ret);
+-			goto end_external_fw;
+-		}
++	dev-&gt;scan_runs = 2;
++	if ((ret = at76_start_scan(dev, 0, 1)) &lt; 0) {
++		err(&quot;%s: %s: start_scan failed with %d&quot;,
++		    dev-&gt;netdev-&gt;name, __FUNCTION__, ret);
++	} else {
++		at76_dbg(DBG_MGMT_TIMER, &quot;%s:%d: starting mgmt_timer for %d ticks&quot;,
++		         __FUNCTION__, __LINE__, SCAN_POLL_INTERVAL);
++		mod_timer(&amp;dev-&gt;mgmt_timer, jiffies + SCAN_POLL_INTERVAL);
+ 	}
+-end_external_fw:
+ 
+-	if (test_bit(AT76_DEVENT_INTERNAL_FW, &amp;dev-&gt;devent_flags)) {
+-		clear_bit(AT76_DEVENT_INTERNAL_FW, &amp;dev-&gt;devent_flags);
++	up(&amp;dev-&gt;sem);
++}
+ 
+-		at76_dbg(DBG_DEVSTART, &quot;downloading internal firmware&quot;);
++static void handle_set_promisc(struct work_struct *work)
++{
++	struct at76_priv *dev = container_of(work, struct at76_priv,
++					     work_set_promisc);
+ 
+-		ret = at76_usbdfu_download(dev-&gt;udev, dev-&gt;intfw,
+-				           dev-&gt;intfw_size,
+-				           dev-&gt;board_type ==
+-				           BOARDTYPE_505A_RFMD_2958 ? 2000 : 0);
++	down(&amp;dev-&gt;sem);
++	set_promisc(dev, dev-&gt;promisc);
++	up(&amp;dev-&gt;sem);
++}
+ 
+-		if (ret &lt; 0) {
+-			err(&quot;downloading internal fw failed with %d&quot;, ret);
+-			goto end_internal_fw;
+-		}
++static void handle_start_ibss(struct work_struct *work)
++{
++	struct at76_priv *dev = container_of(work, struct at76_priv,
++					     work_start_ibss);
++	int ret;
+ 
+-		at76_dbg(DBG_DEVSTART, &quot;sending REMAP&quot;);
++	down(&amp;dev-&gt;sem);
+ 
+-		/* no REMAP for 505A (see SF driver) */
+-		if (dev-&gt;board_type != BOARDTYPE_505A_RFMD_2958)
+-			if ((ret = at76_remap(dev-&gt;udev)) &lt; 0) {
+-				err(&quot;sending REMAP failed with %d&quot;, ret);
+-				goto end_internal_fw;
+-			}
++	at76_assert(dev-&gt;istate == STARTIBSS);
++	ret = at76_start_ibss(dev);
++	if (ret &lt; 0) {
++		err(&quot;%s: start_ibss failed: %d&quot;, dev-&gt;netdev-&gt;name, ret);
++		goto end_startibss;
++	}
++
++	ret = at76_wait_completion(dev, CMD_START_IBSS);
++	if (ret != CMD_STATUS_COMPLETE) {
++		err(&quot;%s start_ibss failed to complete,%d&quot;,
++		    dev-&gt;netdev-&gt;name, ret);
++		goto end_startibss;
++	}
++
++	ret = at76_get_current_bssid(dev);
++	if (ret &lt; 0)
++		goto end_startibss;
++
++	ret = at76_get_current_channel(dev);
++	if (ret &lt; 0)
++		goto end_startibss;
+ 
+-		at76_dbg(DBG_DEVSTART, &quot;sleeping for 2 seconds&quot;);
+-		dev-&gt;istate = EXTFW_DOWNLOAD;
+-		mod_timer(&amp;dev-&gt;fw_dl_timer, jiffies + 2 * HZ + 1);
++	/* not sure what this is good for ??? */
++	memset(&amp;dev-&gt;mib_buf, 0, sizeof(struct set_mib_buffer));
++	dev-&gt;mib_buf.type = MIB_MAC_MGMT;
++	dev-&gt;mib_buf.size = 1;
++	dev-&gt;mib_buf.index = IBSS_CHANGE_OK_OFFSET;
++	ret = at76_set_mib(dev, &amp;dev-&gt;mib_buf);
++	if (ret &lt; 0) {
++		err(&quot;%s: set_mib (ibss change ok) failed: %d&quot;, dev-&gt;netdev-&gt;name, ret);
++		goto end_startibss;
+ 	}
+-end_internal_fw:
+ 
++	netif_carrier_on(dev-&gt;netdev);
++	netif_start_queue(dev-&gt;netdev);
++
++  end_startibss:
+ 	up(&amp;dev-&gt;sem);
++}
+ 
+-	at76_dbg(DBG_DEVENT, &quot;%s: %s exit flags: 0x%lx&quot;, dev-&gt;netdev-&gt;name,
+-	    __FUNCTION__, dev-&gt;devent_flags);
++static void handle_submit_rx(struct work_struct *work)
++{
++	struct at76_priv *dev = container_of(work, struct at76_priv,
++					     work_submit_rx);
+ 
+-	return;
++	down(&amp;dev-&gt;sem);
++	at76_submit_rx_urb(dev);
++	up(&amp;dev-&gt;sem);
+ }
+ 
+ static int at76_essid_matched(struct at76_priv *dev, struct bss_info *ptr)
+@@ -2716,10 +2726,10 @@ static void at76_rx_mgmt_assoc(struct at76_priv *dev, struct at76_rx_buffer *buf
+ 			memcpy(dev-&gt;essid, ptr-&gt;ssid, ptr-&gt;ssid_len);
+ 			dev-&gt;essid_size = ptr-&gt;ssid_len;
+ 			dev-&gt;channel = ptr-&gt;channel;
+-			at76_defer_event(dev, AT76_DEVENT_ASSOC_DONE);
++			schedule_work(&amp;dev-&gt;work_assoc_done);
+ 		} else {
+ 			dev-&gt;istate = JOINING;
+-			at76_defer_event(dev, AT76_DEVENT_JOIN);
++			schedule_work(&amp;dev-&gt;work_join);
+ 		}
+ 		del_timer_sync(&amp;dev-&gt;mgmt_timer);
+ 	} else {
+@@ -2769,11 +2779,11 @@ static void at76_rx_mgmt_reassoc(struct at76_priv *dev,
+ 			dev-&gt;channel = bptr-&gt;channel;
+ 			at76_dbg(DBG_PROGRESS, &quot;%s: reassociated to BSSID %s&quot;,
+ 			         dev-&gt;netdev-&gt;name, mac2str(dev-&gt;bssid));
+-			at76_defer_event(dev, AT76_DEVENT_ASSOC_DONE);
++			schedule_work(&amp;dev-&gt;work_assoc_done);
+ 		} else {
+ 			del_timer_sync(&amp;dev-&gt;mgmt_timer);
+ 			dev-&gt;istate = JOINING;
+-			at76_defer_event(dev, AT76_DEVENT_JOIN);
++			schedule_work(&amp;dev-&gt;work_join);
+ 		}
+ 	} else {
+ 		info(&quot;%s: ReAssocResp in state %d ignored&quot;,
+@@ -2822,7 +2832,7 @@ static void at76_rx_mgmt_disassoc(struct at76_priv *dev,
+ 			}
+ 			del_timer_sync(&amp;dev-&gt;mgmt_timer);
+ 			dev-&gt;istate = JOINING;
+-			at76_defer_event(dev, AT76_DEVENT_JOIN);
++			schedule_work(&amp;dev-&gt;work_join);
+ 		} else {
+ 			/* ignore DisAssoc in states AUTH, ASSOC */
+ 			info(&quot;%s: DisAssoc in state %d ignored&quot;,
+@@ -2876,7 +2886,7 @@ static void at76_rx_mgmt_auth(struct at76_priv *dev, struct at76_rx_buffer *buf)
+ 			del_timer_sync(&amp;dev-&gt;mgmt_timer);
+ 			/* try to join next bss */
+ 			dev-&gt;istate = JOINING;
+-			at76_defer_event(dev, AT76_DEVENT_JOIN);
++			schedule_work(&amp;dev-&gt;work_join);
+ 			return;
+ 		}
+ 
+@@ -2929,7 +2939,7 @@ static void at76_rx_mgmt_deauth(struct at76_priv *dev, struct at76_rx_buffer *bu
+ 				at76_iwevent_bss_disconnect(dev-&gt;netdev);
+ 			}
+ 			dev-&gt;istate = JOINING;
+-			at76_defer_event(dev, AT76_DEVENT_JOIN);
++			schedule_work(&amp;dev-&gt;work_join);
+ 			del_timer_sync(&amp;dev-&gt;mgmt_timer);
+ 		}
+ 		/* ignore DeAuth to other STA or from other BSSID */
+@@ -3762,7 +3772,7 @@ exit:
+ 			/* If we can't submit the URB, the adapter becomes completely
+ 			 * useless, so try again later */
+ 			if (--dev-&gt;nr_submit_rx_tries &gt; 0)
+-				at76_defer_event(dev, AT76_DEVENT_SUBMIT_RX);
++				schedule_work(&amp;dev-&gt;work_submit_rx);
+ 			else {
+ 				err(&quot;%s: giving up to submit rx urb after %d failures -&quot;
+ 			    	    &quot; please unload the driver and/or power cycle the device&quot;,
+@@ -3915,7 +3925,7 @@ static void at76_rx_tasklet(unsigned long param)
+ 	/* there is a new bssid around, accept it: */
+ 	if (buf-&gt;newbss &amp;&amp; dev-&gt;iw_mode == IW_MODE_ADHOC) {
+ 		at76_dbg(DBG_PROGRESS, &quot;%s: rx newbss&quot;, netdev-&gt;name);
+-		at76_defer_event(dev, AT76_DEVENT_NEW_BSS);
++		schedule_work(&amp;dev-&gt;work_new_bss);
+ 	}
+ 
+ 	switch (frame_ctl &amp; IEEE80211_FCTL_FTYPE) {
+@@ -4312,7 +4322,7 @@ static int at76_open(struct net_device *netdev)
+ 
+ 	dev-&gt;open_count++;
+ 
+-	at76_defer_event(dev, AT76_DEVENT_RESTART);
++	schedule_work(&amp;dev-&gt;work_restart);
+ 
+ 	at76_dbg(DBG_PROC_ENTRY, &quot;at76_open end&quot;);
+  err:
+@@ -4393,7 +4403,7 @@ static void at76_set_multicast(struct net_device *netdev)
+ 	if (promisc != dev-&gt;promisc) {
+ 		/* grmbl. This gets called in interrupt. */
+ 		dev-&gt;promisc = promisc;
+-		at76_defer_event(dev, AT76_DEVENT_SET_PROMISC);
++		schedule_work(&amp;dev-&gt;work_set_promisc);
+ 	}
+ }
+ 
+@@ -4884,7 +4894,7 @@ static int at76_iw_handler_set_scan(struct net_device *netdev,
+ 
+ 	/* change to scanning state */
+ 	dev-&gt;istate = SCANNING;
+-	at76_defer_event(dev, AT76_DEVENT_SCAN);
++	schedule_work(&amp;dev-&gt;work_scan);
+ 
+ 	return ret;
+ }
+@@ -5850,7 +5860,18 @@ static struct at76_priv *alloc_new_device(struct usb_device *udev,
+ 	dev-&gt;netdev = netdev;
+ 
+ 	init_MUTEX(&amp;dev-&gt;sem);
+-	INIT_WORK(&amp;dev-&gt;devent_queue, at76_devent);
++	INIT_WORK(&amp;dev-&gt;work_assoc_done, handle_assoc_done);
++	INIT_WORK(&amp;dev-&gt;work_external_fw, handle_external_fw);
++	INIT_WORK(&amp;dev-&gt;work_internal_fw, handle_internal_fw);
++	INIT_WORK(&amp;dev-&gt;work_join, handle_join);
++	INIT_WORK(&amp;dev-&gt;work_mgmt_timeout, handle_mgmt_timeout);
++	INIT_WORK(&amp;dev-&gt;work_new_bss, handle_new_bss);
++	INIT_WORK(&amp;dev-&gt;work_reset_device, handle_reset_device);
++	INIT_WORK(&amp;dev-&gt;work_restart, handle_restart);
++	INIT_WORK(&amp;dev-&gt;work_scan, handle_scan);
++	INIT_WORK(&amp;dev-&gt;work_set_promisc, handle_set_promisc);
++	INIT_WORK(&amp;dev-&gt;work_start_ibss, handle_start_ibss);
++	INIT_WORK(&amp;dev-&gt;work_submit_rx, handle_submit_rx);
+ 
+ 	dev-&gt;open_count = 0;
+ 
+@@ -6141,7 +6162,7 @@ static int at76_do_probe(struct usb_device *udev, u8 *fw_data, int fw_size,
+ 		/* download internal firmware part */
+ 		at76_dbg(DBG_DEVSTART, &quot;downloading internal firmware&quot;);
+ 		         dev-&gt;istate = INTFW_DOWNLOAD;
+-		         at76_defer_event(dev, AT76_DEVENT_INTERNAL_FW);
++		         schedule_work(&amp;dev-&gt;work_internal_fw);
+ 
+ 	} else {
+ 		/* internal firmware already inside the device */
+@@ -6201,7 +6222,7 @@ static int at76_do_probe(struct usb_device *udev, u8 *fw_data, int fw_size,
+ 			}
+ 
+ 			dev-&gt;istate = EXTFW_DOWNLOAD;
+-			at76_defer_event(dev, AT76_DEVENT_EXTERNAL_FW);
++			schedule_work(&amp;dev-&gt;work_external_fw);
+ 		} else {
+ 			dev-&gt;istate = INIT;
+ 			if ((ret = at76_init_new_device(dev)) &lt; 0) {
+diff --git a/at76_usb.h b/at76_usb.h
+index 9b4dbb7..996649e 100644
+--- a/at76_usb.h
++++ b/at76_usb.h
+@@ -387,20 +387,6 @@ enum infra_state {
+ 	MONITORING,
+ };
+ 
+-#define AT76_DEVENT_CTRL_HALT		 1
+-#define AT76_DEVENT_NEW_BSS		 2
+-#define AT76_DEVENT_SET_PROMISC 	 3
+-#define AT76_DEVENT_MGMT_TIMEOUT	 4
+-#define AT76_DEVENT_SCAN	 	 5
+-#define AT76_DEVENT_JOIN		 6
+-#define AT76_DEVENT_STARTIBSS		 7
+-#define AT76_DEVENT_SUBMIT_RX		 8
+-#define AT76_DEVENT_RESTART		 9
+-#define AT76_DEVENT_ASSOC_DONE		10
+-#define AT76_DEVENT_EXTERNAL_FW		11
+-#define AT76_DEVENT_INTERNAL_FW		12
+-#define AT76_DEVENT_RESET_DEVICE 	13
+-
+ /* a description of a regulatory domain and the allowed channels */
+ struct reg_domain {
+ 	u16 code;
+@@ -474,9 +460,19 @@ struct at76_priv {
+ 	int open_count;		/* number of times this port has been opened */
+ 	struct semaphore sem;	/* locks this structure */
+ 
+-	/* our deferred event queue */
+-	unsigned long devent_flags;
+-	struct work_struct devent_queue;
++	/* work queues */
++	struct work_struct work_assoc_done;
++	struct work_struct work_external_fw;
++	struct work_struct work_internal_fw;
++	struct work_struct work_join;
++	struct work_struct work_mgmt_timeout;
++	struct work_struct work_new_bss;
++	struct work_struct work_reset_device;
++	struct work_struct work_restart;
++	struct work_struct work_scan;
++	struct work_struct work_set_promisc;
++	struct work_struct work_start_ibss;
++	struct work_struct work_submit_rx;
+ 
+ 	int nr_submit_rx_tries;	/* number of tries to submit an rx urb left */
+ 	struct tasklet_struct tasklet;
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000037.html">[at76c503a-develop] [PATCH] Standardize on radiotap headers for	monitor mode
+</A></li>
+	<LI>Next message: <A HREF="000039.html">[at76c503a-develop] [PATCH 2/4] Assorted minor comment changes
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#38">[ date ]</a>
+              <a href="thread.html#38">[ thread ]</a>
+              <a href="subject.html#38">[ subject ]</a>
+              <a href="author.html#38">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">More information about the at76c503a-develop
+mailing list</a><br>
+</body></html>

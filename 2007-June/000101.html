@@ -1,0 +1,697 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [at76c503a-develop] [PATCH 1/2] Decouple networking from firmware	download
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/at76c503a-develop/2007-June/index.html" >
+   <LINK REL="made" HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%201/2%5D%20Decouple%20networking%20from%20firmware%0A%09download&In-Reply-To=%3C20070608071619.9966.71582.stgit%40dv.roinet.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000098.html">
+   <LINK REL="Next"  HREF="000102.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[at76c503a-develop] [PATCH 1/2] Decouple networking from firmware	download</H1>
+    <B>Pavel Roskin</B> 
+    <A HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%201/2%5D%20Decouple%20networking%20from%20firmware%0A%09download&In-Reply-To=%3C20070608071619.9966.71582.stgit%40dv.roinet.com%3E"
+       TITLE="[at76c503a-develop] [PATCH 1/2] Decouple networking from firmware	download">proski at gnu.org
+       </A><BR>
+    <I>Fri Jun  8 09:16:19 CEST 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000098.html">[at76c503a-develop] New TODO list.
+</A></li>
+        <LI>Next message: <A HREF="000102.html">[at76c503a-develop] [PATCH 1/2] Decouple networking from	firmware download
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#101">[ date ]</a>
+              <a href="thread.html#101">[ thread ]</a>
+              <a href="subject.html#101">[ subject ]</a>
+              <a href="author.html#101">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Move all firmware related data from struct at76_priv to struct fwentry. 
+Move struct fwentry to the header file.  Share the firmware data between
+devices.
+
+Never load firmware version or anything else into firmwares[], as one
+broken device can mess it for others.  Use temporary structures instead.
+
+Change at76_load_internal_fw() and at76_load_external_fw() not to
+require struct at76_priv, which is allocated as part of the network
+device.  at76_disconnect() should check if priv is allocated.
+
+Don't use priv-&gt;istate to track the firmware loading, as it's done in a
+predictable consecutive manner now.  No state machine is needed at this
+point.  There should be no priv at all before the firmware is loaded. 
+Until the device is fully initialized, priv-&gt;istate should be INIT. 
+
+Don't use mutexes during firmware download for the same reason.  In
+fact, they were used incorrectly since priv is not the same during
+internal and external firmware download.
+
+Parse firmware immediately after loading in a new function
+at76_load_firmware() replacing at76_parse_fw() and parts of
+at76_probe().
+
+Don't access udev before usb_get_dev() is called and be careful to call
+usb_put_dev() for all errors.
+
+Improve error handling and diagnostics in the affected code.
+
+Signed-off-by: Pavel Roskin &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">proski at gnu.org</A>&gt;
+---
+
+ at76_usb.c |  343 +++++++++++++++++++++++++++++-------------------------------
+ at76_usb.h |   25 +++-
+ 2 files changed, 182 insertions(+), 186 deletions(-)
+
+diff --git a/at76_usb.c b/at76_usb.c
+index 1c23efc..ddd890b 100644
+--- a/at76_usb.c
++++ b/at76_usb.c
+@@ -46,11 +46,7 @@
+ 
+ static int at76_debug = DBG_DEFAULTS;
+ 
+-/* Firmware names */
+-static struct fwentry {
+-	const char *const fwname;
+-	const struct firmware *fw;
+-} firmwares[] = {
++static struct fwentry firmwares[] = {
+ 	[0]			      = { &quot;&quot; },
+ 	[BOARDTYPE_503_INTERSIL_3861] = { &quot;atmel_at76c503-i3861.bin&quot; },
+ 	[BOARDTYPE_503_INTERSIL_3863] = { &quot;atmel_at76c503-i3863.bin&quot; },
+@@ -656,7 +652,7 @@ static int at76_get_hw_config(struct at76_priv *priv)
+ 	if (!hwcfg)
+ 		return -ENOMEM;
+ 
+-	switch (priv-&gt;board_type) {
++	switch (priv-&gt;fwe-&gt;board_type) {
+ 
+ 	case BOARDTYPE_503_INTERSIL_3861:
+ 	case BOARDTYPE_503_INTERSIL_3863:
+@@ -688,7 +684,7 @@ static int at76_get_hw_config(struct at76_priv *priv)
+ 
+ 	default:
+ 		err(&quot;Bad board type set (%d).  Unable to get hardware config.&quot;,
+-		    priv-&gt;board_type);
++		    priv-&gt;fwe-&gt;board_type);
+ 		ret = -EINVAL;
+ 	}
+ 
+@@ -2920,8 +2916,8 @@ static int at76_iw_handler_get_scan(struct net_device *netdev,
+ 		iwe-&gt;u.qual.level = (curr_bss-&gt;rssi * 100 / 42);
+ 		if (iwe-&gt;u.qual.level &gt; 100)
+ 			iwe-&gt;u.qual.level = 100;
+-		if ((priv-&gt;board_type == BOARDTYPE_503_INTERSIL_3861) ||
+-		    (priv-&gt;board_type == BOARDTYPE_503_INTERSIL_3863)) {
++		if ((priv-&gt;fwe-&gt;board_type == BOARDTYPE_503_INTERSIL_3861) ||
++		    (priv-&gt;fwe-&gt;board_type == BOARDTYPE_503_INTERSIL_3863)) {
+ 			iwe-&gt;u.qual.qual = curr_bss-&gt;link_qual;
+ 		} else {
+ 			iwe-&gt;u.qual.qual = 0;
+@@ -4018,8 +4014,8 @@ static void at76_ethtool_get_drvinfo(struct net_device *netdev,
+ 
+ 	snprintf(info-&gt;fw_version, sizeof(info-&gt;fw_version) - 1,
+ 		 &quot;%d.%d.%d-%d&quot;,
+-		 priv-&gt;fw_version.major, priv-&gt;fw_version.minor,
+-		 priv-&gt;fw_version.patch, priv-&gt;fw_version.build);
++		 priv-&gt;fwe-&gt;fw_version.major, priv-&gt;fwe-&gt;fw_version.minor,
++		 priv-&gt;fwe-&gt;fw_version.patch, priv-&gt;fwe-&gt;fw_version.build);
+ }
+ 
+ 
+@@ -4047,6 +4043,7 @@ static int at76_init_new_device(struct at76_priv *priv)
+ {
+ 	struct net_device *netdev = priv-&gt;netdev;
+ 	int ret;
++	struct mib_fw_version req_fw_version;
+ 
+ 	/* set up the endpoint information */
+ 	/* check out the endpoints */
+@@ -4060,28 +4057,33 @@ static int at76_init_new_device(struct at76_priv *priv)
+ 		goto error;
+ 
+ 	/* get firmware version */
+-	ret = at76_get_mib(priv-&gt;udev, MIB_FW_VERSION, &amp;priv-&gt;fw_version,
+-			   sizeof(priv-&gt;fw_version));
+-	if ((ret &lt; 0) || ((priv-&gt;fw_version.major == 0) &amp;&amp;
+-			  (priv-&gt;fw_version.minor == 0) &amp;&amp;
+-			  (priv-&gt;fw_version.patch == 0) &amp;&amp;
+-			  (priv-&gt;fw_version.build == 0))) {
+-		err(&quot;getting firmware failed with %d, or version is 0&quot;, ret);
++	ret = at76_get_mib(priv-&gt;udev, MIB_FW_VERSION, &amp;req_fw_version,
++			   sizeof(req_fw_version));
++	if (ret &lt; 0) {
++		err(&quot;error %d getting firmware version&quot;, ret);
++		ret = -ENODEV;
++		goto error;
++	}
++
++	if ((req_fw_version.major == 0) &amp;&amp;
++	    (req_fw_version.minor == 0) &amp;&amp;
++	    (req_fw_version.patch == 0) &amp;&amp;
++	    (req_fw_version.build == 0)) {
++		err(&quot;firmware version consists of all zeroes&quot;);
+ 		err(&quot;this probably means that the ext. fw was not loaded correctly&quot;);
+-		if(ret &gt;= 0)
+-			ret = -ENODEV;
++		ret = -ENODEV;
+ 		goto error;
+ 	}
+ 
+ 	/* fw 0.84 doesn't send FCS with rx data */
+-	if (priv-&gt;fw_version.major == 0 &amp;&amp; priv-&gt;fw_version.minor &lt;= 84)
++	if (req_fw_version.major == 0 &amp;&amp; req_fw_version.minor &lt;= 84)
+ 		priv-&gt;rx_data_fcs_len = 0;
+ 	else
+ 		priv-&gt;rx_data_fcs_len = 4;
+ 
+ 	info(&quot;firmware version %d.%d.%d #%d (fcs_len %d)&quot;,
+-	     priv-&gt;fw_version.major, priv-&gt;fw_version.minor,
+-	     priv-&gt;fw_version.patch, priv-&gt;fw_version.build,
++	     req_fw_version.major, req_fw_version.minor,
++	     req_fw_version.patch, req_fw_version.build,
+ 	     priv-&gt;rx_data_fcs_len);
+ 
+ 	/* MAC address */
+@@ -4149,58 +4151,44 @@ static int at76_init_new_device(struct at76_priv *priv)
+ 
+ 
+ /* Download external firmware */
+-static int at76_load_external_fw(struct at76_priv *priv)
++static int at76_load_external_fw(struct usb_device *udev, struct fwentry *fwe)
+ {
+ 	int ret;
+ 	int op_mode;
+ 
+-	mutex_lock(&amp;priv-&gt;mtx);
+-
+-	op_mode = at76_get_op_mode(priv-&gt;udev);
++	op_mode = at76_get_op_mode(udev);
+ 	at76_dbg(DBG_DEVSTART, &quot;opmode %d&quot;, op_mode);
+ 
+ 	if (op_mode != OPMODE_NORMAL_NIC_WITHOUT_FLASH) {
+ 		err(&quot;unexpected opmode %d&quot;, op_mode);
+-		ret = -EINVAL;
+-		goto end_external_fw;
++		return -EINVAL;
+ 	}
+ 
+-	if (priv-&gt;extfw &amp;&amp; priv-&gt;extfw_size) {
+-		ret = at76_download_external_fw(priv-&gt;udev, priv-&gt;extfw,
+-						priv-&gt;extfw_size);
+-		if (ret &lt; 0) {
+-			err(&quot;Downloading external firmware failed: %d&quot;, ret);
+-			goto end_external_fw;
+-		}
+-		if (priv-&gt;board_type == BOARDTYPE_505A_RFMD_2958) {
+-			info(&quot;200 ms delay for board type 7&quot;);
+-			/* can we do this with priv-&gt;mtx down? */
+-			schedule_timeout_interruptible(HZ / 5 + 1);
+-		}
+-	}
+-	priv-&gt;istate = INIT;
+-	mutex_unlock(&amp;priv-&gt;mtx);
+-	if ((ret = at76_init_new_device(priv)) &lt; 0)
++	if (!fwe-&gt;extfw || !fwe-&gt;extfw_size)
++		return -ENOENT;
++
++	ret = at76_download_external_fw(udev, fwe-&gt;extfw, fwe-&gt;extfw_size);
++	if (ret &lt; 0) {
+ 		err(&quot;Downloading external firmware failed: %d&quot;, ret);
+-	return ret;
++		return ret;
++	}
+ 
+-      end_external_fw:
+-	mutex_unlock(&amp;priv-&gt;mtx);
+-	return ret;
++	if (fwe-&gt;board_type == BOARDTYPE_505A_RFMD_2958) {
++		info(&quot;200 ms delay for board type 7&quot;);
++		schedule_timeout_interruptible(HZ / 5 + 1);
++	}
++	return 0;
+ }
+ 
+ 
+ /* Download internal firmware */
+-static int at76_load_internal_fw(struct at76_priv *priv)
++static int at76_load_internal_fw(struct usb_device *udev, struct fwentry *fwe)
+ {
+ 	int ret;
++	int need_remap = (fwe-&gt;board_type != BOARDTYPE_505A_RFMD_2958);
+ 
+-	mutex_lock(&amp;priv-&gt;mtx);
+-
+-	ret = at76_usbdfu_download(priv-&gt;udev, priv-&gt;intfw,
+-				   priv-&gt;intfw_size,
+-				   priv-&gt;board_type ==
+-				   BOARDTYPE_505A_RFMD_2958 ? 2000 : 0);
++	ret = at76_usbdfu_download(udev, fwe-&gt;intfw, fwe-&gt;intfw_size,
++				   need_remap ? 0 : 2000);
+ 
+ 	if (ret &lt; 0) {
+ 		err(&quot;downloading internal fw failed with %d&quot;, ret);
+@@ -4210,20 +4198,17 @@ static int at76_load_internal_fw(struct at76_priv *priv)
+ 	at76_dbg(DBG_DEVSTART, &quot;sending REMAP&quot;);
+ 
+ 	/* no REMAP for 505A (see SF driver) */
+-	if (priv-&gt;board_type != BOARDTYPE_505A_RFMD_2958)
+-		if ((ret = at76_remap(priv-&gt;udev)) &lt; 0) {
++	if (need_remap)
++		if ((ret = at76_remap(udev)) &lt; 0) {
+ 			err(&quot;sending REMAP failed with %d&quot;, ret);
+ 			goto end_internal_fw;
+ 		}
+ 
+ 	at76_dbg(DBG_DEVSTART, &quot;sleeping for 2 seconds&quot;);
+-	priv-&gt;istate = EXTFW_DOWNLOAD;
+ 	schedule_timeout_interruptible(2 * HZ + 1);
+-	usb_reset_device(priv-&gt;udev);
+-	priv-&gt;istate = WAIT_FOR_DISCONNECT;
++	usb_reset_device(udev);
+ 
+       end_internal_fw:
+-	mutex_unlock(&amp;priv-&gt;mtx);
+ 	return ret;
+ }
+ 
+@@ -5299,8 +5284,8 @@ static void at76_calc_level(struct at76_priv *priv, struct at76_rx_buffer *buf,
+ static void at76_calc_qual(struct at76_priv *priv, struct at76_rx_buffer *buf,
+ 			   struct iw_quality* qual)
+ {
+-	if ((priv-&gt;board_type == BOARDTYPE_503_INTERSIL_3861) ||
+-	    (priv-&gt;board_type == BOARDTYPE_503_INTERSIL_3863)) {
++	if ((priv-&gt;fwe-&gt;board_type == BOARDTYPE_503_INTERSIL_3861) ||
++	    (priv-&gt;fwe-&gt;board_type == BOARDTYPE_503_INTERSIL_3863)) {
+ 		qual-&gt;qual = buf-&gt;link_quality;
+ 	} else {
+ 		unsigned long msec;
+@@ -5992,8 +5977,7 @@ static void at76_rx_tasklet(unsigned long param)
+ }
+ 
+ 
+-static struct at76_priv *at76_alloc_new_device(struct usb_device *udev,
+-					       int board_type)
++static struct at76_priv *at76_alloc_new_device(struct usb_device *udev)
+ {
+ 	struct net_device *netdev;
+ 	struct at76_priv *priv = NULL;
+@@ -6036,7 +6020,7 @@ static struct at76_priv *at76_alloc_new_device(struct usb_device *udev,
+ 
+ 	spin_lock_init(&amp;priv-&gt;mgmt_spinlock);
+ 	priv-&gt;next_mgmt_bulk = NULL;
+-	priv-&gt;istate = INTFW_DOWNLOAD;
++	priv-&gt;istate = INIT;
+ 
+ 	/* initialize empty BSS list */
+ 	priv-&gt;curr_bss = priv-&gt;new_bss = NULL;
+@@ -6056,8 +6040,6 @@ static struct at76_priv *at76_alloc_new_device(struct usb_device *udev,
+ 	priv-&gt;rx_tasklet.func = at76_rx_tasklet;
+ 	priv-&gt;rx_tasklet.data = (unsigned long)priv;
+ 
+-	priv-&gt;board_type = board_type;
+-
+ 	priv-&gt;pm_mode = AT76_PM_OFF;
+ 	priv-&gt;pm_period = 0;
+ 
+@@ -6065,45 +6047,66 @@ static struct at76_priv *at76_alloc_new_device(struct usb_device *udev,
+ }
+ 
+ 
+-/* Parse the firmware image */
+-static int at76_parse_fw(struct at76_priv *priv, u8 *fw_data, int fw_size,
+-			 int board_type)
++/* Load firmware into kernel memory and parse it */
++static struct fwentry *at76_load_firmware(struct usb_device *udev,
++					  int board_type)
+ {
++	int ret;
+ 	char *str;
+-	struct at76_fw_header *fw = (struct at76_fw_header *)fw_data;
++	struct at76_fw_header *fwh;
++	struct fwentry *fwe = &amp;firmwares[board_type];
+ 
+-	if (fw_size &lt;= sizeof(*fw)) {
+-		err(&quot;firmware is too short (0x%x)&quot;, fw_size);
+-		return -EFAULT;
++	if (fwe-&gt;loaded) {
++		at76_dbg(DBG_FW, &quot;re-using previously loaded fw&quot;);
++		return fwe;
++	}
++
++	at76_dbg(DBG_FW, &quot;downloading firmware %s&quot;, fwe-&gt;fwname);
++	ret = request_firmware(&amp;fwe-&gt;fw, fwe-&gt;fwname, &amp;udev-&gt;dev);
++	if (ret &lt; 0) {
++		err(&quot;firmware %s not found.&quot;, fwe-&gt;fwname);
++		err(&quot;You may need to download the firmware from &quot;
++		    &quot;<A HREF="https://developer.berlios.de/projects/at76c503a/">https://developer.berlios.de/projects/at76c503a/</A>&quot;);
++		return NULL;
++	}
++
++	at76_dbg(DBG_FW, &quot;got it.&quot;);
++	fwh = (struct at76_fw_header *)(fwe-&gt;fw-&gt;data);
++
++	if (fwe-&gt;fw-&gt;size &lt;= sizeof(*fwh)) {
++		err(&quot;firmware is too short (0x%zx)&quot;, fwe-&gt;fw-&gt;size);
++		return NULL;
+ 	}
+ 
+ 	/* CRC currently not checked */
+-	priv-&gt;board_type = le32_to_cpu(fw-&gt;board_type);
+-	priv-&gt;fw_version.major = fw-&gt;major;
+-	priv-&gt;fw_version.minor = fw-&gt;minor;
+-	priv-&gt;fw_version.patch = fw-&gt;patch;
+-	priv-&gt;fw_version.build = fw-&gt;build;
+-	str = (char *)fw_data + le32_to_cpu(fw-&gt;str_offset);
+-	priv-&gt;intfw = (u8 *)fw + le32_to_cpu(fw-&gt;int_fw_offset);
+-	priv-&gt;intfw_size = le32_to_cpu(fw-&gt;int_fw_len);
+-	priv-&gt;extfw = (u8 *)fw + le32_to_cpu(fw-&gt;ext_fw_offset);
+-	priv-&gt;extfw_size = le32_to_cpu(fw-&gt;ext_fw_len);
++	fwe-&gt;board_type = le32_to_cpu(fwh-&gt;board_type);
++	if (fwe-&gt;board_type != board_type) {
++		err(&quot;board type mismatch, requested %u, got %u&quot;, board_type,
++		    fwe-&gt;board_type);
++		return NULL;
++	}
++
++	fwe-&gt;fw_version.major = fwh-&gt;major;
++	fwe-&gt;fw_version.minor = fwh-&gt;minor;
++	fwe-&gt;fw_version.patch = fwh-&gt;patch;
++	fwe-&gt;fw_version.build = fwh-&gt;build;
++
++	str = (char *)fwh + le32_to_cpu(fwh-&gt;str_offset);
++	fwe-&gt;intfw = (u8 *)fwh + le32_to_cpu(fwh-&gt;int_fw_offset);
++	fwe-&gt;intfw_size = le32_to_cpu(fwh-&gt;int_fw_len);
++	fwe-&gt;extfw = (u8 *)fwh + le32_to_cpu(fwh-&gt;ext_fw_offset);
++	fwe-&gt;extfw_size = le32_to_cpu(fwh-&gt;ext_fw_len);
++
++	fwe-&gt;loaded = 1;
+ 
+ 	at76_dbg(DBG_DEVSTART, &quot;firmware board %u version %u.%u.%u#%u &quot;
+-		 &quot;(int %x:%tx, ext %x:%tx)&quot;, priv-&gt;board_type,
+-		 priv-&gt;fw_version.major, priv-&gt;fw_version.minor,
+-		 priv-&gt;fw_version.patch, priv-&gt;fw_version.build,
+-		 priv-&gt;intfw_size, priv-&gt;intfw - fw_data,
+-		 priv-&gt;extfw_size, priv-&gt;extfw - fw_data);
++		 &quot;(int %x:%x, ext %x:%x)&quot;, board_type,
++		 fwh-&gt;major, fwh-&gt;minor, fwh-&gt;patch, fwh-&gt;build,
++		 le32_to_cpu(fwh-&gt;int_fw_offset), le32_to_cpu(fwh-&gt;int_fw_len),
++		 le32_to_cpu(fwh-&gt;ext_fw_offset), le32_to_cpu(fwh-&gt;ext_fw_len));
+ 	at76_dbg(DBG_DEVSTART, &quot;firmware id %s&quot;, str);
+ 
+-	if (priv-&gt;board_type != board_type) {
+-		err(&quot;inconsistent board types %u != %u&quot;, board_type,
+-		    priv-&gt;board_type);
+-		return -EINVAL;
+-	}
+-
+-	return 0;
++	return fwe;
+ }
+ 
+ 
+@@ -6112,38 +6115,23 @@ static int at76_probe(struct usb_interface *interface,
+ {
+ 	int ret;
+ 	struct at76_priv *priv;
+-	int board_type = (int)id-&gt;driver_info;
+-	const char *const fw_name = firmwares[board_type].fwname;
+-	const struct firmware *fw = firmwares[board_type].fw;
+-	struct usb_device *udev = interface_to_usbdev(interface);
++	struct fwentry *fwe;
++	struct usb_device *udev;
+ 	int op_mode;
++	int need_ext_fw = 0;
++	struct mib_fw_version req_fw_version;
+ 
+-	if (fw == NULL) {
+-		at76_dbg(DBG_FW, &quot;downloading firmware %s&quot;, fw_name);
+-		ret = request_firmware(&amp;fw, fw_name, &amp;udev-&gt;dev);
+-		if (ret == 0) {
+-			at76_dbg(DBG_FW, &quot;got it.&quot;);
+-		} else {
+-			err(&quot;firmware %s not found.&quot;, fw_name);
+-			err(&quot;You may need to download the firmware from &quot;
+-			    &quot;<A HREF="https://developer.berlios.de/projects/at76c503a/">https://developer.berlios.de/projects/at76c503a/</A>&quot;);
+-			return ret;
+-		}
+-	} else
+-		at76_dbg(DBG_FW, &quot;re-using previously loaded fw&quot;);
+-
+-	usb_get_dev(udev);
++	udev = usb_get_dev(interface_to_usbdev(interface));
+ 
+-	if ((priv = at76_alloc_new_device(udev, board_type)) == NULL) {
+-		ret = -ENOMEM;
+-		goto error_alloc;
++	/* Load firmware into kernel memory */
++	fwe = at76_load_firmware(udev, (int)id-&gt;driver_info);
++	if (!fwe) {
++		ret = -ENOENT;
++		goto error;
+ 	}
+ 
+ 	op_mode = at76_get_op_mode(udev);
+ 
+-	usb_set_intfdata(interface, priv);
+-	priv-&gt;interface = interface;
+-
+ 	at76_dbg(DBG_DEVSTART, &quot;opmode %d&quot;, op_mode);
+ 
+ 	/* we get OPMODE_NONE with 2.4.23, SMC2662W-AR ???
+@@ -6152,73 +6140,72 @@ static int at76_probe(struct usb_interface *interface,
+ 	if (op_mode == OPMODE_HW_CONFIG_MODE) {
+ 		err(&quot;cannot handle a device in HW_CONFIG_MODE (opmode %d)&quot;,
+ 		    op_mode);
+-		ret = -ENODEV;
++		ret = -EBUSY;
+ 		goto error;
+ 	}
+ 
+-	/* parse the firmware */
+-	ret = at76_parse_fw(priv, fw-&gt;data, fw-&gt;size, board_type);
+-	if (ret)
+-		goto error;
+-
+ 	if (op_mode != OPMODE_NORMAL_NIC_WITH_FLASH
+ 	    &amp;&amp; op_mode != OPMODE_NORMAL_NIC_WITHOUT_FLASH) {
+ 		/* download internal firmware part */
+ 		at76_dbg(DBG_DEVSTART, &quot;downloading internal firmware&quot;);
+-		priv-&gt;istate = INTFW_DOWNLOAD;
+-		ret = at76_load_internal_fw(priv);
+-		if (ret)
++		ret = at76_load_internal_fw(udev, fwe);
++		if (ret &lt; 0) {
++			err(&quot;error %d downloading internal firmware&quot;, ret);
+ 			goto error;
+-	} else {
+-		/* Internal firmware already inside the device.  Get firmware
+-		 * version to test if external firmware is loaded.
+-		 * This works only for newer firmware, e.g. the Intersil 0.90.x
+-		 * says &quot;control timeout on ep0in&quot; and subsequent
+-		 * at76_get_op_mode() fail too :-( */
+-		int force_fw_dwl = 0;
+-
+-		/* if version &gt;= 0.100.x.y or device with built-in flash we can
+-		 * query the device for the fw version */
+-		if ((priv-&gt;fw_version.major &gt; 0 || priv-&gt;fw_version.minor &gt;= 100)
+-		    || (op_mode == OPMODE_NORMAL_NIC_WITH_FLASH)) {
+-			ret = at76_get_mib(udev, MIB_FW_VERSION,
+-					   &amp;priv-&gt;fw_version,
+-					   sizeof(priv-&gt;fw_version));
+-		} else {
+-			/* force fw download only if the device has no flash inside */
+-			force_fw_dwl = 1;
+ 		}
++		usb_put_dev(udev);
++		return ret;
++	}
+ 
+-		if ((force_fw_dwl) || (ret &lt; 0)
+-		    || ((priv-&gt;fw_version.major == 0)
+-			&amp;&amp; (priv-&gt;fw_version.minor == 0)
+-			&amp;&amp; (priv-&gt;fw_version.patch == 0)
+-			&amp;&amp; (priv-&gt;fw_version.build == 0))) {
+-			if (force_fw_dwl)
+-				at76_dbg(DBG_DEVSTART,
+-					 &quot;forced download of external firmware part&quot;);
+-			else
+-				at76_dbg(DBG_DEVSTART,
+-					 &quot;cannot get firmware (ret %d) or all zeros &quot;
+-					 &quot;- download external firmware&quot;, ret);
+-
+-			priv-&gt;istate = EXTFW_DOWNLOAD;
+-			ret = at76_load_external_fw(priv);
+-			if (ret)
+-				goto error;
+-		} else {
+-			priv-&gt;istate = INIT;
+-			if ((ret = at76_init_new_device(priv)) &lt; 0)
+-				goto error;
+-		}
++	/* Internal firmware already inside the device.  Get firmware
++	 * version to test if external firmware is loaded.
++	 * This works only for newer firmware, e.g. the Intersil 0.90.x
++	 * says &quot;control timeout on ep0in&quot; and subsequent
++	 * at76_get_op_mode() fail too :-( */
++
++	/* if version &gt;= 0.100.x.y or device with built-in flash we can
++	 * query the device for the fw version */
++	if ((fwe-&gt;fw_version.major &gt; 0 || fwe-&gt;fw_version.minor &gt;= 100)
++	    || (op_mode == OPMODE_NORMAL_NIC_WITH_FLASH)) {
++		ret = at76_get_mib(udev, MIB_FW_VERSION,
++				   &amp;req_fw_version,
++				   sizeof(req_fw_version));
++		if ((ret &lt; 0)
++		    || ((req_fw_version.major == 0)
++			&amp;&amp; (req_fw_version.minor == 0)
++			&amp;&amp; (req_fw_version.patch == 0)
++			&amp;&amp; (req_fw_version.build == 0)))
++		need_ext_fw = 1;
++	} else {
++		/* No way to check firmware version, reload to be sure */
++		need_ext_fw = 1;
+ 	}
+-	return 0;
+ 
+-      error:
+-	at76_delete_device(priv);
++	if (need_ext_fw) {
++		at76_dbg(DBG_DEVSTART, &quot;downloading external firmware&quot;);
++
++		ret = at76_load_external_fw(udev, fwe);
++		if (ret)
++			goto error;
++	}
++
++	priv = at76_alloc_new_device(udev);
++	if (!priv) {
++		ret = -ENOMEM;
++		goto error;
++	}
++
++	usb_set_intfdata(interface, priv);
++	priv-&gt;interface = interface;
++	priv-&gt;fwe = fwe;
++
++	ret = at76_init_new_device(priv);
++	if (ret &lt; 0)
++		at76_delete_device(priv);
++
+ 	return ret;
+ 
+-      error_alloc:
++      error:
+ 	usb_put_dev(udev);
+ 	return ret;
+ }
+@@ -6231,6 +6218,10 @@ static void at76_disconnect(struct usb_interface *interface)
+ 	priv = usb_get_intfdata(interface);
+ 	usb_set_intfdata(interface, NULL);
+ 
++	/* Disconnect after loading internal firmware */
++	if (!priv)
++		return;
++
+ 	info(&quot;%s disconnecting&quot;, priv-&gt;netdev-&gt;name);
+ 	at76_delete_device(priv);
+ 	info(DRIVER_NAME &quot; disconnected&quot;);
+diff --git a/at76_usb.h b/at76_usb.h
+index 6169866..de5f035 100644
+--- a/at76_usb.h
++++ b/at76_usb.h
+@@ -388,9 +388,6 @@ enum infra_state {
+ 	JOINING,
+ 	CONNECTED,
+ 	STARTIBSS,
+-	INTFW_DOWNLOAD,
+-	EXTFW_DOWNLOAD,
+-	WAIT_FOR_DISCONNECT,
+ 	MONITORING,
+ };
+ 
+@@ -447,6 +444,20 @@ struct rx_data_buf {
+ /* how often do we try to submit a rx urb until giving up */
+ #define NR_SUBMIT_RX_TRIES 8
+ 
++/* Data for one loaded firmware file */
++struct fwentry {
++	const char *const fwname;
++	const struct firmware *fw;
++	int extfw_size;
++	int intfw_size;
++	/* these point into a buffer managed by the firmware dl functions, no need to dealloc */
++	u8 *extfw;		/* points to external firmware part, extfw_size bytes long */
++	u8 *intfw;		/* points to internal firmware part, intfw_size bytes long */
++	u32 board_type;		/* BOARDTYPE_* in at76_usb_ids.h */
++	struct mib_fw_version fw_version;
++	int loaded;		/* Loaded and parsed successfully */
++};
++
+ struct at76_priv {
+ 	struct usb_device *udev;	/* USB device pointer */
+ 	struct net_device *netdev;	/* net device pointer */
+@@ -547,7 +558,6 @@ struct at76_priv {
+ 	int retries;		/* counts backwards while re-trying to send auth/assoc_req's */
+ 	u8 pm_mode;		/* power management mode: AT76_PM_{OFF, ON, SMART} */
+ 	u32 pm_period;		/* power manag. period in us */
+-	u32 board_type;		/* BOARDTYPE_* in at76_usb_ids.h */
+ 
+ 	struct reg_domain const *domain;	/* the description of the regulatory domain */
+ 	int international_roaming;
+@@ -564,7 +574,6 @@ struct at76_priv {
+ 	u8 regulatory_domain;
+ 
+ 	struct at76_card_config card_config;
+-	struct mib_fw_version fw_version;
+ 
+ 	int rx_data_fcs_len;	/* length of the trailing FCS 
+ 				   (0 for fw &lt;= 0.84.x, 4 otherwise) */
+@@ -572,11 +581,7 @@ struct at76_priv {
+ 	/* store rx fragments until complete */
+ 	struct rx_data_buf rx_data[NR_RX_DATA_BUF];
+ 
+-	int extfw_size;
+-	int intfw_size;
+-	/* these point into a buffer managed by the firmware dl functions, no need to dealloc */
+-	u8 *extfw;		/* points to external firmware part, extfw_size bytes long */
+-	u8 *intfw;		/* points to internal firmware part, intfw_size bytes long */
++	struct fwentry *fwe;
+ 	unsigned int device_unplugged:1;
+ 	unsigned int netdev_registered:1;
+ 	char obuf[2 * 256 + 1];	/* global debug output buffer to reduce stack usage */
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000098.html">[at76c503a-develop] New TODO list.
+</A></li>
+	<LI>Next message: <A HREF="000102.html">[at76c503a-develop] [PATCH 1/2] Decouple networking from	firmware download
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#101">[ date ]</a>
+              <a href="thread.html#101">[ thread ]</a>
+              <a href="subject.html#101">[ subject ]</a>
+              <a href="author.html#101">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">More information about the at76c503a-develop
+mailing list</a><br>
+</body></html>

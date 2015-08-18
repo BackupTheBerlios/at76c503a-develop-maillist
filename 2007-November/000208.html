@@ -1,0 +1,153 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [at76c503a-develop] mac80211 conversion of at76_usb
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/at76c503a-develop/2007-November/index.html" >
+   <LINK REL="made" HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20mac80211%20conversion%20of%20at76_usb&In-Reply-To=%3C1194231218.1967.10.camel%40dv%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   
+   <LINK REL="Next"  HREF="000209.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[at76c503a-develop] mac80211 conversion of at76_usb</H1>
+    <B>Pavel Roskin</B> 
+    <A HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20mac80211%20conversion%20of%20at76_usb&In-Reply-To=%3C1194231218.1967.10.camel%40dv%3E"
+       TITLE="[at76c503a-develop] mac80211 conversion of at76_usb">proski at gnu.org
+       </A><BR>
+    <I>Mon Nov  5 03:53:38 CET 2007</I>
+    <P><UL>
+        
+        <LI>Next message: <A HREF="000209.html">[at76c503a-develop] mac80211 conversion of at76_usb
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#208">[ date ]</a>
+              <a href="thread.html#208">[ thread ]</a>
+              <a href="subject.html#208">[ subject ]</a>
+              <a href="author.html#208">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hello, Kalle!
+
+On Sun, 2007-11-04 at 10:13 +0200, Kalle Valo wrote:
+
+&gt;<i> Sorry for taking two months to answer. I have been busy in real life
+</I>&gt;<i> and haven't had time for at76. But now I can again devote some time
+</I>&gt;<i> for at76.
+</I>
+I'm glad you are back.
+
+&gt;<i> &gt;&gt; I ripped off code quite a lot and tried to simplify the driver. Maybe
+</I>&gt;<i> &gt;&gt; I removed some needed functionality?
+</I>&gt;<i> &gt;
+</I>&gt;<i> &gt; I see that your patch removes printing MAC address on startup.  Look for
+</I>&gt;<i> &gt; &quot;%s: MAC address %s\n&quot;.  It's a minor issue, but it indicates that
+</I>&gt;<i> &gt; something went wrong at some point.
+</I>&gt;<i> 
+</I>&gt;<i> Ok, I'll fix that.
+</I>
+My point was that all those rebases were not as safe as they should have
+been.
+
+&gt;<i> &gt; So I moved your changes to a separate branch &quot;mac80211-kalle&quot; and reset
+</I>&gt;<i> &gt; the &quot;master&quot; branch to what it was before.
+</I>&gt;<i> 
+</I>&gt;<i> Good. I base my work on mac80211-kalle branch from now on.
+</I>
+Actually, I didn't update that branch, so it's behind the development.
+It would be great is you base your patches on the &quot;master&quot; branch.  It
+has exactly the same code as the kernel plus the patch that converts the
+driver to net/mac80211.h header.
+
+You could use mac80211-kalle for reference and for debugging.  Actually,
+it doesn't compile against wireless-2.6/everything due to API changes.
+open() should be renamed to start() and stop() returns void now.  If I
+change that, I get a crash in at76_probe().  I cannot debug it further
+at the moment.
+
+So, the first step would be to fix compatibility.
+
+&gt;<i> &gt; I think the next step should be the conversion without any cleanup (I'm
+</I>&gt;<i> &gt; even fine with compiler warnings about unused functions), and then all
+</I>&gt;<i> &gt; cleanup should be done as separate commits.  Any changes to the
+</I>&gt;<i> &gt; debugging code should be separate too.
+</I>&gt;<i> 
+</I>&gt;<i> Actually I was thinking of first looking at what's wrong with the
+</I>&gt;<i> frame transmission with my patch. After I have solved that one then I
+</I>&gt;<i> will start the patch refactoring. I hope this okay with you.
+</I>
+That's something you can try.
+
+But I think one way to approach the problem would be to add the mac80211
+based device without removing the network device.  This way, you have
+the old and the new code side-by side, there are no warnings about
+unused functions.
+
+You could make the new implementation call the old one temporarily.  You
+could insert debug statements and see if the new and the old interface
+do the same thing to the hardware.
+
+&gt;<i> &gt; I do appreciate your efforts, as they show that the mac80211 conversion
+</I>&gt;<i> &gt; is possible, but I cannot just take the code as is and massage it into
+</I>&gt;<i> &gt; something working.
+</I>&gt;<i> 
+</I>&gt;<i> Actually I'm not yet convinces that the mac80211 port is possible. I
+</I>&gt;<i> want to see transmission side working first.
+</I>
+Please make sure that CMD_JOIN is issued at the right time, as I
+suggested before.
+
+&gt;<i> &gt; My patches that bring the driver in the at76 branch of the kernel more
+</I>&gt;<i> &gt; up-to-date with my repository haven't been applied yet, so the kernel
+</I>&gt;<i> &gt; version of the driver is not suitable for development yet.
+</I>&gt;<i> 
+</I>&gt;<i> Good to know. I will first debug the transmission problem with
+</I>&gt;<i> mac80211-kalle branch and after that is solved, I will start cutting
+</I>&gt;<i> the patch to smaller pieces.
+</I>
+Things have changed.  The kernel is up-to-date with the master branch
+(except the header conversion), but your code is out-of-date.
+
+I don't think you'll be able to split the patch after the fact.  It
+would be easier to make separate changes.  With StGIT, you can always
+return to the old patches to adjust them as necessary.
+
+The first patch would be to add device registration.  Then the rx and tx
+functions (you could make the rx function deliver packets to whichever
+interface is up).  Then whatever else is needed for mac80211 support.
+Then removal of netdev and the trivial cleanups.  Then deeper cleanups.
+
+-- 
+Regards,
+Pavel Roskin
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	
+	<LI>Next message: <A HREF="000209.html">[at76c503a-develop] mac80211 conversion of at76_usb
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#208">[ date ]</a>
+              <a href="thread.html#208">[ thread ]</a>
+              <a href="subject.html#208">[ subject ]</a>
+              <a href="author.html#208">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">More information about the at76c503a-develop
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,171 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [at76c503a-develop] mac80211-enabled at76_usb is	in	wireless-testing
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/at76c503a-develop/2008-March/index.html" >
+   <LINK REL="made" HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20mac80211-enabled%20at76_usb%20is%0A%09in%09wireless-testing&In-Reply-To=%3C20080310011423.66wzwps9gc0sgg4o%40webmail.spamcop.net%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000224.html">
+   
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[at76c503a-develop] mac80211-enabled at76_usb is	in	wireless-testing</H1>
+    <B>Pavel Roskin</B> 
+    <A HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20mac80211-enabled%20at76_usb%20is%0A%09in%09wireless-testing&In-Reply-To=%3C20080310011423.66wzwps9gc0sgg4o%40webmail.spamcop.net%3E"
+       TITLE="[at76c503a-develop] mac80211-enabled at76_usb is	in	wireless-testing">proski at gnu.org
+       </A><BR>
+    <I>Mon Mar 10 06:14:23 CET 2008</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000224.html">[at76c503a-develop] mac80211-enabled at76_usb is in	wireless-testing
+</A></li>
+        
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#225">[ date ]</a>
+              <a href="thread.html#225">[ thread ]</a>
+              <a href="subject.html#225">[ subject ]</a>
+              <a href="author.html#225">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Quoting Kalle Valo &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">Kalle.Valo at iki.fi</A>&gt;:
+
+&gt;&gt;<i> But the current driver is just not ready for prime time.  I tried it
+</I>&gt;&gt;<i> with WEP, and it was slow to associate
+</I>
+I'm sorry, I cannot keep specific setup for a long time.  I tried it  
+today, and the association wasn't a problem, but slow transmission  
+was.  I guess it should be addressed first since it's easy to reproduce.
+
+That's Belkin F5D6050.  40-bit WEP is used.
+
+usb 5-1: new full speed USB device using uhci_hcd and address 2
+usb 5-1: configuration #1 chosen from 1 choice
+Atmel at76x USB Wireless LAN Driver 0.17 loading
+usb 5-1: using firmware atmel_at76c503-rfmd-acc.bin (version 1.101.0-84)
+at76_usb 5-1:1.0: downloading internal firmware
+usb 5-1: reset full speed USB device using uhci_hcd and address 2
+usb 5-1: device firmware changed
+usb 5-1: USB disconnect, address 2
+usbcore: registered new interface driver at76_usb
+usb 5-1: new full speed USB device using uhci_hcd and address 3
+usb 5-1: configuration #1 chosen from 1 choice
+at76_usb 5-1:1.0: downloading external firmware
+phy0: Selected rate control algorithm 'pid'
+phy0: USB 5-1:1.0, MAC 00:30:bd:62:2f:d6, firmware 8.101.5-84
+phy0: regulatory domain 0x10: FCC (USA)
+wlan1: Initial auth_alg=0
+wlan1: authenticate with AP 00:e0:98:09:22:8f
+wlan1: RX authentication from 00:e0:98:09:22:8f (alg=0 transaction=2 status=0)
+wlan1: authenticated
+wlan1: associate with AP 00:e0:98:09:22:8f
+wlan1: RX AssocResp from 00:e0:98:09:22:8f (capab=0x451 status=0 aid=1)
+wlan1: associated
+wlan1: CTS protection enabled (BSSID=00:e0:98:09:22:8f)
+
+&gt;<i> For me it associates as fast as iwl3945. mac80211 has serious problems
+</I>&gt;<i> with associating (at least with iwl3945) and I'll consider that as a
+</I>&gt;<i> mac80211 issue. Can you pinpoint if the problem you are seeing is
+</I>&gt;<i> because of at76_usb or mac80211?
+</I>
+Yes, I know that iwl3945 can be slow, or more like it disassociates  
+when dhclient is run and doesn't reassociate.  But the slow connection  
+is only observed on at76_usb.
+
+&gt;<i> But I would like to get more information about your problem, if
+</I>&gt;<i> possible. Especially monitor mode dump would be really helpful.
+</I>
+&gt;&gt;<i> and the ping turnaround was 2-4 seconds. It's like there is a sleep
+</I>&gt;&gt;<i> somewhere, of the device is reset for every packet.
+</I>&gt;<i>
+</I>&gt;<i> Yeah, I see this too. Sometime ping latency is normal 3-10 ms and
+</I>&gt;<i> sometimes it can be high as 5 seconds. I'll try to fix this first.
+</I>
+What I see is that most pings have turnaround close to a whole number  
+of seconds, i.e. 1, 2, 3, even 10.  And the more you ping, the slower  
+it gets, although it jumps back sometimes:
+
+64 bytes from cvs (192.168.1.2): icmp_seq=18 ttl=64 time=10093 ms
+64 bytes from cvs (192.168.1.2): icmp_seq=19 ttl=64 time=10093 ms
+64 bytes from cvs (192.168.1.2): icmp_seq=20 ttl=64 time=9493 ms
+64 bytes from cvs (192.168.1.2): icmp_seq=21 ttl=64 time=10083 ms
+64 bytes from cvs (192.168.1.2): icmp_seq=22 ttl=64 time=10082 ms
+64 bytes from cvs (192.168.1.2): icmp_seq=23 ttl=64 time=9472 ms
+64 bytes from cvs (192.168.1.2): icmp_seq=24 ttl=64 time=9082 ms
+64 bytes from cvs (192.168.1.2): icmp_seq=25 ttl=64 time=9082 ms
+64 bytes from cvs (192.168.1.2): icmp_seq=26 ttl=64 time=9087 ms
+64 bytes from cvs (192.168.1.2): icmp_seq=27 ttl=64 time=9082 ms
+64 bytes from cvs (192.168.1.2): icmp_seq=28 ttl=64 time=9082 ms
+64 bytes from cvs (192.168.1.2): icmp_seq=29 ttl=64 time=9082 ms
+64 bytes from cvs (192.168.1.2): icmp_seq=30 ttl=64 time=10082 ms
+64 bytes from cvs (192.168.1.2): icmp_seq=31 ttl=64 time=10092 ms
+64 bytes from cvs (192.168.1.2): icmp_seq=32 ttl=64 time=10092 ms
+64 bytes from cvs (192.168.1.2): icmp_seq=33 ttl=64 time=11092 ms
+
+I tried to monitor it, and I see two issues.  One is that the AP sends  
+the ping reply several times, usually from 2 to 4 times.  I guess it  
+doesn't get the ACK.
+
+Another problem is that when I start pinging a non-existent host, I  
+see unrelated requests first, such as NTP requests, ARP for other  
+hosts, and only then, after several seconds, an APR request for the  
+host I'm pinging.  It's like some old packets are kept somewhere and  
+need to be flushed.
+
+It's a slightly unusual network because the AP MAC address is not  
+equal the BSSID.  I'll try to set up a better testbed with a software  
+based AP to see what is happening.
+
+I just want to give you some information for now.
+
+&gt;&gt;<i> Also, the ad-hoc mode is missing.
+</I>&gt;<i>
+</I>&gt;<i> Is that really so important feature that it would block inclusion to
+</I>&gt;<i> the mainline? For me, Ad-Hoc mode is a low priority issue and I was
+</I>&gt;<i> thinking to implement only after the stability issues are fixed.
+</I>
+I don't think it's a blocking issue.  I agree with your priorities.  I  
+have no objection against the driver going to the mainline even in its  
+present state.  In any case, it will take a lot of time for the driver  
+to reach the users.
+
+I just don't want a broken driver to be in the compat-wireless  
+package, because we won't have a chance to fix it before it reaches  
+the end users.  I don't expect users of compat-wireless to help with  
+fixing the problem, and I don't want to disappoint them now and to get  
+bug reports about things we know already.
+
+Ad-hoc is optional.  Fixing slow connection is essential.
+
+-- 
+Regards,
+Pavel Roskin
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000224.html">[at76c503a-develop] mac80211-enabled at76_usb is in	wireless-testing
+</A></li>
+	
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#225">[ date ]</a>
+              <a href="thread.html#225">[ thread ]</a>
+              <a href="subject.html#225">[ subject ]</a>
+              <a href="author.html#225">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">More information about the at76c503a-develop
+mailing list</a><br>
+</body></html>

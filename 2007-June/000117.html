@@ -1,0 +1,180 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [at76c503a-develop] [PATCH 09/12] Save results of usb_sndbulkpipe()	and usb_rcvbulkpipe()
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/at76c503a-develop/2007-June/index.html" >
+   <LINK REL="made" HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%2009/12%5D%20Save%20results%20of%20usb_sndbulkpipe%28%29%0A%09and%20usb_rcvbulkpipe%28%29&In-Reply-To=%3C20070614011137.25709.15564.stgit%40dv.roinet.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000116.html">
+   <LINK REL="Next"  HREF="000118.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[at76c503a-develop] [PATCH 09/12] Save results of usb_sndbulkpipe()	and usb_rcvbulkpipe()</H1>
+    <B>Pavel Roskin</B> 
+    <A HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%2009/12%5D%20Save%20results%20of%20usb_sndbulkpipe%28%29%0A%09and%20usb_rcvbulkpipe%28%29&In-Reply-To=%3C20070614011137.25709.15564.stgit%40dv.roinet.com%3E"
+       TITLE="[at76c503a-develop] [PATCH 09/12] Save results of usb_sndbulkpipe()	and usb_rcvbulkpipe()">proski at gnu.org
+       </A><BR>
+    <I>Thu Jun 14 03:11:37 CEST 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000116.html">[at76c503a-develop] [PATCH 08/12] Run at76_usb.c throut Lindent
+</A></li>
+        <LI>Next message: <A HREF="000118.html">[at76c503a-develop] [PATCH 10/12] Improve info messages,	avoid printing full path
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#117">[ date ]</a>
+              <a href="thread.html#117">[ thread ]</a>
+              <a href="subject.html#117">[ subject ]</a>
+              <a href="author.html#117">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Calculate the pipe numbers on startup and keep them in at76_priv instead
+of keeping the endpoint numbers.  Pipe numbers don't change.
+
+Signed-off-by: Pavel Roskin &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">proski at gnu.org</A>&gt;
+---
+
+ at76_usb.c |   36 +++++++++++++-----------------------
+ at76_usb.h |    4 ++--
+ 2 files changed, 15 insertions(+), 25 deletions(-)
+
+diff --git a/at76_usb.c b/at76_usb.c
+index 6064171..c763457 100644
+--- a/at76_usb.c
++++ b/at76_usb.c
+@@ -1647,9 +1647,7 @@ static void at76_write_bulk_callback(struct urb *urb)
+ 		       le16_to_cpu(mgmt_buf-&gt;wlength) +
+ 		       offsetof(struct at76_tx_buffer, packet));
+ 		usb_fill_bulk_urb(priv-&gt;write_urb, priv-&gt;udev,
+-				  usb_sndbulkpipe(priv-&gt;udev,
+-						  priv-&gt;bulk_out_endpointAddr),
+-				  priv-&gt;bulk_out_buffer,
++				  priv-&gt;tx_bulk_pipe, priv-&gt;bulk_out_buffer,
+ 				  le16_to_cpu(mgmt_buf-&gt;wlength) +
+ 				  mgmt_buf-&gt;padding + AT76_TX_HDRLEN,
+ 				  at76_write_bulk_callback, priv);
+@@ -1715,13 +1713,10 @@ static int at76_send_mgmt_bulk(struct at76_priv *priv,
+ 		memcpy(priv-&gt;bulk_out_buffer, txbuf,
+ 		       le16_to_cpu(txbuf-&gt;wlength) + AT76_TX_HDRLEN);
+ 		usb_fill_bulk_urb(priv-&gt;write_urb, priv-&gt;udev,
+-				  usb_sndbulkpipe(priv-&gt;udev,
+-						  priv-&gt;bulk_out_endpointAddr),
+-				  priv-&gt;bulk_out_buffer,
+-				  le16_to_cpu(txbuf-&gt;wlength) +
+-				  txbuf-&gt;padding +
+-				  AT76_TX_HDRLEN,
+-				  at76_write_bulk_callback, priv);
++				  priv-&gt;tx_bulk_pipe, priv-&gt;bulk_out_buffer,
++				  le16_to_cpu(txbuf-&gt;wlength) + txbuf-&gt;padding +
++				  AT76_TX_HDRLEN, at76_write_bulk_callback,
++				  priv);
+ 		ret = usb_submit_urb(priv-&gt;write_urb, GFP_ATOMIC);
+ 		if (ret) {
+ 			err(&quot;%s: %s error in tx submit urb: %d&quot;,
+@@ -2290,7 +2285,8 @@ static int at76_alloc_urbs(struct at76_priv *priv,
+ 				err(&quot;No free urbs available&quot;);
+ 				return -ENOMEM;
+ 			}
+-			priv-&gt;bulk_in_endpointAddr = endpoint-&gt;bEndpointAddress;
++			priv-&gt;rx_bulk_pipe =
++			    usb_rcvbulkpipe(udev, endpoint-&gt;bEndpointAddress);
+ 		}
+ 
+ 		if (((endpoint-&gt;bEndpointAddress &amp; 0x80) == 0x00) &amp;&amp;
+@@ -2303,18 +2299,16 @@ static int at76_alloc_urbs(struct at76_priv *priv,
+ 			}
+ 			buffer_size = sizeof(struct at76_tx_buffer) +
+ 			    MAX_PADDING_SIZE;
+-			priv-&gt;bulk_out_endpointAddr =
+-			    endpoint-&gt;bEndpointAddress;
+-			priv-&gt;bulk_out_buffer =
++			priv-&gt;tx_bulk_pipe =
++			    usb_sndbulkpipe(udev, endpoint-&gt;bEndpointAddress),
++			    priv-&gt;bulk_out_buffer =
+ 			    kmalloc(buffer_size, GFP_KERNEL);
+ 			if (!priv-&gt;bulk_out_buffer) {
+ 				err(&quot;couldn't allocate bulk_out_buffer&quot;);
+ 				return -ENOMEM;
+ 			}
+ 			usb_fill_bulk_urb(priv-&gt;write_urb, udev,
+-					  usb_sndbulkpipe(udev,
+-							  endpoint-&gt;
+-							  bEndpointAddress),
++					  priv-&gt;tx_bulk_pipe,
+ 					  priv-&gt;bulk_out_buffer, buffer_size,
+ 					  at76_write_bulk_callback, priv);
+ 		}
+@@ -3746,9 +3740,7 @@ static int at76_tx(struct sk_buff *skb, struct net_device *netdev)
+ 	netif_stop_queue(netdev);
+ 	netdev-&gt;trans_start = jiffies;
+ 
+-	usb_fill_bulk_urb(priv-&gt;write_urb, priv-&gt;udev,
+-			  usb_sndbulkpipe(priv-&gt;udev,
+-					  priv-&gt;bulk_out_endpointAddr),
++	usb_fill_bulk_urb(priv-&gt;write_urb, priv-&gt;udev, priv-&gt;tx_bulk_pipe,
+ 			  tx_buffer, submit_len, at76_write_bulk_callback,
+ 			  priv);
+ 	ret = usb_submit_urb(priv-&gt;write_urb, GFP_ATOMIC);
+@@ -3811,9 +3803,7 @@ static int at76_submit_rx_urb(struct at76_priv *priv)
+ 	}
+ 
+ 	size = skb_tailroom(skb);
+-	usb_fill_bulk_urb(priv-&gt;read_urb, priv-&gt;udev,
+-			  usb_rcvbulkpipe(priv-&gt;udev,
+-					  priv-&gt;bulk_in_endpointAddr),
++	usb_fill_bulk_urb(priv-&gt;read_urb, priv-&gt;udev, priv-&gt;rx_bulk_pipe,
+ 			  skb_put(skb, size), size, at76_read_bulk_callback,
+ 			  priv);
+ 	ret = usb_submit_urb(priv-&gt;read_urb, GFP_ATOMIC);
+diff --git a/at76_usb.h b/at76_usb.h
+index 2a292b5..aeabc4a 100644
+--- a/at76_usb.h
++++ b/at76_usb.h
+@@ -465,12 +465,12 @@ struct at76_priv {
+ 	struct iw_statistics wstats;
+ 
+ 	struct sk_buff *rx_skb;	/* skbuff for receiving packets */
+-	__u8 bulk_in_endpointAddr;	/* the address of the bulk in endpoint */
++	unsigned int rx_bulk_pipe;	/* bulk in endpoint */
+ 
+ 	void *bulk_out_buffer;	/* the buffer to send data */
+ 	struct urb *write_urb;	/* the urb used to send data */
+ 	struct urb *read_urb;
+-	__u8 bulk_out_endpointAddr;	/* the address of the bulk out endpoint */
++	unsigned int tx_bulk_pipe;	/* bulk out endpoint */
+ 
+ 	int open_count;		/* number of times this port has been opened */
+ 	struct mutex mtx;	/* locks this structure */
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000116.html">[at76c503a-develop] [PATCH 08/12] Run at76_usb.c throut Lindent
+</A></li>
+	<LI>Next message: <A HREF="000118.html">[at76c503a-develop] [PATCH 10/12] Improve info messages,	avoid printing full path
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#117">[ date ]</a>
+              <a href="thread.html#117">[ thread ]</a>
+              <a href="subject.html#117">[ subject ]</a>
+              <a href="author.html#117">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">More information about the at76c503a-develop
+mailing list</a><br>
+</body></html>

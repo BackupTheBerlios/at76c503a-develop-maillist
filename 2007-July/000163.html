@@ -1,0 +1,100 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [at76c503a-develop] [PATCH 09/19] Comment changes for	at76_init_new_device() and	at76_init_new_device()
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/at76c503a-develop/2007-July/index.html" >
+   <LINK REL="made" HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%2009/19%5D%20Comment%20changes%20for%0A%09at76_init_new_device%28%29%20and%09at76_init_new_device%28%29&In-Reply-To=%3C20070710062109.29117.35119.stgit%40dv.roinet.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000154.html">
+   <LINK REL="Next"  HREF="000159.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[at76c503a-develop] [PATCH 09/19] Comment changes for	at76_init_new_device() and	at76_init_new_device()</H1>
+    <B>Pavel Roskin</B> 
+    <A HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%2009/19%5D%20Comment%20changes%20for%0A%09at76_init_new_device%28%29%20and%09at76_init_new_device%28%29&In-Reply-To=%3C20070710062109.29117.35119.stgit%40dv.roinet.com%3E"
+       TITLE="[at76c503a-develop] [PATCH 09/19] Comment changes for	at76_init_new_device() and	at76_init_new_device()">proski at gnu.org
+       </A><BR>
+    <I>Tue Jul 10 08:21:10 CEST 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000154.html">[at76c503a-develop] [PATCH 08/19] Move usb_put_dev() further to the	end of	at76_delete_device()
+</A></li>
+        <LI>Next message: <A HREF="000159.html">[at76c503a-develop] [PATCH 10/19] Use __func__ in debug messages
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#163">[ date ]</a>
+              <a href="thread.html#163">[ thread ]</a>
+              <a href="subject.html#163">[ subject ]</a>
+              <a href="author.html#163">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Remove an obsolete comment for at76_init_new_device().  There is no way
+it can be run before the firmware is loaded.  Write better comments for
+at76_init_new_device() and at76_init_new_device().
+
+Signed-off-by: Pavel Roskin &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">proski at gnu.org</A>&gt;
+---
+
+ at76_usb.c |    9 ++-------
+ 1 files changed, 2 insertions(+), 7 deletions(-)
+
+diff --git a/at76_usb.c b/at76_usb.c
+index 823389f..2cc781f 100644
+--- a/at76_usb.c
++++ b/at76_usb.c
+@@ -3972,13 +3972,7 @@ static struct ethtool_ops at76_ethtool_ops = {
+ 	.get_link = at76_ethtool_get_link,
+ };
+ 
+-/**
+- * at76_init_new_device - continue device initialization after firmware download
+- *
+- * FIXME: We may have to move the register_netdev into at76_alloc_new_device,
+- * because hotplug may try to configure the netdev _before_ (or parallel to)
+- * the download of firmware
+- */
++/* Register network device and initialize the hardware */
+ static int at76_init_new_device(struct at76_priv *priv,
+ 				struct usb_interface *interface)
+ {
+@@ -5825,6 +5819,7 @@ static void at76_rx_tasklet(unsigned long param)
+ 	return;
+ }
+ 
++/* Allocate network device and initialize private data */
+ static struct at76_priv *at76_alloc_new_device(struct usb_device *udev)
+ {
+ 	struct net_device *netdev;
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000154.html">[at76c503a-develop] [PATCH 08/19] Move usb_put_dev() further to the	end of	at76_delete_device()
+</A></li>
+	<LI>Next message: <A HREF="000159.html">[at76c503a-develop] [PATCH 10/19] Use __func__ in debug messages
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#163">[ date ]</a>
+              <a href="thread.html#163">[ thread ]</a>
+              <a href="subject.html#163">[ subject ]</a>
+              <a href="author.html#163">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">More information about the at76c503a-develop
+mailing list</a><br>
+</body></html>

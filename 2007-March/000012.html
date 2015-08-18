@@ -1,0 +1,88 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [at76c503a-develop] [PATCH 3/8] Don't use __attribute__((packed))	on structure fileds
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/at76c503a-develop/2007-March/index.html" >
+   <LINK REL="made" HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%203/8%5D%20Don%27t%20use%20__attribute__%28%28packed%29%29%0A%09on%20structure%20fileds&In-Reply-To=%3C20070304083524.4169.24455.stgit%40np.roinet.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000011.html">
+   <LINK REL="Next"  HREF="000013.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[at76c503a-develop] [PATCH 3/8] Don't use __attribute__((packed))	on structure fileds</H1>
+    <B>Pavel Roskin</B> 
+    <A HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%203/8%5D%20Don%27t%20use%20__attribute__%28%28packed%29%29%0A%09on%20structure%20fileds&In-Reply-To=%3C20070304083524.4169.24455.stgit%40np.roinet.com%3E"
+       TITLE="[at76c503a-develop] [PATCH 3/8] Don't use __attribute__((packed))	on structure fileds">proski at gnu.org
+       </A><BR>
+    <I>Sun Mar  4 09:35:24 CET 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000011.html">[at76c503a-develop] [PATCH 2/8] Rename .cvsignore to .gitignore
+</A></li>
+        <LI>Next message: <A HREF="000013.html">[at76c503a-develop] [PATCH 4/8] Remove all typedefs,	they are not recommended in Linux code
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#12">[ date ]</a>
+              <a href="thread.html#12">[ thread ]</a>
+              <a href="subject.html#12">[ subject ]</a>
+              <a href="author.html#12">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Signed-off-by: Pavel Roskin &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">proski at gnu.org</A>&gt;
+---
+
+ at76_usb.h |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/at76_usb.h b/at76_usb.h
+index 8af15aa..db81a53 100644
+--- a/at76_usb.h
++++ b/at76_usb.h
+@@ -627,10 +627,10 @@ struct at76c503 {
+ /* message data item for INT, BOUNDEDINT, ENUMINT */
+ typedef struct p80211item_uint32
+ {
+-	uint32_t		did	__attribute__ ((packed));
+-	uint16_t		status	__attribute__ ((packed));
+-	uint16_t		len	__attribute__ ((packed));
+-	uint32_t		data	__attribute__ ((packed));
++	uint32_t did;
++	uint16_t status;
++	uint16_t len;
++	uint32_t data;
+ } __attribute__ ((packed)) p80211item_uint32_t;
+ 
+ typedef struct p80211msg
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000011.html">[at76c503a-develop] [PATCH 2/8] Rename .cvsignore to .gitignore
+</A></li>
+	<LI>Next message: <A HREF="000013.html">[at76c503a-develop] [PATCH 4/8] Remove all typedefs,	they are not recommended in Linux code
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#12">[ date ]</a>
+              <a href="thread.html#12">[ thread ]</a>
+              <a href="subject.html#12">[ subject ]</a>
+              <a href="author.html#12">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">More information about the at76c503a-develop
+mailing list</a><br>
+</body></html>

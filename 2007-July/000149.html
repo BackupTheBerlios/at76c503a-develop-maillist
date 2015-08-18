@@ -1,0 +1,195 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [at76c503a-develop] [PATCH 07/19] Expand request type macros in	usb_control_msg() calls
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/at76c503a-develop/2007-July/index.html" >
+   <LINK REL="made" HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%2007/19%5D%20Expand%20request%20type%20macros%20in%0A%09usb_control_msg%28%29%20calls&In-Reply-To=%3C20070710062059.29117.71912.stgit%40dv.roinet.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000161.html">
+   <LINK REL="Next"  HREF="000154.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[at76c503a-develop] [PATCH 07/19] Expand request type macros in	usb_control_msg() calls</H1>
+    <B>Pavel Roskin</B> 
+    <A HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%2007/19%5D%20Expand%20request%20type%20macros%20in%0A%09usb_control_msg%28%29%20calls&In-Reply-To=%3C20070710062059.29117.71912.stgit%40dv.roinet.com%3E"
+       TITLE="[at76c503a-develop] [PATCH 07/19] Expand request type macros in	usb_control_msg() calls">proski at gnu.org
+       </A><BR>
+    <I>Tue Jul 10 08:20:59 CEST 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000161.html">[at76c503a-develop] [PATCH 06/19] Make firmware download utilities	more uniform
+</A></li>
+        <LI>Next message: <A HREF="000154.html">[at76c503a-develop] [PATCH 08/19] Move usb_put_dev() further to the	end of	at76_delete_device()
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#149">[ date ]</a>
+              <a href="thread.html#149">[ thread ]</a>
+              <a href="subject.html#149">[ subject ]</a>
+              <a href="author.html#149">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>They were used inconsistently.  Besides, they don't make the code more
+readable.
+
+Signed-off-by: Pavel Roskin &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">proski at gnu.org</A>&gt;
+---
+
+ at76_usb.c |   44 ++++++++++++++++++++++++--------------------
+ at76_usb.h |    7 -------
+ 2 files changed, 24 insertions(+), 27 deletions(-)
+
+diff --git a/at76_usb.c b/at76_usb.c
+index ae1bc26..c8efd1d 100644
+--- a/at76_usb.c
++++ b/at76_usb.c
+@@ -539,9 +539,10 @@ static inline void at76_free_bss_list(struct at76_priv *priv)
+ static int at76_remap(struct usb_device *udev)
+ {
+ 	int ret;
+-	ret = usb_control_msg(udev, usb_sndctrlpipe(udev, 0),
+-			      0x0a, INTERFACE_VENDOR_REQUEST_OUT,
+-			      0, 0, NULL, 0, USB_CTRL_GET_TIMEOUT);
++	ret = usb_control_msg(udev, usb_sndctrlpipe(udev, 0), 0x0a,
++			      USB_TYPE_VENDOR | USB_DIR_OUT |
++			      USB_RECIP_INTERFACE, 0, 0, NULL, 0,
++			      USB_CTRL_GET_TIMEOUT);
+ 	if (ret &lt; 0)
+ 		return ret;
+ 	return 0;
+@@ -552,9 +553,10 @@ static int at76_get_op_mode(struct usb_device *udev)
+ 	int ret;
+ 	u8 op_mode;
+ 
+-	ret = usb_control_msg(udev, usb_rcvctrlpipe(udev, 0),
+-			      0x33, INTERFACE_VENDOR_REQUEST_IN,
+-			      0x01, 0, &amp;op_mode, 1, USB_CTRL_GET_TIMEOUT);
++	ret = usb_control_msg(udev, usb_rcvctrlpipe(udev, 0), 0x33,
++			      USB_TYPE_VENDOR | USB_DIR_IN |
++			      USB_RECIP_INTERFACE, 0x01, 0, &amp;op_mode, 1,
++			      USB_CTRL_GET_TIMEOUT);
+ 	if (ret &lt; 0)
+ 		return ret;
+ 	return op_mode;
+@@ -564,8 +566,8 @@ static int at76_get_op_mode(struct usb_device *udev)
+ static inline int at76_load_ext_fw_block(struct usb_device *udev, int blockno,
+ 					 void *block, int size)
+ {
+-	return usb_control_msg(udev, usb_sndctrlpipe(udev, 0),
+-			       0x0e, DEVICE_VENDOR_REQUEST_OUT,
++	return usb_control_msg(udev, usb_sndctrlpipe(udev, 0), 0x0e,
++			       USB_TYPE_VENDOR | USB_DIR_OUT | USB_RECIP_DEVICE,
+ 			       0x0802, blockno, block, size,
+ 			       USB_CTRL_GET_TIMEOUT);
+ }
+@@ -573,9 +575,9 @@ static inline int at76_load_ext_fw_block(struct usb_device *udev, int blockno,
+ static inline int at76_get_hw_cfg_rfmd(struct usb_device *udev,
+ 				       union at76_hwcfg *buf, int buf_size)
+ {
+-	return usb_control_msg(udev, usb_rcvctrlpipe(udev, 0),
+-			       0x33, INTERFACE_VENDOR_REQUEST_IN,
+-			       ((0x0a &lt;&lt; 8) | 0x02), 0,
++	return usb_control_msg(udev, usb_rcvctrlpipe(udev, 0), 0x33,
++			       USB_TYPE_VENDOR | USB_DIR_IN |
++			       USB_RECIP_INTERFACE, ((0x0a &lt;&lt; 8) | 0x02), 0,
+ 			       buf, buf_size, USB_CTRL_GET_TIMEOUT);
+ }
+ 
+@@ -583,9 +585,9 @@ static inline int at76_get_hw_cfg_rfmd(struct usb_device *udev,
+ static inline int at76_get_hw_cfg_intersil(struct usb_device *udev,
+ 					   union at76_hwcfg *buf, int buf_size)
+ {
+-	return usb_control_msg(udev, usb_rcvctrlpipe(udev, 0),
+-			       0x33, INTERFACE_VENDOR_REQUEST_IN,
+-			       ((0x09 &lt;&lt; 8) | 0x02), 0,
++	return usb_control_msg(udev, usb_rcvctrlpipe(udev, 0), 0x33,
++			       USB_TYPE_VENDOR | USB_DIR_IN |
++			       USB_RECIP_INTERFACE, ((0x09 &lt;&lt; 8) | 0x02), 0,
+ 			       buf, buf_size, USB_CTRL_GET_TIMEOUT);
+ }
+ 
+@@ -676,10 +678,10 @@ static struct reg_domain const *at76_get_reg_domain(u16 code)
+ static inline int at76_get_mib(struct usb_device *udev, u16 mib, void *buf,
+ 			       int buf_size)
+ {
+-	return usb_control_msg(udev, usb_rcvctrlpipe(udev, 0),
+-			       0x33, INTERFACE_VENDOR_REQUEST_IN,
+-			       mib &lt;&lt; 8, 0,
+-			       buf, buf_size, USB_CTRL_GET_TIMEOUT);
++	return usb_control_msg(udev, usb_rcvctrlpipe(udev, 0), 0x33,
++			       USB_TYPE_VENDOR | USB_DIR_IN |
++			       USB_RECIP_INTERFACE, mib &lt;&lt; 8, 0, buf, buf_size,
++			       USB_CTRL_GET_TIMEOUT);
+ }
+ 
+ /* Return positive number for status, negative for an error */
+@@ -689,7 +691,8 @@ static inline int at76_get_cmd_status(struct usb_device *udev, u8 cmd)
+ 	int ret;
+ 
+ 	ret = usb_control_msg(udev, usb_rcvctrlpipe(udev, 0), 0x22,
+-			      INTERFACE_VENDOR_REQUEST_IN, cmd, 0, stat_buf,
++			      USB_TYPE_VENDOR | USB_DIR_IN |
++			      USB_RECIP_INTERFACE, cmd, 0, stat_buf,
+ 			      sizeof(stat_buf), USB_CTRL_GET_TIMEOUT);
+ 	if (ret &lt; 0)
+ 		return ret;
+@@ -760,7 +763,8 @@ static int at76_set_card_command(struct usb_device *udev, int cmd, void *buf,
+ 	memcpy(cmd_buf-&gt;data, buf, buf_size);
+ 
+ 	ret = usb_control_msg(udev, usb_sndctrlpipe(udev, 0), 0x0e,
+-			      DEVICE_VENDOR_REQUEST_OUT, 0, 0, cmd_buf,
++			      USB_TYPE_VENDOR | USB_DIR_OUT | USB_RECIP_DEVICE,
++			      0, 0, cmd_buf,
+ 			      sizeof(struct at76_command) + buf_size,
+ 			      USB_CTRL_GET_TIMEOUT);
+ 	kfree(cmd_buf);
+diff --git a/at76_usb.h b/at76_usb.h
+index 111a5ee..6178784 100644
+--- a/at76_usb.h
++++ b/at76_usb.h
+@@ -47,13 +47,6 @@
+ #define AT76_SET_INTL_ROAMING    (SIOCIWFIRSTPRIV + 10)
+ #define AT76_GET_INTL_ROAMING    (SIOCIWFIRSTPRIV + 11)
+ 
+-#define DEVICE_VENDOR_REQUEST_OUT    0x40
+-#define DEVICE_VENDOR_REQUEST_IN     0xc0
+-#define INTERFACE_VENDOR_REQUEST_OUT 0x41
+-#define INTERFACE_VENDOR_REQUEST_IN  0xc1
+-#define CLASS_REQUEST_OUT            0x21
+-#define CLASS_REQUEST_IN             0xa1
+-
+ #define CMD_STATUS_IDLE                   0x00
+ #define CMD_STATUS_COMPLETE               0x01
+ #define CMD_STATUS_UNKNOWN                0x02
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000161.html">[at76c503a-develop] [PATCH 06/19] Make firmware download utilities	more uniform
+</A></li>
+	<LI>Next message: <A HREF="000154.html">[at76c503a-develop] [PATCH 08/19] Move usb_put_dev() further to the	end of	at76_delete_device()
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#149">[ date ]</a>
+              <a href="thread.html#149">[ thread ]</a>
+              <a href="subject.html#149">[ subject ]</a>
+              <a href="author.html#149">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">More information about the at76c503a-develop
+mailing list</a><br>
+</body></html>

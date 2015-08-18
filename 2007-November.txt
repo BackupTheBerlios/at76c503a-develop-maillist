@@ -1,0 +1,144 @@
+From proski at gnu.org  Mon Nov  5 03:53:38 2007
+From: proski at gnu.org (Pavel Roskin)
+Date: Sun, 04 Nov 2007 21:53:38 -0500
+Subject: [at76c503a-develop] mac80211 conversion of at76_usb
+In-Reply-To: <87d4uqe8dm.fsf@litku.valot.fi>
+References: <1188617553.9555.29.camel@dv> <873axyk163.fsf@litku.valot.fi>
+	<20070901170549.r6scuu1w2ssgoow0@webmail.spamcop.net>
+	<87sl5x3c2y.fsf@litku.valot.fi> <87odgl35w6.fsf@litku.valot.fi>
+	<20070902114929.onwne6an4k4cs0g4@webmail.spamcop.net>
+	<87veas27l1.fsf@litku.valot.fi> <1189401577.25360.2.camel@dv>
+	<87d4uqe8dm.fsf@litku.valot.fi>
+Message-ID: <1194231218.1967.10.camel@dv>
+
+Hello, Kalle!
+
+On Sun, 2007-11-04 at 10:13 +0200, Kalle Valo wrote:
+
+> Sorry for taking two months to answer. I have been busy in real life
+> and haven't had time for at76. But now I can again devote some time
+> for at76.
+
+I'm glad you are back.
+
+> >> I ripped off code quite a lot and tried to simplify the driver. Maybe
+> >> I removed some needed functionality?
+> >
+> > I see that your patch removes printing MAC address on startup.  Look for
+> > "%s: MAC address %s\n".  It's a minor issue, but it indicates that
+> > something went wrong at some point.
+> 
+> Ok, I'll fix that.
+
+My point was that all those rebases were not as safe as they should have
+been.
+
+> > So I moved your changes to a separate branch "mac80211-kalle" and reset
+> > the "master" branch to what it was before.
+> 
+> Good. I base my work on mac80211-kalle branch from now on.
+
+Actually, I didn't update that branch, so it's behind the development.
+It would be great is you base your patches on the "master" branch.  It
+has exactly the same code as the kernel plus the patch that converts the
+driver to net/mac80211.h header.
+
+You could use mac80211-kalle for reference and for debugging.  Actually,
+it doesn't compile against wireless-2.6/everything due to API changes.
+open() should be renamed to start() and stop() returns void now.  If I
+change that, I get a crash in at76_probe().  I cannot debug it further
+at the moment.
+
+So, the first step would be to fix compatibility.
+
+> > I think the next step should be the conversion without any cleanup (I'm
+> > even fine with compiler warnings about unused functions), and then all
+> > cleanup should be done as separate commits.  Any changes to the
+> > debugging code should be separate too.
+> 
+> Actually I was thinking of first looking at what's wrong with the
+> frame transmission with my patch. After I have solved that one then I
+> will start the patch refactoring. I hope this okay with you.
+
+That's something you can try.
+
+But I think one way to approach the problem would be to add the mac80211
+based device without removing the network device.  This way, you have
+the old and the new code side-by side, there are no warnings about
+unused functions.
+
+You could make the new implementation call the old one temporarily.  You
+could insert debug statements and see if the new and the old interface
+do the same thing to the hardware.
+
+> > I do appreciate your efforts, as they show that the mac80211 conversion
+> > is possible, but I cannot just take the code as is and massage it into
+> > something working.
+> 
+> Actually I'm not yet convinces that the mac80211 port is possible. I
+> want to see transmission side working first.
+
+Please make sure that CMD_JOIN is issued at the right time, as I
+suggested before.
+
+> > My patches that bring the driver in the at76 branch of the kernel more
+> > up-to-date with my repository haven't been applied yet, so the kernel
+> > version of the driver is not suitable for development yet.
+> 
+> Good to know. I will first debug the transmission problem with
+> mac80211-kalle branch and after that is solved, I will start cutting
+> the patch to smaller pieces.
+
+Things have changed.  The kernel is up-to-date with the master branch
+(except the header conversion), but your code is out-of-date.
+
+I don't think you'll be able to split the patch after the fact.  It
+would be easier to make separate changes.  With StGIT, you can always
+return to the old patches to adjust them as necessary.
+
+The first patch would be to add device registration.  Then the rx and tx
+functions (you could make the rx function deliver packets to whichever
+interface is up).  Then whatever else is needed for mac80211 support.
+Then removal of netdev and the trivial cleanups.  Then deeper cleanups.
+
+-- 
+Regards,
+Pavel Roskin
+
+
+
+From milan.plzik at gmail.com  Mon Nov  5 23:15:54 2007
+From: milan.plzik at gmail.com (Milan Plzik)
+Date: Mon, 05 Nov 2007 23:15:54 +0100
+Subject: [at76c503a-develop] mac80211 conversion of at76_usb
+In-Reply-To: <1194231218.1967.10.camel@dv>
+References: <1188617553.9555.29.camel@dv> <873axyk163.fsf@litku.valot.fi>
+	<20070901170549.r6scuu1w2ssgoow0@webmail.spamcop.net>
+	<87sl5x3c2y.fsf@litku.valot.fi> <87odgl35w6.fsf@litku.valot.fi>
+	<20070902114929.onwne6an4k4cs0g4@webmail.spamcop.net>
+	<87veas27l1.fsf@litku.valot.fi> <1189401577.25360.2.camel@dv>
+	<87d4uqe8dm.fsf@litku.valot.fi>  <1194231218.1967.10.camel@dv>
+Message-ID: <1194300981.3344.193.camel@localhost>
+
+
+On Sun, 2007-11-04 at 21:53 -0500, Pavel Roskin wrote:
+
+> 
+> On Sun, 2007-11-04 at 10:13 +0200, Kalle Valo wrote:
+> 
+> > Sorry for taking two months to answer. I have been busy in real life
+> > and haven't had time for at76. But now I can again devote some time
+> > for at76.
+> 
+> I'm glad you are back.
+
+  I'm too:) If you would need any help with testing/debugging, I can
+help at least a bit. I would like to help as much as possible to speed
+up mac80211 conversion. After that, I could start implementing support
+for 1.103.x firmware.
+
+	Milan
+
+
+
+

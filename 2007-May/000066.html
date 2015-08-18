@@ -1,0 +1,342 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [at76c503a-develop] [PATCH 6/6] Replace semaphores with mutexes
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/at76c503a-develop/2007-May/index.html" >
+   <LINK REL="made" HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%206/6%5D%20Replace%20semaphores%20with%20mutexes&In-Reply-To=%3C20070502000107.14011.31624.stgit%40dv.roinet.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000067.html">
+   <LINK REL="Next"  HREF="000069.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[at76c503a-develop] [PATCH 6/6] Replace semaphores with mutexes</H1>
+    <B>Pavel Roskin</B> 
+    <A HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%206/6%5D%20Replace%20semaphores%20with%20mutexes&In-Reply-To=%3C20070502000107.14011.31624.stgit%40dv.roinet.com%3E"
+       TITLE="[at76c503a-develop] [PATCH 6/6] Replace semaphores with mutexes">proski at gnu.org
+       </A><BR>
+    <I>Wed May  2 02:01:07 CEST 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000067.html">[at76c503a-develop] [PATCH 5/6] Call private data (at76_priv)	&quot;priv&quot;, not &quot;dev&quot;, the later is ambiguous
+</A></li>
+        <LI>Next message: <A HREF="000069.html">[at76c503a-develop] [PATCH 1/6] Merge at76_do_probe() into	at76_probe()
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#66">[ date ]</a>
+              <a href="thread.html#66">[ thread ]</a>
+              <a href="subject.html#66">[ subject ]</a>
+              <a href="author.html#66">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Semaphores are overkill for simple locking.
+
+Signed-off-by: Pavel Roskin &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">proski at gnu.org</A>&gt;
+---
+
+ at76_usb.c |   60 ++++++++++++++++++++++++++++++------------------------------
+ at76_usb.h |    2 +-
+ 2 files changed, 31 insertions(+), 31 deletions(-)
+
+diff --git a/at76_usb.c b/at76_usb.c
+index b66536d..62172ff 100644
+--- a/at76_usb.c
++++ b/at76_usb.c
+@@ -2288,7 +2288,7 @@ static void at76_work_assoc_done(struct work_struct *work)
+ 	struct at76_priv *priv = container_of(work, struct at76_priv,
+ 					     work_assoc_done);
+ 
+-	down(&amp;priv-&gt;sem);
++	mutex_lock(&amp;priv-&gt;mtx);
+ 
+ 	at76_assert(priv-&gt;istate == ASSOCIATING || priv-&gt;istate == REASSOCIATING);
+ 	if (priv-&gt;iw_mode == IW_MODE_INFRA) {
+@@ -2323,7 +2323,7 @@ static void at76_work_assoc_done(struct work_struct *work)
+ 	at76_dbg(DBG_PROGRESS, &quot;%s: connected to BSSID %s&quot;,
+ 	         priv-&gt;netdev-&gt;name, mac2str(priv-&gt;curr_bss-&gt;bssid));
+ 
+-	up(&amp;priv-&gt;sem);
++	mutex_unlock(&amp;priv-&gt;mtx);
+ }
+ 
+ 
+@@ -4033,7 +4033,7 @@ static int at76_open(struct net_device *netdev)
+ 
+ 	at76_dbg(DBG_PROC_ENTRY, &quot;at76_open entry&quot;);
+ 
+-	if (down_interruptible(&amp;priv-&gt;sem))
++	if (mutex_lock_interruptible(&amp;priv-&gt;mtx))
+ 		return -EINTR;
+ 
+ 	/* if netdev-&gt;dev_addr != priv-&gt;mac_addr we must
+@@ -4062,7 +4062,7 @@ static int at76_open(struct net_device *netdev)
+ 
+ 	at76_dbg(DBG_PROC_ENTRY, &quot;at76_open end&quot;);
+  err:
+-	up(&amp;priv-&gt;sem);
++	mutex_unlock(&amp;priv-&gt;mtx);
+ 	return ret &lt; 0 ? ret : 0;
+ }
+ 
+@@ -4074,7 +4074,7 @@ static int at76_stop(struct net_device *netdev)
+ 
+ 	at76_dbg(DBG_DEVSTART, &quot;%s: ENTER&quot;, __FUNCTION__);
+ 
+-	if (down_interruptible(&amp;priv-&gt;sem))
++	if (mutex_lock_interruptible(&amp;priv-&gt;mtx))
+ 		return -EINTR;
+ 
+ 	netif_stop_queue(netdev);
+@@ -4107,7 +4107,7 @@ static int at76_stop(struct net_device *netdev)
+ 	at76_assert(priv-&gt;open_count &gt; 0);
+ 	priv-&gt;open_count--;
+ 
+-	up(&amp;priv-&gt;sem);
++	mutex_unlock(&amp;priv-&gt;mtx);
+ 	at76_dbg(DBG_DEVSTART, &quot;%s: EXIT&quot;, __FUNCTION__);
+ 
+ 	return 0;
+@@ -4271,7 +4271,7 @@ static void at76_work_external_fw(struct work_struct *work)
+ 	int ret;
+ 	u8 op_mode;
+ 
+-	down(&amp;priv-&gt;sem);
++	mutex_lock(&amp;priv-&gt;mtx);
+ 
+ 	op_mode = at76_get_op_mode(priv-&gt;udev);
+ 	at76_dbg(DBG_DEVSTART, &quot;opmode %d&quot;, op_mode);
+@@ -4290,7 +4290,7 @@ static void at76_work_external_fw(struct work_struct *work)
+ 		}
+ 		if (priv-&gt;board_type == BOARDTYPE_505A_RFMD_2958) {
+ 			info(&quot;200 ms delay for board type 7&quot;);
+-			/* can we do this with priv-&gt;sem down? */
++			/* can we do this with priv-&gt;mtx down? */
+ 			set_current_state(TASK_INTERRUPTIBLE);
+ 			schedule_timeout(HZ / 5 + 1);
+ 		}
+@@ -4300,7 +4300,7 @@ static void at76_work_external_fw(struct work_struct *work)
+ 		err(&quot;Downloading external firmware failed: %d&quot;, ret);
+ 
+   end_external_fw:
+-	up(&amp;priv-&gt;sem);
++	mutex_unlock(&amp;priv-&gt;mtx);
+ }
+ 
+ 
+@@ -4311,7 +4311,7 @@ static void at76_work_internal_fw(struct work_struct *work)
+ 					     work_internal_fw);
+ 	int ret;
+ 
+-	down(&amp;priv-&gt;sem);
++	mutex_lock(&amp;priv-&gt;mtx);
+ 
+ 	ret = at76_usbdfu_download(priv-&gt;udev, priv-&gt;intfw,
+ 			           priv-&gt;intfw_size,
+@@ -4337,7 +4337,7 @@ static void at76_work_internal_fw(struct work_struct *work)
+ 	mod_timer(&amp;priv-&gt;fw_dl_timer, jiffies + 2 * HZ + 1);
+ 
+   end_internal_fw:
+-	up(&amp;priv-&gt;sem);
++	mutex_unlock(&amp;priv-&gt;mtx);
+ }
+ 
+ 
+@@ -4475,7 +4475,7 @@ static void at76_work_join(struct work_struct *work)
+ 	int ret;
+ 	unsigned long flags;
+ 
+-	down(&amp;priv-&gt;sem);
++	mutex_lock(&amp;priv-&gt;mtx);
+ 
+ 	if (priv-&gt;istate == INIT)
+ 		goto end_join;
+@@ -4547,7 +4547,7 @@ static void at76_work_join(struct work_struct *work)
+ 	schedule_work(&amp;priv-&gt;work_scan);
+ 
+   end_join:
+-	up(&amp;priv-&gt;sem);
++	mutex_unlock(&amp;priv-&gt;mtx);
+ }
+ 
+ 
+@@ -4556,9 +4556,9 @@ static void at76_work_mgmt_timeout(struct work_struct *work)
+ 	struct at76_priv *priv = container_of(work, struct at76_priv,
+ 					     work_mgmt_timeout);
+ 
+-	down(&amp;priv-&gt;sem);
++	mutex_lock(&amp;priv-&gt;mtx);
+ 	at76_handle_mgmt_timeout(priv);
+-	up(&amp;priv-&gt;sem);
++	mutex_unlock(&amp;priv-&gt;mtx);
+ }
+ 
+ 
+@@ -4570,7 +4570,7 @@ static void at76_work_new_bss(struct work_struct *work)
+ 	struct net_device *netdev = priv-&gt;netdev;
+ 	struct mib_mac_mgmt mac_mgmt;
+ 
+-	down(&amp;priv-&gt;sem);
++	mutex_lock(&amp;priv-&gt;mtx);
+ 
+ 	ret = at76_get_mib(priv-&gt;udev, MIB_MAC_MGMT, &amp;mac_mgmt,
+ 		      sizeof(struct mib_mac_mgmt));
+@@ -4594,7 +4594,7 @@ static void at76_work_new_bss(struct work_struct *work)
+ 		err(&quot;%s: set_mib (ibss change ok) failed: %d&quot;, netdev-&gt;name, ret);
+ 
+   new_bss_clean:
+-	up(&amp;priv-&gt;sem);
++	mutex_unlock(&amp;priv-&gt;mtx);
+ }
+ 
+ 
+@@ -4603,10 +4603,10 @@ static void at76_work_reset_device(struct work_struct *work)
+ 	struct at76_priv *priv = container_of(work, struct at76_priv,
+ 					     work_reset_device);
+ 
+-	down(&amp;priv-&gt;sem);
++	mutex_lock(&amp;priv-&gt;mtx);
+ 	usb_reset_device(priv-&gt;udev);
+ 	priv-&gt;istate = WAIT_FOR_DISCONNECT;
+-	up(&amp;priv-&gt;sem);
++	mutex_unlock(&amp;priv-&gt;mtx);
+ }
+ 
+ 
+@@ -4758,7 +4758,7 @@ static void at76_work_restart(struct work_struct *work)
+ 	struct at76_priv *priv = container_of(work, struct at76_priv,
+ 					     work_restart);
+ 
+-	down(&amp;priv-&gt;sem);
++	mutex_lock(&amp;priv-&gt;mtx);
+ 
+ 	at76_startup_device(priv);
+ 	at76_set_monitor_mode(priv);
+@@ -4778,7 +4778,7 @@ static void at76_work_restart(struct work_struct *work)
+ 			  jiffies + SCAN_POLL_INTERVAL);
+ 	}
+ 
+-	up(&amp;priv-&gt;sem);
++	mutex_unlock(&amp;priv-&gt;mtx);
+ }
+ 
+ 
+@@ -4788,7 +4788,7 @@ static void at76_work_scan(struct work_struct *work)
+ 					     work_scan);
+ 	int ret;
+ 
+-	down(&amp;priv-&gt;sem);
++	mutex_lock(&amp;priv-&gt;mtx);
+ 
+ 	at76_assert(priv-&gt;istate == SCANNING);
+ 	/* only clear the bss list when a scan is actively initiated,
+@@ -4806,7 +4806,7 @@ static void at76_work_scan(struct work_struct *work)
+ 		mod_timer(&amp;priv-&gt;mgmt_timer, jiffies + SCAN_POLL_INTERVAL);
+ 	}
+ 
+-	up(&amp;priv-&gt;sem);
++	mutex_unlock(&amp;priv-&gt;mtx);
+ }
+ 
+ 
+@@ -4816,7 +4816,7 @@ static void at76_work_set_promisc(struct work_struct *work)
+ 					     work_set_promisc);
+ 	int ret = 0;
+ 
+-	down(&amp;priv-&gt;sem);
++	mutex_lock(&amp;priv-&gt;mtx);
+ 
+ 	memset(&amp;priv-&gt;mib_buf, 0, sizeof(struct set_mib_buffer));
+ 	priv-&gt;mib_buf.type = MIB_LOCAL;
+@@ -4829,7 +4829,7 @@ static void at76_work_set_promisc(struct work_struct *work)
+ 		    priv-&gt;netdev-&gt;name, ret);
+ 	}
+ 
+-	up(&amp;priv-&gt;sem);
++	mutex_unlock(&amp;priv-&gt;mtx);
+ }
+ 
+ 
+@@ -4839,7 +4839,7 @@ static void at76_work_start_ibss(struct work_struct *work)
+ 					     work_start_ibss);
+ 	int ret;
+ 
+-	down(&amp;priv-&gt;sem);
++	mutex_lock(&amp;priv-&gt;mtx);
+ 
+ 	at76_assert(priv-&gt;istate == STARTIBSS);
+ 	ret = at76_start_ibss(priv);
+@@ -4878,7 +4878,7 @@ static void at76_work_start_ibss(struct work_struct *work)
+ 	netif_start_queue(priv-&gt;netdev);
+ 
+   end_startibss:
+-	up(&amp;priv-&gt;sem);
++	mutex_unlock(&amp;priv-&gt;mtx);
+ }
+ 
+ 
+@@ -4887,9 +4887,9 @@ static void at76_work_submit_rx(struct work_struct *work)
+ 	struct at76_priv *priv = container_of(work, struct at76_priv,
+ 					     work_submit_rx);
+ 
+-	down(&amp;priv-&gt;sem);
++	mutex_lock(&amp;priv-&gt;mtx);
+ 	at76_submit_rx_urb(priv);
+-	up(&amp;priv-&gt;sem);
++	mutex_unlock(&amp;priv-&gt;mtx);
+ }
+ 
+ 
+@@ -6097,7 +6097,7 @@ static struct at76_priv *at76_alloc_new_device(struct usb_device *udev,
+ 	priv-&gt;udev = udev;
+ 	priv-&gt;netdev = netdev;
+ 
+-	init_MUTEX(&amp;priv-&gt;sem);
++	mutex_init(&amp;priv-&gt;mtx);
+ 	INIT_WORK(&amp;priv-&gt;work_assoc_done, at76_work_assoc_done);
+ 	INIT_WORK(&amp;priv-&gt;work_external_fw, at76_work_external_fw);
+ 	INIT_WORK(&amp;priv-&gt;work_internal_fw, at76_work_internal_fw);
+diff --git a/at76_usb.h b/at76_usb.h
+index f32bb61..34f1862 100644
+--- a/at76_usb.h
++++ b/at76_usb.h
+@@ -466,7 +466,7 @@ struct at76_priv {
+ 	__u8 bulk_out_endpointAddr;	/* the address of the bulk out endpoint */
+ 
+ 	int open_count;		/* number of times this port has been opened */
+-	struct semaphore sem;	/* locks this structure */
++	struct mutex mtx;	/* locks this structure */
+ 
+ 	/* work queues */
+ 	struct work_struct work_assoc_done;
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000067.html">[at76c503a-develop] [PATCH 5/6] Call private data (at76_priv)	&quot;priv&quot;, not &quot;dev&quot;, the later is ambiguous
+</A></li>
+	<LI>Next message: <A HREF="000069.html">[at76c503a-develop] [PATCH 1/6] Merge at76_do_probe() into	at76_probe()
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#66">[ date ]</a>
+              <a href="thread.html#66">[ thread ]</a>
+              <a href="subject.html#66">[ subject ]</a>
+              <a href="author.html#66">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">More information about the at76c503a-develop
+mailing list</a><br>
+</body></html>

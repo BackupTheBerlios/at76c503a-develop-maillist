@@ -1,0 +1,784 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [at76c503a-develop] [PATCH 3/3] Remove all locking for istate
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/at76c503a-develop/2007-March/index.html" >
+   <LINK REL="made" HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%203/3%5D%20Remove%20all%20locking%20for%20istate&In-Reply-To=%3C20070305035844.5752.31537.stgit%40dl.roinet.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000020.html">
+   <LINK REL="Next"  HREF="000024.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[at76c503a-develop] [PATCH 3/3] Remove all locking for istate</H1>
+    <B>Pavel Roskin</B> 
+    <A HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%203/3%5D%20Remove%20all%20locking%20for%20istate&In-Reply-To=%3C20070305035844.5752.31537.stgit%40dl.roinet.com%3E"
+       TITLE="[at76c503a-develop] [PATCH 3/3] Remove all locking for istate">proski at gnu.org
+       </A><BR>
+    <I>Mon Mar  5 04:58:44 CET 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000020.html">[at76c503a-develop] [PATCH 2/3] Allocate mac_mgmt on stack,	it's just 24 bytes long
+</A></li>
+        <LI>Next message: <A HREF="000024.html">[at76c503a-develop] [PATCH 3/3] Remove all locking for istate
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#21">[ date ]</a>
+              <a href="thread.html#21">[ thread ]</a>
+              <a href="subject.html#21">[ subject ]</a>
+              <a href="author.html#21">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Access to integer variables is already atomic.  The istate locking
+causes warnings from the lock checker.  If there are any specific
+scenarios when locking is needed, they should be addressed individually.
+
+Locking around debug statements that simply read istate is a clear
+indication that the locking code was written by somebody lacking
+competence in the field and should be reverted completely.  Coding style
+is another indicator.
+
+Signed-off-by: Pavel Roskin &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">proski at gnu.org</A>&gt;
+---
+
+ at76_usb.c |  159 ++++++++++++++----------------------------------------------
+ at76_usb.h |    3 -
+ 2 files changed, 37 insertions(+), 125 deletions(-)
+
+diff --git a/at76_usb.c b/at76_usb.c
+index c710c6a..59a5ed5 100644
+--- a/at76_usb.c
++++ b/at76_usb.c
+@@ -209,19 +209,6 @@ static void set_monitor_mode(struct at76c503 *dev, int use_prism);
+ /* second step of initialization (after fw download) */
+ static int init_new_device(struct at76c503 *dev);
+ 
+-static unsigned long spin_l_istate_flags;
+-#define LOCK_ISTATE()   spin_lock_irqsave(&amp;dev-&gt;istate_spinlock,spin_l_istate_flags);
+-#define UNLOCK_ISTATE() spin_unlock_irqrestore(&amp;dev-&gt;istate_spinlock,spin_l_istate_flags);
+-
+-#define NEW_STATE(dev,newstate) \
+-  do {\
+-    LOCK_ISTATE();\
+-    dbg(DBG_PROGRESS, &quot;%s: state %d -&gt; %d (&quot; #newstate &quot;)&quot;,\
+-        dev-&gt;netdev-&gt;name, dev-&gt;istate, newstate);\
+-    dev-&gt;istate = newstate;\
+-    UNLOCK_ISTATE();\
+-  } while (0)
+-
+ /* Firmware download */
+ /* DFU states */
+ #define STATE_IDLE  			0x00
+@@ -1535,7 +1522,6 @@ static int start_scan(struct at76c503 *dev, int use_essid, int ir_step)
+ 	/* INFO: For probe_delay, not multiplying by 1024 as this will be 
+ 	   slightly less than min_channel_time
+ 	   (per spec: probe delay &lt; min. channel time) */
+-	LOCK_ISTATE()
+ 	if (dev-&gt;istate == MONITORING) {
+ 		scan.min_channel_time = cpu_to_le16(dev-&gt;monitor_scan_min_time);
+ 		scan.max_channel_time = cpu_to_le16(dev-&gt;monitor_scan_max_time);
+@@ -1545,7 +1531,6 @@ static int start_scan(struct at76c503 *dev, int use_essid, int ir_step)
+ 		scan.max_channel_time = cpu_to_le16(dev-&gt;scan_max_time);
+ 		scan.probe_delay = cpu_to_le16(dev-&gt;scan_min_time * 1000);
+ 	}
+-	UNLOCK_ISTATE()
+ 	if (dev-&gt;international_roaming == IR_ON &amp;&amp; ir_step == 1)
+ 		scan.international_scan = 0;
+ 	else
+@@ -1670,16 +1655,12 @@ static void handle_mgmt_timeout_scan(struct at76c503 *dev)
+                 /* INFO: Hope it was a one off error - if not, scanning 
+ 		   further down the line and stop this cycle */
+ 	}
+-	LOCK_ISTATE()
+ 	dbg(DBG_PROGRESS, &quot;%s %s:%d got cmd_status %d (istate %d, &quot;
+ 	    &quot;scan_runs %d)&quot;,
+ 	    dev-&gt;netdev-&gt;name, __FUNCTION__, __LINE__, status,
+ 	    dev-&gt;istate, dev-&gt;scan_runs);
+-	UNLOCK_ISTATE()
+ 	if (status == CMD_STATUS_COMPLETE) {
+-		LOCK_ISTATE()
+ 		if (dev-&gt;istate == SCANNING) {
+-			UNLOCK_ISTATE()
+ 			dump_bss_table(dev,0);
+ 			switch (dev-&gt;scan_runs) {
+ 
+@@ -1721,7 +1702,7 @@ static void handle_mgmt_timeout_scan(struct at76c503 *dev)
+ 				dev-&gt;site_survey_state = SITE_SURVEY_COMPLETED;
+ 				/* report the end of scan to user space */
+ 				iwevent_scan_complete(dev-&gt;netdev);
+-				NEW_STATE(dev,JOINING);
++				dev-&gt;istate = JOINING;
+ 				/* call join_bss immediately after
+ 				   re-run of all other threads in kevent */
+ 				defer_kevent(dev,KEVENT_JOIN);
+@@ -1734,7 +1715,6 @@ static void handle_mgmt_timeout_scan(struct at76c503 *dev)
+ 		} else {
+ 			
+ 			assert(dev-&gt;istate == MONITORING);
+-			UNLOCK_ISTATE()
+ 			dbg(DBG_MONITOR_MODE, &quot;%s: MONITOR MODE: restart scan&quot;,
+ 			    dev-&gt;netdev-&gt;name);
+ 			start_scan(dev, 0, 0);
+@@ -1761,7 +1741,6 @@ static void handle_mgmt_timeout_scan(struct at76c503 *dev)
+ /* the deferred procedure called from kevent() */
+ static void handle_mgmt_timeout(struct at76c503 *dev)
+ {
+-	LOCK_ISTATE()
+ 	if ((dev-&gt;istate != SCANNING &amp;&amp; dev-&gt;istate != MONITORING) || 
+ 	     (at76_debug &amp; DBG_MGMT_TIMER))
+ 		/* this is normal behavior in states MONITORING, SCANNING ... */
+@@ -1772,18 +1751,15 @@ static void handle_mgmt_timeout(struct at76c503 *dev)
+ 
+ 	case MONITORING:
+ 	case SCANNING: 
+-		UNLOCK_ISTATE()
+ 		handle_mgmt_timeout_scan(dev);
+ 		break;
+ 
+ 	case JOINING:
+-		UNLOCK_ISTATE()
+ 		assert(0);
+ 		break;
+ 
+ 	case CONNECTED: /* we haven't received the beacon of this BSS for 
+ 			   BEACON_TIMEOUT seconds */
+-		UNLOCK_ISTATE()
+ 		info(&quot;%s: lost beacon bssid %s&quot;,
+ 		     dev-&gt;netdev-&gt;name, mac2str(dev-&gt;curr_bss-&gt;bssid));
+ 		/* jal: starting mgmt_timer in ad-hoc mode is questionable, 
+@@ -1792,13 +1768,12 @@ static void handle_mgmt_timeout(struct at76c503 *dev)
+ 			netif_carrier_off(dev-&gt;netdev);
+ 			netif_stop_queue(dev-&gt;netdev);
+ 			iwevent_bss_disconnect(dev-&gt;netdev);
+-			NEW_STATE(dev,SCANNING);
++			dev-&gt;istate = SCANNING;
+ 			defer_kevent(dev,KEVENT_SCAN);
+ 		}
+ 		break;
+ 
+ 	case AUTHENTICATING:
+-		UNLOCK_ISTATE()
+ 		if (dev-&gt;retries-- &gt;= 0) {
+ 			auth_req(dev, dev-&gt;curr_bss, 1, NULL);
+ 			dbg(DBG_MGMT_TIMER, &quot;%s:%d: starting mgmt_timer + HZ&quot;,
+@@ -1806,13 +1781,12 @@ static void handle_mgmt_timeout(struct at76c503 *dev)
+ 			mod_timer(&amp;dev-&gt;mgmt_timer, jiffies+HZ);
+ 		} else {
+ 			/* try to get next matching BSS */
+-			NEW_STATE(dev,JOINING);
++			dev-&gt;istate = JOINING;
+ 			defer_kevent(dev,KEVENT_JOIN);
+ 		}
+ 		break;
+ 
+ 	case ASSOCIATING:
+-		UNLOCK_ISTATE()
+ 		if (dev-&gt;retries-- &gt;= 0) {
+ 			assoc_req(dev,dev-&gt;curr_bss);
+ 			dbg(DBG_MGMT_TIMER, &quot;%s:%d: starting mgmt_timer + HZ&quot;,
+@@ -1824,19 +1798,18 @@ static void handle_mgmt_timeout(struct at76c503 *dev)
+ 			   in the future ... */
+ 
+ 			/* try to get next matching BSS */
+-			NEW_STATE(dev,JOINING);
++			dev-&gt;istate = JOINING;
+ 			defer_kevent(dev,KEVENT_JOIN);
+ 		}
+ 		break;
+ 
+ 	case REASSOCIATING:
+-		UNLOCK_ISTATE()
+ 		if (dev-&gt;retries-- &gt;= 0)
+ 			reassoc_req(dev, dev-&gt;curr_bss, dev-&gt;new_bss);
+ 		else {
+ 			/* we disassociate from the curr_bss and
+ 			   scan again ... */
+-			NEW_STATE(dev,DISASSOCIATING);
++			dev-&gt;istate = DISASSOCIATING;
+ 			dev-&gt;retries = DISASSOC_RETRIES;
+ 			disassoc_req(dev, dev-&gt;curr_bss);
+ 		}
+@@ -1846,7 +1819,6 @@ static void handle_mgmt_timeout(struct at76c503 *dev)
+ 		break;
+ 
+ 	case DISASSOCIATING:
+-		UNLOCK_ISTATE()
+ 		if (dev-&gt;retries-- &gt;= 0) {
+ 			disassoc_req(dev, dev-&gt;curr_bss);
+ 			dbg(DBG_MGMT_TIMER, &quot;%s:%d: starting mgmt_timer + HZ&quot;,
+@@ -1854,17 +1826,15 @@ static void handle_mgmt_timeout(struct at76c503 *dev)
+ 			mod_timer(&amp;dev-&gt;mgmt_timer,jiffies+HZ);
+ 		} else {
+ 			/* we scan again ... */
+-			NEW_STATE(dev,SCANNING);
++			dev-&gt;istate = SCANNING;
+ 			defer_kevent(dev,KEVENT_SCAN);
+ 		}
+ 		break;
+ 
+ 	case INIT:
+-		UNLOCK_ISTATE()
+ 		break;
+ 
+ 	default:
+-		UNLOCK_ISTATE()
+ 		assert(0);
+ 	} /* switch (dev-&gt;istate) */
+ 
+@@ -2300,9 +2270,7 @@ static void kevent(struct work_struct *work)
+ 	/* check this _before_ KEVENT_JOIN, 'cause _JOIN sets _STARTIBSS bit */
+ 	if (test_bit(KEVENT_STARTIBSS, &amp;dev-&gt;kevent_flags)) {
+ 		clear_bit(KEVENT_STARTIBSS, &amp;dev-&gt;kevent_flags);
+-		LOCK_ISTATE()
+ 		assert(dev-&gt;istate == STARTIBSS);
+-		UNLOCK_ISTATE()
+ 		ret = start_ibss(dev);
+ 		if (ret &lt; 0) {
+ 			err(&quot;%s: start_ibss failed: %d&quot;, dev-&gt;netdev-&gt;name, ret);
+@@ -2341,13 +2309,10 @@ end_startibss:
+ 	/* check this _before_ KEVENT_SCAN, 'cause _SCAN sets _JOIN bit */
+ 	if (test_bit(KEVENT_JOIN, &amp;dev-&gt;kevent_flags)) {
+ 		clear_bit(KEVENT_JOIN, &amp;dev-&gt;kevent_flags);
+-		LOCK_ISTATE()
+ 		if (dev-&gt;istate == INIT) {
+-			UNLOCK_ISTATE()	
+ 			goto end_join;
+ 		}
+ 		assert(dev-&gt;istate == JOINING);
+-		UNLOCK_ISTATE()
+ 		/* dev-&gt;curr_bss == NULL signals a new round,
+ 		   starting with list_entry(dev-&gt;bss_list.next, ...) */
+ 
+@@ -2381,7 +2346,7 @@ end_startibss:
+ 			/* here we have joined the (I)BSS */
+ 			if (dev-&gt;iw_mode == IW_MODE_ADHOC) {
+ 				struct bss_info *bptr = dev-&gt;curr_bss;
+-				NEW_STATE(dev,CONNECTED);
++				dev-&gt;istate = CONNECTED;
+ 				/* get ESSID, BSSID and channel for dev-&gt;curr_bss */
+ 				dev-&gt;essid_size = bptr-&gt;ssid_len;
+ 				memcpy(dev-&gt;essid, bptr-&gt;ssid, bptr-&gt;ssid_len);
+@@ -2394,7 +2359,7 @@ end_startibss:
+ 				del_timer_sync(&amp;dev-&gt;mgmt_timer);
+ 			} else {
+ 				/* send auth req */
+-				NEW_STATE(dev,AUTHENTICATING);
++				dev-&gt;istate = AUTHENTICATING;
+ 				auth_req(dev, dev-&gt;curr_bss, 1, NULL);
+ 				dbg(DBG_MGMT_TIMER, &quot;%s:%d: starting mgmt_timer + HZ&quot;,
+ 				    __FUNCTION__, __LINE__);
+@@ -2405,12 +2370,12 @@ end_startibss:
+ 
+ 		/* here we haven't found a matching (i)bss ... */
+ 		if (dev-&gt;iw_mode == IW_MODE_ADHOC) {
+-			NEW_STATE(dev,STARTIBSS);
++			dev-&gt;istate = STARTIBSS;
+ 			defer_kevent(dev,KEVENT_STARTIBSS);
+ 			goto end_join;
+ 		}
+ 		/* haven't found a matching BSS in infra mode - try again */
+-		NEW_STATE(dev,SCANNING);
++		dev-&gt;istate = SCANNING;
+ 		defer_kevent(dev, KEVENT_SCAN);
+ 	} /* if (test_bit(KEVENT_JOIN, &amp;dev-&gt;kevent_flags)) */
+ end_join:
+@@ -2423,13 +2388,11 @@ end_join:
+ 	if (test_bit(KEVENT_SCAN, &amp;dev-&gt;kevent_flags)) {
+ 		clear_bit(KEVENT_SCAN, &amp;dev-&gt;kevent_flags);
+ 
+-		LOCK_ISTATE()
+ 		assert(dev-&gt;istate == SCANNING);
+ 		/* only clear the bss list when a scan is actively initiated,
+ 		 * otherwise simply rely on bss_list_timeout */
+ 		if (dev-&gt;site_survey_state == SITE_SURVEY_IN_PROGRESS)
+ 			free_bss_list(dev);
+-		UNLOCK_ISTATE()
+ 
+ 		dev-&gt;scan_runs = 2;
+ 		if ((ret = start_scan(dev, 0, 1)) &lt; 0) {
+@@ -2452,11 +2415,9 @@ end_join:
+ 
+ 	if (test_bit(KEVENT_RESTART, &amp;dev-&gt;kevent_flags)) {
+ 		clear_bit(KEVENT_RESTART, &amp;dev-&gt;kevent_flags);
+-		LOCK_ISTATE()
+ #if 0
+ 		assert(dev-&gt;istate == INIT);
+ #endif
+-		UNLOCK_ISTATE()
+ 		startup_device(dev);
+ 
+ 		/* call it here for default_iw_mode == IW_MODE_MONITOR and
+@@ -2469,10 +2430,10 @@ end_join:
+ 		netif_carrier_off(dev-&gt;netdev); /* disable running netdev watchdog */
+ 		netif_stop_queue(dev-&gt;netdev); /* stop tx data packets */
+ 		if (dev-&gt;iw_mode != IW_MODE_MONITOR) {
+-			NEW_STATE(dev,SCANNING);
++			dev-&gt;istate = SCANNING;
+ 			defer_kevent(dev,KEVENT_SCAN);
+ 		} else {
+-			NEW_STATE(dev,MONITORING);
++			dev-&gt;istate = MONITORING;
+ 			start_scan(dev,0,0);
+ 			dbg(DBG_MGMT_TIMER, &quot;%s:%d: starting mgmt_timer for %d ticks&quot;,
+ 			    __FUNCTION__, __LINE__, SCAN_POLL_INTERVAL);
+@@ -2482,10 +2443,8 @@ end_join:
+ 
+ 	if (test_bit(KEVENT_ASSOC_DONE, &amp;dev-&gt;kevent_flags)) {
+ 		clear_bit(KEVENT_ASSOC_DONE, &amp;dev-&gt;kevent_flags);
+-		LOCK_ISTATE()
+ 		assert(dev-&gt;istate == ASSOCIATING ||
+ 		       dev-&gt;istate == REASSOCIATING);
+-		UNLOCK_ISTATE()
+ 		if (dev-&gt;iw_mode == IW_MODE_INFRA) {
+ 			assert(dev-&gt;curr_bss != NULL);
+ 			if (dev-&gt;curr_bss != NULL &amp;&amp; 
+@@ -2522,7 +2481,7 @@ end_join:
+ 
+ 		netif_carrier_on(dev-&gt;netdev);
+ 		netif_wake_queue(dev-&gt;netdev); /* _start_queue ??? */
+-		NEW_STATE(dev,CONNECTED);
++		dev-&gt;istate = CONNECTED;
+ 		iwevent_bss_connect(dev-&gt;netdev,dev-&gt;curr_bss-&gt;bssid);
+ 		dbg(DBG_PROGRESS, &quot;%s: connected to BSSID %s&quot;,
+ 		    dev-&gt;netdev-&gt;name, mac2str(dev-&gt;curr_bss-&gt;bssid));
+@@ -2537,7 +2496,7 @@ end_join:
+ 
+ 		usb_reset_device(dev-&gt;udev);
+ 
+-		NEW_STATE(dev, WAIT_FOR_DISCONNECT);
++		dev-&gt;istate =  WAIT_FOR_DISCONNECT;
+ 	}
+ 
+ 	if (test_bit(KEVENT_EXTERNAL_FW, &amp;dev-&gt;kevent_flags)) {
+@@ -2567,7 +2526,7 @@ end_join:
+ 				schedule_timeout(HZ/5+1);
+ 			}
+ 		}
+-		NEW_STATE(dev,INIT);
++		dev-&gt;istate = INIT;
+ 		init_new_device(dev);
+ 	}
+ end_external_fw:
+@@ -2596,7 +2555,7 @@ end_external_fw:
+ 			}
+ 
+ 		dbg(DBG_DEVSTART, &quot;sleeping for 2 seconds&quot;);
+-		NEW_STATE(dev,EXTFW_DOWNLOAD);
++		dev-&gt;istate = EXTFW_DOWNLOAD;
+ 		mod_timer(&amp;dev-&gt;fw_dl_timer, jiffies+2*HZ+1);
+ 	}
+ end_internal_fw:
+@@ -2780,9 +2739,7 @@ static void rx_mgmt_assoc(struct at76c503 *dev,
+ 	    dev-&gt;netdev-&gt;name, mac2str(mgmt-&gt;addr3), capa, status, assoc_id,
+ 	    hex2str(dev-&gt;obuf, resp-&gt;data+2,
+ 		    min((size_t)*(resp-&gt;data+1),(sizeof(dev-&gt;obuf)-1)/2), '\0'));
+-	LOCK_ISTATE()
+ 	if (dev-&gt;istate == ASSOCIATING) {
+-		UNLOCK_ISTATE()
+ 		assert(dev-&gt;curr_bss != NULL);
+ 		if (dev-&gt;curr_bss == NULL)
+ 			return;
+@@ -2797,12 +2754,11 @@ static void rx_mgmt_assoc(struct at76c503 *dev,
+ 			dev-&gt;channel = ptr-&gt;channel;
+ 			defer_kevent(dev,KEVENT_ASSOC_DONE);
+ 		} else {
+-			NEW_STATE(dev,JOINING);
++			dev-&gt;istate = JOINING;
+ 			defer_kevent(dev,KEVENT_JOIN);
+ 		}
+ 		del_timer_sync(&amp;dev-&gt;mgmt_timer);
+ 	} else {
+-		UNLOCK_ISTATE()
+ 		info(&quot;%s: AssocResp in state %d ignored&quot;,
+ 		     dev-&gt;netdev-&gt;name, dev-&gt;istate);
+ 	}
+@@ -2825,9 +2781,7 @@ static void rx_mgmt_reassoc(struct at76c503 *dev,
+ 	    dev-&gt;netdev-&gt;name, mac2str(mgmt-&gt;addr3), capa, status, assoc_id,
+ 	    hex2str(dev-&gt;obuf, resp-&gt;data+2,
+ 		    min((size_t)*(resp-&gt;data+1),(sizeof(dev-&gt;obuf)-1)/2), '\0'));
+-	LOCK_ISTATE()
+ 	if (dev-&gt;istate == REASSOCIATING) {
+-		UNLOCK_ISTATE()
+ 		assert(dev-&gt;new_bss != NULL);
+ 		if (dev-&gt;new_bss == NULL)
+ 			return;
+@@ -2835,7 +2789,7 @@ static void rx_mgmt_reassoc(struct at76c503 *dev,
+ 		if (status == WLAN_STATUS_SUCCESS) {
+ 			struct bss_info *bptr = dev-&gt;new_bss;
+ 			bptr-&gt;assoc_id = assoc_id;
+-			NEW_STATE(dev,CONNECTED);
++			dev-&gt;istate = CONNECTED;
+ 
+ 			iwevent_bss_connect(dev-&gt;netdev,bptr-&gt;bssid);
+ 
+@@ -2854,13 +2808,12 @@ static void rx_mgmt_reassoc(struct at76c503 *dev,
+ 			defer_kevent(dev, KEVENT_ASSOC_DONE);
+ 		} else {
+ 			del_timer_sync(&amp;dev-&gt;mgmt_timer);
+-			NEW_STATE(dev,JOINING);
++			dev-&gt;istate = JOINING;
+ 			defer_kevent(dev,KEVENT_JOIN);
+ 		}
+ 	} else {
+ 		info(&quot;%s: ReAssocResp in state %d ignored&quot;,
+ 		     dev-&gt;netdev-&gt;name, dev-&gt;istate);
+-		UNLOCK_ISTATE()
+ 	}
+ } /* rx_mgmt_reassoc */
+ 
+@@ -2877,24 +2830,17 @@ static void rx_mgmt_disassoc(struct at76c503 *dev,
+ 	    le16_to_cpu(resp-&gt;reason),
+ 	    hex2str(dev-&gt;obuf, mgmt-&gt;addr1, 
+ 		    min((int)sizeof(dev-&gt;obuf)/3, ETH_ALEN), ':'));
+-	LOCK_ISTATE()
+-	if (dev-&gt;istate == SCANNING || dev-&gt;istate == INIT) {
+-		UNLOCK_ISTATE()
++	if (dev-&gt;istate == SCANNING || dev-&gt;istate == INIT)
+ 		return;
+-	}
+-	UNLOCK_ISTATE()
+ 
+ 	assert(dev-&gt;curr_bss != NULL);
+ 	if (dev-&gt;curr_bss == NULL)
+ 		return;
+-	LOCK_ISTATE()
+ 	if (dev-&gt;istate == REASSOCIATING) {
+-		UNLOCK_ISTATE()
+ 		assert(dev-&gt;new_bss != NULL);
+ 		if (dev-&gt;new_bss == NULL)
+ 			return;
+-	} else
+-		UNLOCK_ISTATE()
++	}
+ 	if (!compare_ether_addr(mgmt-&gt;addr3, dev-&gt;curr_bss-&gt;bssid) &amp;&amp;
+ 		(!compare_ether_addr(dev-&gt;netdev-&gt;dev_addr, mgmt-&gt;addr1) ||
+ 		 is_broadcast_ether_addr(mgmt-&gt;addr1))) {
+@@ -2902,7 +2848,6 @@ static void rx_mgmt_disassoc(struct at76c503 *dev,
+ 		   trying to connect to, directed to us or broadcasted */
+ 		/* jal: TODO: can the DisAssoc also come from the BSS
+ 		   we've sent a ReAssocReq to (i.e. from dev-&gt;new_bss) ? */
+-		LOCK_ISTATE()
+ 		if (dev-&gt;istate == DISASSOCIATING ||
+ 		    dev-&gt;istate == ASSOCIATING  ||
+ 		    dev-&gt;istate == REASSOCIATING  ||
+@@ -2910,20 +2855,18 @@ static void rx_mgmt_disassoc(struct at76c503 *dev,
+ 		    dev-&gt;istate == JOINING)
+ 		{
+ 			if (dev-&gt;istate == CONNECTED) {
+-				UNLOCK_ISTATE()
+ 				netif_carrier_off(dev-&gt;netdev);
+ 				netif_stop_queue(dev-&gt;netdev);
+ 				iwevent_bss_disconnect(dev-&gt;netdev);
+-			} else UNLOCK_ISTATE()
++			}
+ 			del_timer_sync(&amp;dev-&gt;mgmt_timer);
+-			NEW_STATE(dev,JOINING);
++			dev-&gt;istate = JOINING;
+ 			defer_kevent(dev,KEVENT_JOIN);
+ 		} else {
+ 			
+ 		/* ignore DisAssoc in states AUTH, ASSOC */
+ 			info(&quot;%s: DisAssoc in state %d ignored&quot;,
+ 			     dev-&gt;netdev-&gt;name, dev-&gt;istate);
+-			UNLOCK_ISTATE()
+ 		}
+ 	}
+ 	/* ignore DisAssoc to other STA or from other BSSID */
+@@ -2954,14 +2897,11 @@ static void rx_mgmt_auth(struct at76c503 *dev,
+ 		    hex2str(dev-&gt;obuf, resp-&gt;challenge,
+ 			    min((int)sizeof(dev-&gt;obuf)/3,18), ' '));
+ 	}
+-	LOCK_ISTATE()
+ 	if (dev-&gt;istate != AUTHENTICATING) {
+ 		info(&quot;%s: ignored AuthFrame in state %d&quot;,
+ 		     dev-&gt;netdev-&gt;name, dev-&gt;istate);
+-		UNLOCK_ISTATE()
+ 		return;
+ 	}
+-	UNLOCK_ISTATE()
+ 	if (dev-&gt;auth_mode != alg) {
+ 		info(&quot;%s: ignored AuthFrame for alg %d&quot;,
+ 		     dev-&gt;netdev-&gt;name, alg);
+@@ -2979,7 +2919,7 @@ static void rx_mgmt_auth(struct at76c503 *dev,
+ 		if (status != WLAN_STATUS_SUCCESS) {
+ 			del_timer_sync(&amp;dev-&gt;mgmt_timer);
+ 			/* try to join next bss */
+-			NEW_STATE(dev,JOINING);
++			dev-&gt;istate = JOINING;
+ 			defer_kevent(dev,KEVENT_JOIN);
+ 			return;
+ 		}
+@@ -2987,7 +2927,7 @@ static void rx_mgmt_auth(struct at76c503 *dev,
+ 		if (dev-&gt;auth_mode == WLAN_AUTH_OPEN ||
+ 			seq_nr == 4) {
+ 			dev-&gt;retries = ASSOC_RETRIES;
+-			NEW_STATE(dev,ASSOCIATING);
++			dev-&gt;istate = ASSOCIATING;
+ 			assoc_req(dev, dev-&gt;curr_bss);
+ 			dbg(DBG_MGMT_TIMER, &quot;%s:%d: starting mgmt_timer + HZ&quot;,
+ 			    __FUNCTION__, __LINE__);
+@@ -3018,13 +2958,11 @@ static void rx_mgmt_deauth(struct at76c503 *dev,
+ 	    le16_to_cpu(resp-&gt;reason),
+ 	    hex2str(dev-&gt;obuf, mgmt-&gt;addr1,
+ 		    min((int)sizeof(dev-&gt;obuf)/3,ETH_ALEN), ':'));
+-	LOCK_ISTATE()
+ 	if (dev-&gt;istate == DISASSOCIATING ||
+ 	    dev-&gt;istate == AUTHENTICATING ||
+ 	    dev-&gt;istate == ASSOCIATING ||
+ 	    dev-&gt;istate == REASSOCIATING  ||
+ 	    dev-&gt;istate == CONNECTED) {
+-		UNLOCK_ISTATE()
+ 		assert(dev-&gt;curr_bss != NULL);
+ 		if (dev-&gt;curr_bss == NULL)
+ 			return;
+@@ -3034,12 +2972,10 @@ static void rx_mgmt_deauth(struct at76c503 *dev,
+ 		     is_broadcast_ether_addr(mgmt-&gt;addr1))) {
+ 			/* this is a DeAuth from the BSS we are connected or
+ 			   trying to connect to, directed to us or broadcasted */
+-			LOCK_ISTATE()
+ 			if (dev-&gt;istate == CONNECTED) {
+-				UNLOCK_ISTATE()
+ 				iwevent_bss_disconnect(dev-&gt;netdev);
+-			} else UNLOCK_ISTATE()
+-			NEW_STATE(dev,JOINING);
++			}
++			dev-&gt;istate = JOINING;
+ 			defer_kevent(dev,KEVENT_JOIN);
+ 			del_timer_sync(&amp;dev-&gt;mgmt_timer);
+ 		}
+@@ -3048,7 +2984,6 @@ static void rx_mgmt_deauth(struct at76c503 *dev,
+ 		/* ignore DeAuth in states SCANNING */
+ 		info(&quot;%s: DeAuth in state %d ignored&quot;,
+ 		     dev-&gt;netdev-&gt;name, dev-&gt;istate);
+-		UNLOCK_ISTATE()
+ 	}
+ } /* rx_mgmt_deauth */
+ 
+@@ -3084,9 +3019,7 @@ static void rx_mgmt_beacon(struct at76c503 *dev,
+ 	unsigned long flags;
+ 	
+ 	spin_lock_irqsave(&amp;dev-&gt;bss_list_spinlock, flags);
+-	LOCK_ISTATE()	
+ 	if (dev-&gt;istate == CONNECTED) {
+-		UNLOCK_ISTATE()
+ 		/* in state CONNECTED we use the mgmt_timer to control
+ 		   the beacon of the BSS */
+ 		assert(dev-&gt;curr_bss != NULL);
+@@ -3098,8 +3031,7 @@ static void rx_mgmt_beacon(struct at76c503 *dev,
+ 			dev-&gt;beacons_received++;
+ 			goto rx_mgmt_beacon_end;
+ 		}
+-	} else 
+-	    UNLOCK_ISTATE()
++	}
+ 
+ 	/* look if we have this BSS already in the list */
+ 	match = NULL;
+@@ -3314,9 +3246,7 @@ static void rx_mgmt(struct at76c503 *dev, struct at76c503_rx_buffer *buf)
+ 	u16 subtype = le16_to_cpu(mgmt-&gt;frame_ctl) &amp; IEEE80211_FCTL_STYPE;
+ 
+ 	/* update wstats */
+-	LOCK_ISTATE()
+ 	if (dev-&gt;istate != INIT &amp;&amp; dev-&gt;istate != SCANNING) {
+-		UNLOCK_ISTATE()
+ 		/* jal: this is a dirty hack needed by Tim in ad-hoc mode */
+ 		if (dev-&gt;iw_mode == IW_MODE_ADHOC || (dev-&gt;curr_bss != NULL &amp;&amp;
+ 		     !compare_ether_addr(mgmt-&gt;addr3, dev-&gt;curr_bss-&gt;bssid))) {
+@@ -3326,7 +3256,7 @@ static void rx_mgmt(struct at76c503 *dev, struct at76c503_rx_buffer *buf)
+ 			   values, we just present the raw value at the moment - TJS */
+ 			update_wstats(dev, buf);
+ 		}
+-	} else UNLOCK_ISTATE()
++	}
+ 
+ 	if (at76_debug &amp; DBG_RX_MGMT_CONTENT) {
+ 		dbg_uc(&quot;%s rx mgmt subtype x%x %s&quot;,
+@@ -4089,13 +4019,10 @@ static void rx_tasklet(unsigned long param)
+ 		    hex2str(dev-&gt;obuf,(u8 *)i802_11_hdr,
+ 			    min((int)(sizeof(dev-&gt;obuf)-1)/2,48),'\0'));
+ 	}
+-	LOCK_ISTATE()
+ 	if (dev-&gt;istate == MONITORING) {
+-		UNLOCK_ISTATE()
+ 		rx_monitor_mode(dev);
+ 		goto finish;
+ 	}
+-	UNLOCK_ISTATE()
+ 
+ 	/* there is a new bssid around, accept it: */
+ 	if (buf-&gt;newbss &amp;&amp; dev-&gt;iw_mode == IW_MODE_ADHOC) {
+@@ -4516,7 +4443,7 @@ static int at76c503_stop(struct net_device *netdev)
+ 
+ 	netif_stop_queue(netdev);
+ 
+-  	NEW_STATE(dev,INIT);
++  	dev-&gt;istate = INIT;
+ 
+ 	if (!(dev-&gt;device_unplugged)) {
+ 		/* we are called by &quot;ifconfig wlanX down&quot;, not because the
+@@ -4667,10 +4594,8 @@ static int at76c503_iw_handler_commit(struct net_device *netdev,
+ 		__FUNCTION__);
+ 	
+ 	/* TODO: stop any pending tx bulk urb */
+-	LOCK_ISTATE()
+ 	if (dev-&gt;istate != INIT) {
+-		UNLOCK_ISTATE()
+-		NEW_STATE(dev,INIT);
++		dev-&gt;istate = INIT;
+ 		/* stop pending management stuff */
+ 		del_timer_sync(&amp;dev-&gt;mgmt_timer);
+ 
+@@ -4683,7 +4608,7 @@ static int at76c503_iw_handler_commit(struct net_device *netdev,
+ 
+ 		netif_carrier_off(dev-&gt;netdev);
+ 		netif_stop_queue(dev-&gt;netdev);
+-	} else UNLOCK_ISTATE()
++	}
+ 
+ 	/* do the restart after two seconds to catch
+ 	 * following ioctl's (from more params of iwconfig)
+@@ -5087,7 +5012,6 @@ static int at76c503_iw_handler_set_scan(struct net_device *netdev,
+ 			dev-&gt;scan_mode = SCAN_TYPE_ACTIVE;
+ 
+ 		/* Sanity check values? */
+-		LOCK_ISTATE()
+ 		if (req-&gt;min_channel_time &gt; 0) {
+ 			if (dev-&gt;istate == MONITORING)
+ 				dev-&gt;monitor_scan_min_time = req-&gt;min_channel_time;
+@@ -5100,11 +5024,10 @@ static int at76c503_iw_handler_set_scan(struct net_device *netdev,
+ 			else
+ 				dev-&gt;scan_max_time = req-&gt;max_channel_time;
+ 		}
+-		UNLOCK_ISTATE()
+ 	} 
+ 	
+ 	/* change to scanning state */
+-	NEW_STATE(dev, SCANNING);
++	dev-&gt;istate =  SCANNING;
+ 	defer_kevent(dev, KEVENT_SCAN);
+ 	
+ 	return ret;
+@@ -5269,10 +5192,8 @@ static int at76c503_iw_handler_get_essid(struct net_device *netdev,
+ 		data-&gt;length += 1;
+ 	} else {
+ 		/* the ANY ssid was specified */
+-		LOCK_ISTATE()
+ 		if (dev-&gt;istate == CONNECTED &amp;&amp;
+ 		    dev-&gt;curr_bss != NULL) {
+-			UNLOCK_ISTATE()
+ 			/* report the SSID we have found */
+ 			data-&gt;flags = 1;
+ 			data-&gt;length = dev-&gt;curr_bss-&gt;ssid_len;
+@@ -5280,7 +5201,6 @@ static int at76c503_iw_handler_get_essid(struct net_device *netdev,
+ 			extra[dev-&gt;curr_bss-&gt;ssid_len] = '\0';
+ 			data-&gt;length += 1;
+ 		} else {
+-			UNLOCK_ISTATE()
+ 			/* report ANY back */
+ 			data-&gt;flags=0;
+ 			data-&gt;length=0;
+@@ -5788,7 +5708,6 @@ static int at76c503_iw_handler_PRIV_IOCTL_SET_SCAN_TIMES
+ 	if (mint &lt;= 0 || maxt &lt;= 0 || mint &gt; maxt) {
+ 		ret = -EINVAL;
+ 	} else {
+-		LOCK_ISTATE()
+ 		if (dev-&gt;istate == MONITORING) {
+ 			dev-&gt;monitor_scan_min_time = mint;
+ 			dev-&gt;monitor_scan_max_time = maxt;
+@@ -5797,7 +5716,6 @@ static int at76c503_iw_handler_PRIV_IOCTL_SET_SCAN_TIMES
+ 			dev-&gt;scan_min_time = mint;
+ 			dev-&gt;scan_max_time = maxt;
+ 		}
+-		UNLOCK_ISTATE()
+ 	}
+ 	
+ 	return ret;
+@@ -6077,11 +5995,9 @@ static void at76c503_delete_device(struct at76c503 *dev)
+ 	free_bss_list(dev);
+ 	del_timer_sync(&amp;dev-&gt;bss_list_timer);
+ 
+-	LOCK_ISTATE()
+ 	if (dev-&gt;istate == CONNECTED) {
+-		UNLOCK_ISTATE()
+ 		iwevent_bss_disconnect(dev-&gt;netdev); 
+-	} else UNLOCK_ISTATE()
++	}
+ 
+ 	for(i=0; i &lt; NR_RX_DATA_BUF; i++)
+ 		if (dev-&gt;rx_data[i].skb != NULL) {
+@@ -6211,7 +6127,6 @@ static struct at76c503 *alloc_new_device(struct usb_device *udev,
+ 
+ 
+ 	spin_lock_init(&amp;dev-&gt;mgmt_spinlock);
+-	spin_lock_init(&amp;dev-&gt;istate_spinlock);
+ 	dev-&gt;next_mgmt_bulk = NULL;
+ 	dev-&gt;istate = INTFW_DOWNLOAD;
+ 
+@@ -6486,7 +6401,7 @@ static int at76c503_do_probe(struct usb_device *udev, u8 *fw_data, int fw_size,
+ 
+ 		/* download internal firmware part */
+ 		dbg(DBG_DEVSTART, &quot;downloading internal firmware&quot;);
+-		NEW_STATE(dev,INTFW_DOWNLOAD);
++		dev-&gt;istate = INTFW_DOWNLOAD;
+ 		defer_kevent(dev,KEVENT_INTERNAL_FW);
+ 
+ 	} else {
+@@ -6540,10 +6455,10 @@ static int at76c503_do_probe(struct usb_device *udev, u8 *fw_data, int fw_size,
+ 				goto error;
+ 			}
+ 
+-			NEW_STATE(dev,EXTFW_DOWNLOAD);
++			dev-&gt;istate = EXTFW_DOWNLOAD;
+ 			defer_kevent(dev,KEVENT_EXTERNAL_FW);
+ 		} else {
+-			NEW_STATE(dev,INIT);
++			dev-&gt;istate = INIT;
+ 			if (init_new_device(dev) &lt; 0) {
+ 				ret = -ENODEV;
+ 				goto error;
+diff --git a/at76_usb.h b/at76_usb.h
+index 2d69bdd..df0a529 100644
+--- a/at76_usb.h
++++ b/at76_usb.h
+@@ -539,9 +539,6 @@ struct at76c503 {
+ 	/* some data for infrastructure mode only */
+ 	spinlock_t mgmt_spinlock;  /* this spinlock protects access to
+ 				      next_mgmt_bulk */
+-	spinlock_t istate_spinlock;/* this spinlock protects access to
+-	                              istate */
+-
+ 	
+ 	struct at76c503_tx_buffer *next_mgmt_bulk; /* pending management msg to
+ 						      send via bulk out */
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000020.html">[at76c503a-develop] [PATCH 2/3] Allocate mac_mgmt on stack,	it's just 24 bytes long
+</A></li>
+	<LI>Next message: <A HREF="000024.html">[at76c503a-develop] [PATCH 3/3] Remove all locking for istate
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#21">[ date ]</a>
+              <a href="thread.html#21">[ thread ]</a>
+              <a href="subject.html#21">[ subject ]</a>
+              <a href="author.html#21">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">More information about the at76c503a-develop
+mailing list</a><br>
+</body></html>

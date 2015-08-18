@@ -1,0 +1,118 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [at76c503a-develop] [PATCH 01/19] Convert skb compatibility code	from functions to macros
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/at76c503a-develop/2007-July/index.html" >
+   <LINK REL="made" HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%2001/19%5D%20Convert%20skb%20compatibility%20code%0A%09from%20functions%20to%20macros&In-Reply-To=%3C20070710062029.29117.27547.stgit%40dv.roinet.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   
+   <LINK REL="Next"  HREF="000148.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[at76c503a-develop] [PATCH 01/19] Convert skb compatibility code	from functions to macros</H1>
+    <B>Pavel Roskin</B> 
+    <A HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%2001/19%5D%20Convert%20skb%20compatibility%20code%0A%09from%20functions%20to%20macros&In-Reply-To=%3C20070710062029.29117.27547.stgit%40dv.roinet.com%3E"
+       TITLE="[at76c503a-develop] [PATCH 01/19] Convert skb compatibility code	from functions to macros">proski at gnu.org
+       </A><BR>
+    <I>Tue Jul 10 08:20:29 CEST 2007</I>
+    <P><UL>
+        
+        <LI>Next message: <A HREF="000148.html">[at76c503a-develop] [PATCH 02/19] Give plain http URL for the	firmware, not https
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#147">[ date ]</a>
+              <a href="thread.html#147">[ thread ]</a>
+              <a href="subject.html#147">[ subject ]</a>
+              <a href="author.html#147">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>One reason is that it can be expected that some vendor kernels will
+backport the Linux 2.6.22 skb API.  Macros can safely mask the inline
+functions used by the vendor kernel, whereas inline functions will
+conflict and fail.
+
+Another reason is that linux/skbuff.h doesn't need to be included from
+compat.h anymore, which makes the compatibility code less intrusive.
+
+Signed-off-by: Pavel Roskin &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">proski at gnu.org</A>&gt;
+---
+
+ compat.h |   32 +++++++-------------------------
+ 1 files changed, 7 insertions(+), 25 deletions(-)
+
+diff --git a/compat.h b/compat.h
+index 7759f04..77dcc29 100644
+--- a/compat.h
++++ b/compat.h
+@@ -12,31 +12,13 @@
+ #include &lt;linux/version.h&gt;
+ 
+ #if LINUX_VERSION_CODE &lt; KERNEL_VERSION(2,6,22)
+-#include &lt;linux/skbuff.h&gt;
+-static inline unsigned char *skb_mac_header(const struct sk_buff *skb)
+-{
+-	return skb-&gt;mac.raw;
+-}
+-
+-static inline void skb_reset_mac_header(struct sk_buff *skb)
+-{
+-	skb-&gt;mac.raw = skb-&gt;data;
+-}
+-
+-static inline void skb_set_mac_header(struct sk_buff *skb, const int offset)
+-{
+-	skb-&gt;mac.raw = skb-&gt;data + offset;
+-}
+-
+-static inline unsigned char *skb_end_pointer(const struct sk_buff *skb)
+-{
+-	return skb-&gt;end;
+-}
+-
+-static inline unsigned char *skb_tail_pointer(const struct sk_buff *skb)
+-{
+-	return skb-&gt;tail;
+-}
++#define skb_mac_header(_skb) ((_skb)-&gt;mac.raw)
++#define skb_reset_mac_header(_skb) \
++	do { (_skb)-&gt;mac.raw = (_skb)-&gt;data; } while(0)
++#define skb_set_mac_header(_skb, _offset) \
++	do { (_skb)-&gt;mac.raw = (_skb)-&gt;data + (_offset); } while(0)
++#define skb_end_pointer(_skb) ((_skb)-&gt;end)
++#define skb_tail_pointer(_skb) ((_skb)-&gt;tail)
+ #endif
+ 
+ #if LINUX_VERSION_CODE &lt; KERNEL_VERSION(2,6,20)
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	
+	<LI>Next message: <A HREF="000148.html">[at76c503a-develop] [PATCH 02/19] Give plain http URL for the	firmware, not https
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#147">[ date ]</a>
+              <a href="thread.html#147">[ thread ]</a>
+              <a href="subject.html#147">[ subject ]</a>
+              <a href="author.html#147">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">More information about the at76c503a-develop
+mailing list</a><br>
+</body></html>

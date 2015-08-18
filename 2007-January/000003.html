@@ -1,0 +1,101 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [at76c503a-develop] Adding the at76_usb wireless driver
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/at76c503a-develop/2007-January/index.html" >
+   <LINK REL="made" HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20Adding%20the%20at76_usb%20wireless%20driver&In-Reply-To=%3C20070110145724.GA4171%40bogon.ms20.nix%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000006.html">
+   <LINK REL="Next"  HREF="000005.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[at76c503a-develop] Adding the at76_usb wireless driver</H1>
+    <B>Guido Guenther</B> 
+    <A HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20Adding%20the%20at76_usb%20wireless%20driver&In-Reply-To=%3C20070110145724.GA4171%40bogon.ms20.nix%3E"
+       TITLE="[at76c503a-develop] Adding the at76_usb wireless driver">agx at sigxcpu.org
+       </A><BR>
+    <I>Wed Jan 10 15:57:24 CET 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000006.html">[at76c503a-develop] workqueue fixes for 2.6.20
+</A></li>
+        <LI>Next message: <A HREF="000005.html">[at76c503a-develop] Adding the at76_usb wireless driver
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3">[ date ]</a>
+              <a href="thread.html#3">[ thread ]</a>
+              <a href="subject.html#3">[ subject ]</a>
+              <a href="author.html#3">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi John,
+attached is a patch that adds the at76_usb wireless driver to
+2.6.20-rc3. It supports the at76c503, at76c505 and at76c505a wireless
+USB adapters.
+
+Could you please comment on what needs to be adjusted to get the driver
+included into your wireless linux git tree?
+
+Please note that I'm not the author of the driver, the driver itself
+lists these copyright holders (but none of them showed up on the
+mailing list during the last couple of months):
+
+Copyright (c) 2002 - 2003 Oliver Kurth
+Copyright (c) 2004 Joerg Albert &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">joerg.albert at gmx.de</A>&gt;
+Copyright (c) 2004 Nick Jones
+Copyright (c) 2004 Balint Seeber &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">n0_5p4m_p13453 at hotmail.com</A>&gt;
+
+Pavel Roskin, Maxim Grechkin and me were committing to CVS recently.
+
+The projects homepage is:
+    <A HREF="http://at76c503a.berlios.de/">http://at76c503a.berlios.de/</A>
+I'm currently maintaining a (hopefully short lifed) git tree that
+removes support for older kernels, older wireless extensions, C99 style
+comments, commented out code and changes the workque interface for
+2.6.20.  This is only done to ease reviewing - there are no functional
+changes over the CVS archive:
+    git-clone <A HREF="http://honk.sigxcpu.org/git/at76c503a.git/">http://honk.sigxcpu.org/git/at76c503a.git/</A>
+The version in this repository is what's attached to this mail. The
+driver was tested (and is in pracitical use) on at least i386 and
+powerpc.
+Cheers,
+ -- Guido
+
+Signed-Off-By: Guido Guenther &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">agx at sigxcpu.org</A>&gt;
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: at76c503a.diff
+Type: text/x-diff
+Size: 242696 bytes
+Desc: not available
+URL: &lt;<A HREF="https://lists.berlios.de/pipermail/at76c503a-develop/attachments/20070110/4e93cf93/attachment.diff">https://lists.berlios.de/pipermail/at76c503a-develop/attachments/20070110/4e93cf93/attachment.diff</A>&gt;
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000006.html">[at76c503a-develop] workqueue fixes for 2.6.20
+</A></li>
+	<LI>Next message: <A HREF="000005.html">[at76c503a-develop] Adding the at76_usb wireless driver
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#3">[ date ]</a>
+              <a href="thread.html#3">[ thread ]</a>
+              <a href="subject.html#3">[ subject ]</a>
+              <a href="author.html#3">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">More information about the at76c503a-develop
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,198 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [at76c503a-develop] [PATCH 6/7] Clean up eth frame conversion in	the rx path
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/at76c503a-develop/2007-July/index.html" >
+   <LINK REL="made" HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%206/7%5D%20Clean%20up%20eth%20frame%20conversion%20in%0A%09the%20rx%20path&In-Reply-To=%3C20070712065349.16841.234.stgit%40dv.roinet.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000180.html">
+   <LINK REL="Next"  HREF="000182.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[at76c503a-develop] [PATCH 6/7] Clean up eth frame conversion in	the rx path</H1>
+    <B>Pavel Roskin</B> 
+    <A HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%206/7%5D%20Clean%20up%20eth%20frame%20conversion%20in%0A%09the%20rx%20path&In-Reply-To=%3C20070712065349.16841.234.stgit%40dv.roinet.com%3E"
+       TITLE="[at76c503a-develop] [PATCH 6/7] Clean up eth frame conversion in	the rx path">proski at gnu.org
+       </A><BR>
+    <I>Thu Jul 12 08:53:49 CEST 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000180.html">[at76c503a-develop] [PATCH 5/7] Clean up handling of ethernet	frames in the tx path
+</A></li>
+        <LI>Next message: <A HREF="000182.html">[at76c503a-develop] [PATCH 7/7] Remove &quot;a short overview on	Ethernet-II, 802.2, 802.3 and SNAP&quot;
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#181">[ date ]</a>
+              <a href="thread.html#181">[ thread ]</a>
+              <a href="subject.html#181">[ subject ]</a>
+              <a href="author.html#181">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Stop badmouthing the implementations and follow the standard for 802.3
+frames.  Make it clear that if the ethernet header already exists, it
+was done by the local hardware (i.e. it's not an encapsulation method).
+
+Use eth_type_trans() to set skb-&gt;protocol.
+
+Signed-off-by: Pavel Roskin &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">proski at gnu.org</A>&gt;
+---
+
+ at76_usb.c |   88 +++++++++++++++++++++---------------------------------------
+ 1 files changed, 31 insertions(+), 57 deletions(-)
+
+diff --git a/at76_usb.c b/at76_usb.c
+index d843771..a4d10f8 100644
+--- a/at76_usb.c
++++ b/at76_usb.c
+@@ -5252,87 +5252,61 @@ static void at76_dbg_dumpbuf(const char *tag, const u8 *buf, int size)
+ 	pr_debug(&quot;\n&quot;);
+ }
+ 
+-/* Convert the 802.11 header on a packet into an ethernet-style header
+- * (basically, pretend we're an ethernet card receiving ethernet packets)
+- *
+- * This routine returns with the skbuff pointing to the actual data (just past
+- * the end of the newly-created ethernet header).
+- */
++/* Convert the 802.11 header into an ethernet-style header, make skb
++ * ready for consumption by netif_rx() */
+ static void at76_ieee80211_to_eth(struct sk_buff *skb, int iw_mode)
+ {
+ 	struct ieee80211_hdr_3addr *i802_11_hdr;
+ 	struct ethhdr *eth_hdr_p;
+ 	u8 *src_addr;
+ 	u8 *dest_addr;
+-	__be16 proto = 0;
+-	int build_ethhdr = 1;
+ 
+ 	i802_11_hdr = (struct ieee80211_hdr_3addr *)skb-&gt;data;
+ 
+ 	dbg(&quot;%s: ENTRY skb len %d data %s&quot;, __func__,
+ 	    skb-&gt;len, hex2str(skb-&gt;data, 64));
+ 
+-	skb_pull(skb, IEEE80211_3ADDR_LEN);
++	/* That would be the ethernet header if the hardware converted
++	 * the frame for us.  Make sure the source and the destination
++	 * match the 802.11 header.  Which hardware does it? */
++	eth_hdr_p = (struct ethhdr *)skb_pull(skb, IEEE80211_3ADDR_LEN);
+ 
+-	src_addr = iw_mode == IW_MODE_ADHOC ? i802_11_hdr-&gt;addr2
+-	    : i802_11_hdr-&gt;addr3;
+ 	dest_addr = i802_11_hdr-&gt;addr1;
++	if (iw_mode == IW_MODE_ADHOC)
++		src_addr = i802_11_hdr-&gt;addr2;
++	else
++		src_addr = i802_11_hdr-&gt;addr3;
+ 
+-	eth_hdr_p = (struct ethhdr *)skb-&gt;data;
+ 	if (!compare_ether_addr(eth_hdr_p-&gt;h_source, src_addr) &amp;&amp;
+ 	    !compare_ether_addr(eth_hdr_p-&gt;h_dest, dest_addr)) {
+-		/* An ethernet frame is encapsulated within the data portion.
+-		 * Just use its header instead. */
+-		skb_pull(skb, ETH_HLEN);
+-		build_ethhdr = 0;
+-	} else if (!memcmp(skb-&gt;data, snapsig, sizeof(snapsig))) {
+-		/* SNAP frame - collapse it */
+-		skb_pull(skb, sizeof(rfc1042sig) + 2);
+-		proto = *(__be16 *)(skb-&gt;data - 2);
++		/* Yes, we already have an ethernet header */
++		skb_reset_mac_header(skb);
+ 	} else {
+-#ifdef IEEE_STANDARD
+-		/* According to all standards, we should assume the data
+-		 * portion contains 802.2 LLC information, so we should give it
+-		 * an 802.3 header (which has the same implications) */
+-		proto = htons(skb-&gt;len);
+-#else				/* IEEE_STANDARD */
+-		/* Unfortunately, it appears no actual 802.11 implementations
+-		 * follow any standards specs.  They all appear to put a
+-		 * 16-bit ethertype after the 802.11 header instead, so we take
+-		 * that value and make it into an Ethernet-II packet. */
+-		/* Note that this means we can never support non-SNAP 802.2
+-		 * frames (because we can't tell when we get one) */
+-
+-		/* jal: This isn't true. My WRT54G happily sends SNAP.
+-		   Difficult to speak for all APs, so I don't dare to define
+-		   IEEE_STANDARD ... */
+-		proto = *(__be16 *)(skb-&gt;data);
+-		skb_pull(skb, 2);
+-#endif				/* IEEE_STANDARD */
+-	}
+-
+-	skb_set_mac_header(skb, -ETH_HLEN);
+-	eth_hdr_p = (struct ethhdr *)skb_mac_header(skb);
+-
+-	if (build_ethhdr) {
++		u16 len;
++
++		/* Need to build an ethernet header */
++		if (!memcmp(skb-&gt;data, snapsig, sizeof(snapsig))) {
++			/* SNAP frame - decapsulate, keep proto */
++			skb_push(skb, offsetof(struct ethhdr, h_proto) -
++				 sizeof(rfc1042sig));
++			len = 0;
++		} else {
++			/* 802.3 frame, proto is length */
++			len = skb-&gt;len;
++			skb_push(skb, ETH_HLEN);
++		}
++
++		skb_reset_mac_header(skb);
++		eth_hdr_p = eth_hdr(skb);
+ 		/* This needs to be done in this order (eth_hdr_p-&gt;h_dest may
+ 		 * overlap src_addr) */
+ 		memcpy(eth_hdr_p-&gt;h_source, src_addr, ETH_ALEN);
+ 		memcpy(eth_hdr_p-&gt;h_dest, dest_addr, ETH_ALEN);
+-		/* make an 802.3 header (proto = length) */
+-		eth_hdr_p-&gt;h_proto = proto;
++		if (len)
++			eth_hdr_p-&gt;h_proto = htons(len);
+ 	}
+ 
+-	if (ntohs(eth_hdr_p-&gt;h_proto) &gt; 1518) {
+-		skb-&gt;protocol = eth_hdr_p-&gt;h_proto;
+-	} else if (*(unsigned short *)skb-&gt;data == 0xFFFF) {
+-		/* Magic hack for Novell IPX-in-802.3 packets */
+-		skb-&gt;protocol = htons(ETH_P_802_3);
+-	} else {
+-		/* Assume it's an 802.2 packet (it should be, and we have no
+-		 * good way to tell if it isn't) */
+-		skb-&gt;protocol = htons(ETH_P_802_2);
+-	}
++	skb-&gt;protocol = eth_type_trans(skb, skb-&gt;dev);
+ 
+ 	dbg(&quot;%s: EXIT skb da %s sa %s proto 0x%04x len %d data %s&quot;,
+ 	    __func__, mac2str(eth_hdr(skb)-&gt;h_dest),
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000180.html">[at76c503a-develop] [PATCH 5/7] Clean up handling of ethernet	frames in the tx path
+</A></li>
+	<LI>Next message: <A HREF="000182.html">[at76c503a-develop] [PATCH 7/7] Remove &quot;a short overview on	Ethernet-II, 802.2, 802.3 and SNAP&quot;
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#181">[ date ]</a>
+              <a href="thread.html#181">[ thread ]</a>
+              <a href="subject.html#181">[ subject ]</a>
+              <a href="author.html#181">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">More information about the at76c503a-develop
+mailing list</a><br>
+</body></html>

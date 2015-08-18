@@ -1,0 +1,397 @@
+From agx at sigxcpu.org  Mon Jan  8 23:10:14 2007
+From: agx at sigxcpu.org (Guido Guenther)
+Date: Mon, 8 Jan 2007 23:10:14 +0100
+Subject: [at76c503a-develop] workqueue fixes for 2.6.20
+Message-ID: <20070108221014.GA4573@bogon.ms20.nix>
+
+Hi,
+Here's the current head updated to compile and work with 2.6.20:
+ git-clone http://honk.sigxcpu.org/git/at76c503a.git/
+This branch also drops support for kernel versions < 2.6.20 in
+preparation for submitting the driver into the wireless-dev tree.
+Shall I merge this into a CVS branch called wireless-dev or something?
+Cheers,
+ -- Guido
+
+
+From proski at gnu.org  Tue Jan  9 06:22:00 2007
+From: proski at gnu.org (Pavel Roskin)
+Date: Tue, 09 Jan 2007 00:22:00 -0500
+Subject: [at76c503a-develop] workqueue fixes for 2.6.20
+In-Reply-To: <20070108221014.GA4573@bogon.ms20.nix>
+References: <20070108221014.GA4573@bogon.ms20.nix>
+Message-ID: <1168320120.5855.5.camel@dv>
+
+Hello!
+
+On Mon, 2007-01-08 at 23:10 +0100, Guido Guenther wrote:
+
+> Hi,
+> Here's the current head updated to compile and work with 2.6.20:
+>  git-clone http://honk.sigxcpu.org/git/at76c503a.git/
+
+That's very much appreciated!
+
+> This branch also drops support for kernel versions < 2.6.20 in
+> preparation for submitting the driver into the wireless-dev tree.
+> Shall I merge this into a CVS branch called wireless-dev or something?
+
+I actually hoped to add support for the latest WPA enables firmware
+first, but I didn't have a chance to look at that.
+
+Perhaps it's a good idea to submit the driver to the kernel so that it's
+kept up to date.  I did some preparation too but never submitted the
+driver.
+
+I'm not sure we actually want to drop support for older kernels right
+now.   Maybe the portable version should be maintained in addition to
+the version in the kernel.
+
+-- 
+Regards,
+Pavel Roskin
+
+
+
+
+From maximsch2 at gmail.com  Tue Jan  9 08:24:22 2007
+From: maximsch2 at gmail.com (Maxim Grechkin)
+Date: Tue, 9 Jan 2007 10:24:22 +0300
+Subject: [at76c503a-develop] workqueue fixes for 2.6.20
+In-Reply-To: <1168320120.5855.5.camel@dv>
+References: <20070108221014.GA4573@bogon.ms20.nix> <1168320120.5855.5.camel@dv>
+Message-ID: <450c78130701082324s1529052cu87d617c1a19575d9@mail.gmail.com>
+
+I think now is too early to drop support for old kernels. You should place
+all code that is needed for old kernels in #ifdef OLD_KERNEL ... #endif it
+will be easy to delete this parts in the future.
+
+On 1/9/07, Pavel Roskin <proski at gnu.org> wrote:
+>
+> Hello!
+>
+> On Mon, 2007-01-08 at 23:10 +0100, Guido Guenther wrote:
+>
+> > Hi,
+> > Here's the current head updated to compile and work with 2.6.20:
+> >  git-clone http://honk.sigxcpu.org/git/at76c503a.git/
+>
+> That's very much appreciated!
+>
+> > This branch also drops support for kernel versions < 2.6.20 in
+> > preparation for submitting the driver into the wireless-dev tree.
+> > Shall I merge this into a CVS branch called wireless-dev or something?
+>
+> I actually hoped to add support for the latest WPA enables firmware
+> first, but I didn't have a chance to look at that.
+>
+> Perhaps it's a good idea to submit the driver to the kernel so that it's
+> kept up to date.  I did some preparation too but never submitted the
+> driver.
+>
+> I'm not sure we actually want to drop support for older kernels right
+> now.   Maybe the portable version should be maintained in addition to
+> the version in the kernel.
+>
+> --
+> Regards,
+> Pavel Roskin
+>
+>
+> _______________________________________________
+> at76c503a-develop mailing list
+> at76c503a-develop at lists.berlios.de
+> https://lists.berlios.de/mailman/listinfo/at76c503a-develop
+>
+
+
+
+-- 
+
+Maxim
+-------------- next part --------------
+An HTML attachment was scrubbed...
+URL: <https://lists.berlios.de/pipermail/at76c503a-develop/attachments/20070109/398310d2/attachment.html>
+
+From agx at sigxcpu.org  Wed Jan 10 15:57:24 2007
+From: agx at sigxcpu.org (Guido Guenther)
+Date: Wed, 10 Jan 2007 15:57:24 +0100
+Subject: [at76c503a-develop] Adding the at76_usb wireless driver
+Message-ID: <20070110145724.GA4171@bogon.ms20.nix>
+
+Hi John,
+attached is a patch that adds the at76_usb wireless driver to
+2.6.20-rc3. It supports the at76c503, at76c505 and at76c505a wireless
+USB adapters.
+
+Could you please comment on what needs to be adjusted to get the driver
+included into your wireless linux git tree?
+
+Please note that I'm not the author of the driver, the driver itself
+lists these copyright holders (but none of them showed up on the
+mailing list during the last couple of months):
+
+Copyright (c) 2002 - 2003 Oliver Kurth
+Copyright (c) 2004 Joerg Albert <joerg.albert at gmx.de>
+Copyright (c) 2004 Nick Jones
+Copyright (c) 2004 Balint Seeber <n0_5p4m_p13453 at hotmail.com>
+
+Pavel Roskin, Maxim Grechkin and me were committing to CVS recently.
+
+The projects homepage is:
+    http://at76c503a.berlios.de/
+I'm currently maintaining a (hopefully short lifed) git tree that
+removes support for older kernels, older wireless extensions, C99 style
+comments, commented out code and changes the workque interface for
+2.6.20.  This is only done to ease reviewing - there are no functional
+changes over the CVS archive:
+    git-clone http://honk.sigxcpu.org/git/at76c503a.git/
+The version in this repository is what's attached to this mail. The
+driver was tested (and is in pracitical use) on at least i386 and
+powerpc.
+Cheers,
+ -- Guido
+
+Signed-Off-By: Guido Guenther <agx at sigxcpu.org>
+-------------- next part --------------
+A non-text attachment was scrubbed...
+Name: at76c503a.diff
+Type: text/x-diff
+Size: 242696 bytes
+Desc: not available
+URL: <https://lists.berlios.de/pipermail/at76c503a-develop/attachments/20070110/4e93cf93/attachment.diff>
+
+From agx at sigxcpu.org  Wed Jan 10 16:50:56 2007
+From: agx at sigxcpu.org (Guido Guenther)
+Date: Wed, 10 Jan 2007 16:50:56 +0100
+Subject: [at76c503a-develop] workqueue fixes for 2.6.20
+In-Reply-To: <1168320120.5855.5.camel@dv>
+References: <20070108221014.GA4573@bogon.ms20.nix> <1168320120.5855.5.camel@dv>
+Message-ID: <20070110155056.GA4221@bogon.ms20.nix>
+
+On Tue, Jan 09, 2007 at 12:22:00AM -0500, Pavel Roskin wrote:
+> Hello!
+> 
+> On Mon, 2007-01-08 at 23:10 +0100, Guido Guenther wrote:
+> 
+> > Hi,
+> > Here's the current head updated to compile and work with 2.6.20:
+> >  git-clone http://honk.sigxcpu.org/git/at76c503a.git/
+> 
+> That's very much appreciated!
+> 
+> > This branch also drops support for kernel versions < 2.6.20 in
+> > preparation for submitting the driver into the wireless-dev tree.
+> > Shall I merge this into a CVS branch called wireless-dev or something?
+> 
+> I actually hoped to add support for the latest WPA enables firmware
+> first, but I didn't have a chance to look at that.
+Same here. But I think we can fix this up later.
+
+> Perhaps it's a good idea to submit the driver to the kernel so that it's
+> kept up to date.  I did some preparation too but never submitted the
+> driver.
+Just did so. I think we'll have to fixup some things anyway before it
+gets accepted, maybe we even have WPA working by then.
+
+> I'm not sure we actually want to drop support for older kernels right
+> now.   Maybe the portable version should be maintained in addition to
+> the version in the kernel.
+Agreed. All bugfixes shall go back into CVS head but we won't get the
+driver accepted with the old cruft included, I guess.
+Cheers, 
+-- Guido
+
+
+From proski at gnu.org  Wed Jan 10 18:29:24 2007
+From: proski at gnu.org (Pavel Roskin)
+Date: Wed, 10 Jan 2007 12:29:24 -0500
+Subject: [at76c503a-develop] Adding the at76_usb wireless driver
+In-Reply-To: <20070110145724.GA4171@bogon.ms20.nix>
+References: <20070110145724.GA4171@bogon.ms20.nix>
+Message-ID: <1168450164.22037.17.camel@dv>
+
+Hello!
+
+Guido, I think this should have been sent to the netdev list, not to
+John's personal e-mail.  Anyway, the next iteration will be sent to the
+list.
+
+I think we should get rid of names at76c503 and at76c503a.  They are
+misleading because they exclude at76c505 and at76c505a.  In fact, I
+don't think there was even a chip called at76c503a.  And calling the
+driver at76c50x would imply non-USB chips such as at76c504.  What really
+matters is that it's a USB driver, so at76_usb seems appropriate,
+although I tent to think that atmel_usb may be even better for
+consistency.
+
+On Wed, 2007-01-10 at 15:57 +0100, Guido Guenther wrote:
+> Hi John,
+> attached is a patch that adds the at76_usb wireless driver to
+> 2.6.20-rc3. It supports the at76c503, at76c505 and at76c505a wireless
+> USB adapters.
+> 
+> Could you please comment on what needs to be adjusted to get the driver
+> included into your wireless linux git tree?
+
+I second this request.  At least please have a short look.  The next
+iteration will go to the list.
+
+> The version in this repository is what's attached to this mail. The
+> driver was tested (and is in pracitical use) on at least i386 and
+> powerpc.
+
+x86_64 is also OK.  The driver has been checked by sparse and produces
+no warnings even with all warnings enabled.
+
+-- 
+Regards,
+Pavel Roskin
+
+
+
+
+From proski at gnu.org  Wed Jan 10 18:35:46 2007
+From: proski at gnu.org (Pavel Roskin)
+Date: Wed, 10 Jan 2007 12:35:46 -0500
+Subject: [at76c503a-develop] workqueue fixes for 2.6.20
+In-Reply-To: <20070110155056.GA4221@bogon.ms20.nix>
+References: <20070108221014.GA4573@bogon.ms20.nix>
+	<1168320120.5855.5.camel@dv>  <20070110155056.GA4221@bogon.ms20.nix>
+Message-ID: <1168450546.22037.24.camel@dv>
+
+On Wed, 2007-01-10 at 16:50 +0100, Guido Guenther wrote:
+> > I actually hoped to add support for the latest WPA enables firmware
+> > first, but I didn't have a chance to look at that.
+> Same here. But I think we can fix this up later.
+
+I agree.  It would only help if the driver sits next to the PCI/PCMCIA
+Atmel driver that already used the WPA enabled firmware.
+
+> > Perhaps it's a good idea to submit the driver to the kernel so that it's
+> > kept up to date.  I did some preparation too but never submitted the
+> > driver.
+> Just did so. I think we'll have to fixup some things anyway before it
+> gets accepted, maybe we even have WPA working by then.
+
+We probably should go through another round of renaming.  This time, I'd
+like Simon Kelley to be involved.
+
+> > I'm not sure we actually want to drop support for older kernels right
+> > now.   Maybe the portable version should be maintained in addition to
+> > the version in the kernel.
+> Agreed. All bugfixes shall go back into CVS head but we won't get the
+> driver accepted with the old cruft included, I guess.
+
+No need to guess, it's a fact :)
+
+That said, they are some non-intrusive ways of maintaining backward
+compatibility, such as using -include in CFLAGS to include the
+compatibility header.  This only works to a degree, but it's not like we
+care about something really older than two or three revisions back (to
+cover most current distros).
+
+-- 
+Regards,
+Pavel Roskin
+
+
+
+
+From agx at sigxcpu.org  Wed Jan 10 21:26:16 2007
+From: agx at sigxcpu.org (Guido Guenther)
+Date: Wed, 10 Jan 2007 21:26:16 +0100
+Subject: [at76c503a-develop] at76c503: sometimes the device reset doesn't
+	work
+Message-ID: <20070110202616.GA10807@bogon.ms20.nix>
+
+Hi,
+when pluggin in my at76c503 the adapter sometimes (maybe 1 out of 10
+cases) doesn't get detected properly. This is what happens:
+
+/var/scratch/at76c503a/git/at76c503.c: opmode -32
+                                       ^^^^^^^^^^
+Is this broken pipe in do_probe o.k.? I'm always seeing this.
+
+/var/scratch/at76c503a/git/at76c503.c: need to download firmware
+/var/scratch/at76c503a/git/at76c503.c: firmware board 3 version 1.101.0#84 (int 57a4:64, ext 3c44:5808)
+/var/scratch/at76c503a/git/at76c503.c: firmware id 1.101.0-84 503 RFMD Copyright (c) 1999-2000 by Atmel Corporation
+/var/scratch/at76c503a/git/at76c503.c: downloading internal firmware
+drivers/usb/core/inode.c: creating file '010'
+hub 2-0:1.0: state 7 ports 2 chg 0000 evt 0002
+/var/scratch/at76c503a/git/at76c503.c: downloading internal firmware
+/var/scratch/at76c503a/git/at76c503.c: sending REMAP
+/var/scratch/at76c503a/git/at76c503.c: sleeping for 2 seconds
+/var/scratch/at76c503a/git/at76c503.c: resetting the device
+ohci_hcd 0001:10:19.0: GetStatus roothub.portstatus [0] = 0x00100103 PRSC PPS PES CCS
+usb 2-1: reset full speed USB device using ohci_hcd and address 10
+ohci_hcd 0001:10:19.0: GetStatus roothub.portstatus [0] = 0x00100103 PRSC PPS PES CCS
+hub 2-0:1.0: state 7 ports 2 chg 0000 evt 0002
+usb 2-1: ep0 maxpacket = 8
+usb 2-1: manual set_interface for iface 0, alt 0
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+This is the actual problem: the reset doesn't get detected properly.  In
+case it works the last line looks different:
+
+usb 2-1: config index 0 changed (#1)
+usb 2-1: device firmware changed
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+When seeing this everything works fine (device gets disconnected,
+redetected and the external firmware gets downloaded):
+
+hub 2-0:1.0: logical disconnect on port 1
+hub 2-0:1.0: state 7 ports 2 chg 0002 evt 0002
+hub 2-0:1.0: port 1, status 0101, change 0000, 12 Mb/s
+usb 2-1: USB disconnect, address 6
+usb 2-1: unregistering device
+usb 2-1: usb_disable_device nuking all URBs
+usb 2-1: unregistering interface 2-1:1.0
+/var/scratch/at76c503a/git/at76c503.c: wlan0 disconnecting
+/var/scratch/at76c503a/git/at76c503.c: at76_usb disconnected
+
+I tried increasing the firmware download timeout but this doesn't seem
+to help. Any ideas (arch is ppc)?
+Cheers,
+ -- Guido
+
+
+From tim at buttersideup.com  Thu Jan 11 09:31:03 2007
+From: tim at buttersideup.com (Tim Small)
+Date: Thu, 11 Jan 2007 08:31:03 +0000
+Subject: [at76c503a-develop] Adding the at76_usb wireless driver
+In-Reply-To: <1168450164.22037.17.camel@dv>
+References: <20070110145724.GA4171@bogon.ms20.nix>
+	<1168450164.22037.17.camel@dv>
+Message-ID: <45A5F5C7.7010100@buttersideup.com>
+
+Pavel Roskin wrote:
+> In fact, I don't think there was even a chip called at76c503a.
+Yes, there is.
+>   And calling the
+> driver at76c50x would imply non-USB chips such as at76c504.  What really
+> matters is that it's a USB driver, so at76_usb seems appropriate,
+> although I tent to think that atmel_usb may be even better for
+> consistency.
+>   
+Hmm, I think the problem is that atmel_usb could easily become 
+non-descriptive / ambiguous, as Atmel make a variety of USB chips, and 
+are likely to make more in the future.  I'd propose something like:
+
+1. atmel_wifi_usb
+
+or
+
+2. at76c50x_usb
+
+> The driver was tested (and is in pracitical use) on at least i386 and
+> powerpc.
+>   
+FWIW, until recently I was using it (reasonably heavily, 24/7) on arm as 
+well...
+
+
+Cheers,
+
+Tim.
+
+

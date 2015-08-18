@@ -1,0 +1,82 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [at76c503a-develop] [PATCH 02/11] Remove another unneeded cast
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/at76c503a-develop/2007-June/index.html" >
+   <LINK REL="made" HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%2002/11%5D%20Remove%20another%20unneeded%20cast&In-Reply-To=%3C20070602180008.28397.3483.stgit%40dv.roinet.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000076.html">
+   <LINK REL="Next"  HREF="000078.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[at76c503a-develop] [PATCH 02/11] Remove another unneeded cast</H1>
+    <B>Pavel Roskin</B> 
+    <A HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%2002/11%5D%20Remove%20another%20unneeded%20cast&In-Reply-To=%3C20070602180008.28397.3483.stgit%40dv.roinet.com%3E"
+       TITLE="[at76c503a-develop] [PATCH 02/11] Remove another unneeded cast">proski at gnu.org
+       </A><BR>
+    <I>Sat Jun  2 20:00:08 CEST 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000076.html">[at76c503a-develop] [PATCH 01/11] Rename tasklet to rx_tasklet,	the former is too generic
+</A></li>
+        <LI>Next message: <A HREF="000078.html">[at76c503a-develop] [PATCH 03/11] op_mode should be int,	negative values are valid and mean an error
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#77">[ date ]</a>
+              <a href="thread.html#77">[ thread ]</a>
+              <a href="subject.html#77">[ subject ]</a>
+              <a href="author.html#77">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Signed-off-by: Pavel Roskin &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">proski at gnu.org</A>&gt;
+---
+
+ at76_usb.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/at76_usb.c b/at76_usb.c
+index fc27f51..58cbf31 100644
+--- a/at76_usb.c
++++ b/at76_usb.c
+@@ -6251,7 +6251,7 @@ static int at76_probe(struct usb_interface *interface,
+ 
+ 	usb_get_dev(udev);
+ 
+-	if ((priv = at76_alloc_new_device(udev, (u8) board_type)) == NULL) {
++	if ((priv = at76_alloc_new_device(udev, board_type)) == NULL) {
+ 		ret = -ENOMEM;
+ 		goto error_alloc;
+ 	}
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000076.html">[at76c503a-develop] [PATCH 01/11] Rename tasklet to rx_tasklet,	the former is too generic
+</A></li>
+	<LI>Next message: <A HREF="000078.html">[at76c503a-develop] [PATCH 03/11] op_mode should be int,	negative values are valid and mean an error
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#77">[ date ]</a>
+              <a href="thread.html#77">[ thread ]</a>
+              <a href="subject.html#77">[ subject ]</a>
+              <a href="author.html#77">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">More information about the at76c503a-develop
+mailing list</a><br>
+</body></html>

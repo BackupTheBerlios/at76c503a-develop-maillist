@@ -1,0 +1,96 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [at76c503a-develop] [PATCH 2/6] Remove last remains of LED	support, it shouldn't be here
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/at76c503a-develop/2007-April/index.html" >
+   <LINK REL="made" HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%202/6%5D%20Remove%20last%20remains%20of%20LED%0A%09support%2C%20it%20shouldn%27t%20be%20here&In-Reply-To=%3C20070429110806.GA5059%40bogon.ms20.nix%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000053.html">
+   <LINK REL="Next"  HREF="000047.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[at76c503a-develop] [PATCH 2/6] Remove last remains of LED	support, it shouldn't be here</H1>
+    <B>Guido Guenther</B> 
+    <A HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%202/6%5D%20Remove%20last%20remains%20of%20LED%0A%09support%2C%20it%20shouldn%27t%20be%20here&In-Reply-To=%3C20070429110806.GA5059%40bogon.ms20.nix%3E"
+       TITLE="[at76c503a-develop] [PATCH 2/6] Remove last remains of LED	support, it shouldn't be here">agx at sigxcpu.org
+       </A><BR>
+    <I>Sun Apr 29 13:08:07 CEST 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000053.html">[at76c503a-develop] [PATCH 2/6] Remove last remains of	LED	support, it shouldn't be here
+</A></li>
+        <LI>Next message: <A HREF="000047.html">[at76c503a-develop] [PATCH 3/6] Fix remaining prefixes,	remove comments after functions and switches
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#54">[ date ]</a>
+              <a href="thread.html#54">[ thread ]</a>
+              <a href="subject.html#54">[ subject ]</a>
+              <a href="author.html#54">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Pavel,
+On Sat, Apr 28, 2007 at 04:54:07PM -0400, Pavel Roskin wrote:
+&gt;<i> Quoting Erik Hovland &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">erik at hovland.org</A>&gt;:
+</I>&gt;<i> 
+</I>&gt;<i> &gt; If you could keep LED support, it would be helpful. We are carrying a
+</I>&gt;<i> &gt; patch in our tree that uses LEDs. I will see what I can do about getting
+</I>&gt;<i> &gt; an updated patch to this list for those LEDs.
+</I>&gt;<i> 
+</I>&gt;<i> OK, let's keep the LED code for now.  It was just a cleanup based on nm output. 
+</I>&gt;<i> We have bigger issues.
+</I>&gt;<i>
+</I>&gt;<i> But I'm sure we'll be asked about the LED code if the driver is submitted again
+</I>&gt;<i> for the kernel.  Something needs to be done about it.
+</I>I think Johannes suggested using a LED trigger, that's why I added the
+code.
+
+&gt;<i> What's really strange is that the LED code only indicates whether the driver is
+</I>&gt;<i> loaded.  It's completely separate from any hardware.  If the hardware is
+</I>&gt;<i> disconnected, the LED is still registered.
+</I>The trigger is registered during module load time and unregistered on
+module removal, it triggers the led (if bound to any via sysfs) on
+package receive - looks o.k. to me.
+Cheers,
+ -- Guido
+
+&gt;<i> We can just as well have a separate module with the LED code that would indicate
+</I>&gt;<i> its own presence.  But that's a sign that the LED code is useless as it is now.
+</I>&gt;<i> 
+</I>&gt;<i> --
+</I>&gt;<i> Regards,
+</I>&gt;<i> Pavel Roskin
+</I>&gt;<i> _______________________________________________
+</I>&gt;<i> at76c503a-develop mailing list
+</I>&gt;<i> <A HREF="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">at76c503a-develop at lists.berlios.de</A>
+</I>&gt;<i> <A HREF="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">https://lists.berlios.de/mailman/listinfo/at76c503a-develop</A>
+</I>
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000053.html">[at76c503a-develop] [PATCH 2/6] Remove last remains of	LED	support, it shouldn't be here
+</A></li>
+	<LI>Next message: <A HREF="000047.html">[at76c503a-develop] [PATCH 3/6] Fix remaining prefixes,	remove comments after functions and switches
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#54">[ date ]</a>
+              <a href="thread.html#54">[ thread ]</a>
+              <a href="subject.html#54">[ subject ]</a>
+              <a href="author.html#54">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">More information about the at76c503a-develop
+mailing list</a><br>
+</body></html>

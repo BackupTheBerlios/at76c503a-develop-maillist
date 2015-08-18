@@ -1,0 +1,127 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [at76c503a-develop] [PATCH 08/10] Simplify at76_set_card_command()
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/at76c503a-develop/2007-June/index.html" >
+   <LINK REL="made" HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%2008/10%5D%20Simplify%20at76_set_card_command%28%29&In-Reply-To=%3C20070616073902.13212.84259.stgit%40dv.roinet.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000128.html">
+   <LINK REL="Next"  HREF="000131.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[at76c503a-develop] [PATCH 08/10] Simplify at76_set_card_command()</H1>
+    <B>Pavel Roskin</B> 
+    <A HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%2008/10%5D%20Simplify%20at76_set_card_command%28%29&In-Reply-To=%3C20070616073902.13212.84259.stgit%40dv.roinet.com%3E"
+       TITLE="[at76c503a-develop] [PATCH 08/10] Simplify at76_set_card_command()">proski at gnu.org
+       </A><BR>
+    <I>Sat Jun 16 09:39:02 CEST 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000128.html">[at76c503a-develop] [PATCH 07/10] Reuse at76_set_card_command()	from at76_set_mib()
+</A></li>
+        <LI>Next message: <A HREF="000131.html">[at76c503a-develop] [PATCH 09/10] Eliminate struct dfu_ctx
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#130">[ date ]</a>
+              <a href="thread.html#130">[ thread ]</a>
+              <a href="subject.html#130">[ subject ]</a>
+              <a href="author.html#130">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Add &quot;data&quot; field to struct at76_command to avoid dubious code to access
+data beyound the end of structure.  Don't make handle 0-byte buffer as a
+special case.  Avoid extra indentation.
+
+Signed-off-by: Pavel Roskin &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">proski at gnu.org</A>&gt;
+---
+
+ at76_usb.c |   29 +++++++++++++----------------
+ at76_usb.h |    1 +
+ 2 files changed, 14 insertions(+), 16 deletions(-)
+
+diff --git a/at76_usb.c b/at76_usb.c
+index 99f6eb6..3e555e2 100644
+--- a/at76_usb.c
++++ b/at76_usb.c
+@@ -788,23 +788,20 @@ static int at76_set_card_command(struct usb_device *udev, int cmd, void *buf,
+ 	struct at76_command *cmd_buf = kmalloc(sizeof(struct at76_command) +
+ 					       buf_size, GFP_KERNEL);
+ 
+-	if (cmd_buf) {
+-		cmd_buf-&gt;cmd = cmd;
+-		cmd_buf-&gt;reserved = 0;
+-		cmd_buf-&gt;size = cpu_to_le16(buf_size);
+-		if (buf_size &gt; 0)
+-			memcpy(&amp;(cmd_buf[1]), buf, buf_size);
+-		ret = usb_control_msg(udev, usb_sndctrlpipe(udev, 0),
+-				      0x0e, DEVICE_VENDOR_REQUEST_OUT,
+-				      0, 0,
+-				      cmd_buf,
+-				      sizeof(struct at76_command) +
+-				      buf_size, USB_CTRL_GET_TIMEOUT);
+-		kfree(cmd_buf);
+-		return ret;
+-	}
++	if (!cmd_buf)
++		return -ENOMEM;
+ 
+-	return -ENOMEM;
++	cmd_buf-&gt;cmd = cmd;
++	cmd_buf-&gt;reserved = 0;
++	cmd_buf-&gt;size = cpu_to_le16(buf_size);
++	memcpy(cmd_buf-&gt;data, buf, buf_size);
++
++	ret = usb_control_msg(udev, usb_sndctrlpipe(udev, 0), 0x0e,
++			      DEVICE_VENDOR_REQUEST_OUT, 0, 0, cmd_buf,
++			      sizeof(struct at76_command) + buf_size,
++			      USB_CTRL_GET_TIMEOUT);
++	kfree(cmd_buf);
++	return ret;
+ }
+ 
+ #define MAKE_CMD_STATUS_CASE(c)	case (c): return #c
+diff --git a/at76_usb.h b/at76_usb.h
+index 46a2d7a..0854ad7 100644
+--- a/at76_usb.h
++++ b/at76_usb.h
+@@ -178,6 +178,7 @@ struct at76_command {
+ 	u8 cmd;
+ 	u8 reserved;
+ 	__le16 size;
++	u8 data[0];
+ } __attribute__ ((packed));
+ 
+ /* the length of the Atmel firmware specific rx header before IEEE 802.11 starts */
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000128.html">[at76c503a-develop] [PATCH 07/10] Reuse at76_set_card_command()	from at76_set_mib()
+</A></li>
+	<LI>Next message: <A HREF="000131.html">[at76c503a-develop] [PATCH 09/10] Eliminate struct dfu_ctx
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#130">[ date ]</a>
+              <a href="thread.html#130">[ thread ]</a>
+              <a href="subject.html#130">[ subject ]</a>
+              <a href="author.html#130">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">More information about the at76c503a-develop
+mailing list</a><br>
+</body></html>

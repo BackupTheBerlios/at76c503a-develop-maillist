@@ -1,0 +1,93 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [at76c503a-develop] workqueue fixes for 2.6.20
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/at76c503a-develop/2007-January/index.html" >
+   <LINK REL="made" HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20workqueue%20fixes%20for%202.6.20&In-Reply-To=%3C20070110155056.GA4221%40bogon.ms20.nix%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000002.html">
+   <LINK REL="Next"  HREF="000006.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[at76c503a-develop] workqueue fixes for 2.6.20</H1>
+    <B>Guido Guenther</B> 
+    <A HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20workqueue%20fixes%20for%202.6.20&In-Reply-To=%3C20070110155056.GA4221%40bogon.ms20.nix%3E"
+       TITLE="[at76c503a-develop] workqueue fixes for 2.6.20">agx at sigxcpu.org
+       </A><BR>
+    <I>Wed Jan 10 16:50:56 CET 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000002.html">[at76c503a-develop] workqueue fixes for 2.6.20
+</A></li>
+        <LI>Next message: <A HREF="000006.html">[at76c503a-develop] workqueue fixes for 2.6.20
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4">[ date ]</a>
+              <a href="thread.html#4">[ thread ]</a>
+              <a href="subject.html#4">[ subject ]</a>
+              <a href="author.html#4">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>On Tue, Jan 09, 2007 at 12:22:00AM -0500, Pavel Roskin wrote:
+&gt;<i> Hello!
+</I>&gt;<i> 
+</I>&gt;<i> On Mon, 2007-01-08 at 23:10 +0100, Guido Guenther wrote:
+</I>&gt;<i> 
+</I>&gt;<i> &gt; Hi,
+</I>&gt;<i> &gt; Here's the current head updated to compile and work with 2.6.20:
+</I>&gt;<i> &gt;  git-clone <A HREF="http://honk.sigxcpu.org/git/at76c503a.git/">http://honk.sigxcpu.org/git/at76c503a.git/</A>
+</I>&gt;<i> 
+</I>&gt;<i> That's very much appreciated!
+</I>&gt;<i> 
+</I>&gt;<i> &gt; This branch also drops support for kernel versions &lt; 2.6.20 in
+</I>&gt;<i> &gt; preparation for submitting the driver into the wireless-dev tree.
+</I>&gt;<i> &gt; Shall I merge this into a CVS branch called wireless-dev or something?
+</I>&gt;<i> 
+</I>&gt;<i> I actually hoped to add support for the latest WPA enables firmware
+</I>&gt;<i> first, but I didn't have a chance to look at that.
+</I>Same here. But I think we can fix this up later.
+
+&gt;<i> Perhaps it's a good idea to submit the driver to the kernel so that it's
+</I>&gt;<i> kept up to date.  I did some preparation too but never submitted the
+</I>&gt;<i> driver.
+</I>Just did so. I think we'll have to fixup some things anyway before it
+gets accepted, maybe we even have WPA working by then.
+
+&gt;<i> I'm not sure we actually want to drop support for older kernels right
+</I>&gt;<i> now.   Maybe the portable version should be maintained in addition to
+</I>&gt;<i> the version in the kernel.
+</I>Agreed. All bugfixes shall go back into CVS head but we won't get the
+driver accepted with the old cruft included, I guess.
+Cheers, 
+-- Guido
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000002.html">[at76c503a-develop] workqueue fixes for 2.6.20
+</A></li>
+	<LI>Next message: <A HREF="000006.html">[at76c503a-develop] workqueue fixes for 2.6.20
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4">[ date ]</a>
+              <a href="thread.html#4">[ thread ]</a>
+              <a href="subject.html#4">[ subject ]</a>
+              <a href="author.html#4">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">More information about the at76c503a-develop
+mailing list</a><br>
+</body></html>

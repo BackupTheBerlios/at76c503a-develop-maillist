@@ -1,0 +1,145 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [at76c503a-develop] [PATCH 05/10] Call at76_set_monitor_mode() from	at76_startup_device()
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/at76c503a-develop/2007-June/index.html" >
+   <LINK REL="made" HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%2005/10%5D%20Call%20at76_set_monitor_mode%28%29%20from%0A%09at76_startup_device%28%29&In-Reply-To=%3C20070605010407.32602.12501.stgit%40dv.roinet.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000092.html">
+   <LINK REL="Next"  HREF="000093.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[at76c503a-develop] [PATCH 05/10] Call at76_set_monitor_mode() from	at76_startup_device()</H1>
+    <B>Pavel Roskin</B> 
+    <A HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%2005/10%5D%20Call%20at76_set_monitor_mode%28%29%20from%0A%09at76_startup_device%28%29&In-Reply-To=%3C20070605010407.32602.12501.stgit%40dv.roinet.com%3E"
+       TITLE="[at76c503a-develop] [PATCH 05/10] Call at76_set_monitor_mode() from	at76_startup_device()">proski at gnu.org
+       </A><BR>
+    <I>Tue Jun  5 03:04:07 CEST 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000092.html">[at76c503a-develop] [PATCH 04/10] Remove support for channel	scanning in monitor mode
+</A></li>
+        <LI>Next message: <A HREF="000093.html">[at76c503a-develop] [PATCH 06/10] Run at76_usb.h through Lindent
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#91">[ date ]</a>
+              <a href="thread.html#91">[ thread ]</a>
+              <a href="subject.html#91">[ subject ]</a>
+              <a href="author.html#91">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>at76_set_monitor_mode() is always called after at76_startup_device(),
+and other at76_set functions are called from at76_startup_device()
+directly.  Move at76_set_monitor_mode() closer to the other at76_set
+functions.
+
+Signed-off-by: Pavel Roskin &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">proski at gnu.org</A>&gt;
+---
+
+ at76_usb.c |   37 ++++++++++++++++++-------------------
+ 1 files changed, 18 insertions(+), 19 deletions(-)
+
+diff --git a/at76_usb.c b/at76_usb.c
+index cf684ac..ab062d8 100644
+--- a/at76_usb.c
++++ b/at76_usb.c
+@@ -1061,6 +1061,21 @@ static int at76_set_autorate_fallback(struct at76_priv *priv, int onoff)
+ }
+ 
+ 
++/* set network device type for the current mode */
++static void at76_set_monitor_mode(struct at76_priv *priv)
++{
++	if (priv-&gt;iw_mode == IW_MODE_MONITOR) {
++		at76_dbg(DBG_MONITOR_MODE, &quot;%s: MONITOR MODE ON&quot;,
++			 priv-&gt;netdev-&gt;name);
++		priv-&gt;netdev-&gt;type = ARPHRD_IEEE80211_RADIOTAP;
++	} else {
++		at76_dbg(DBG_MONITOR_MODE, &quot;%s: MONITOR MODE OFF&quot;,
++		         priv-&gt;netdev-&gt;name);
++		priv-&gt;netdev-&gt;type = ARPHRD_ETHER;
++	}
++}
++
++
+ static int at76_add_mac_address(struct at76_priv *priv, void *addr)
+ {
+ 	int ret = 0;
+@@ -4672,6 +4687,8 @@ static int at76_startup_device(struct at76_priv *priv)
+ 	if ((ret = at76_set_iroaming(priv, priv-&gt;international_roaming)) &lt; 0)
+ 		return ret;
+ 
++	at76_set_monitor_mode(priv);
++
+ 	if (at76_debug &amp; DBG_MIB) {
+ 		at76_dump_mib_mac(priv);
+ 		at76_dump_mib_mac_addr(priv);
+@@ -4686,23 +4703,6 @@ static int at76_startup_device(struct at76_priv *priv)
+ }
+ 
+ 
+-/**
+- * set_monitor_mode - sets priv-&gt;netdev-&gt;type
+- */
+-static void at76_set_monitor_mode(struct at76_priv *priv)
+-{
+-	if (priv-&gt;iw_mode == IW_MODE_MONITOR) {
+-		at76_dbg(DBG_MONITOR_MODE, &quot;%s: MONITOR MODE ON&quot;,
+-			 priv-&gt;netdev-&gt;name);
+-		priv-&gt;netdev-&gt;type = ARPHRD_IEEE80211_RADIOTAP;
+-	} else {
+-		at76_dbg(DBG_MONITOR_MODE, &quot;%s: MONITOR MODE OFF&quot;,
+-		         priv-&gt;netdev-&gt;name);
+-		priv-&gt;netdev-&gt;type = ARPHRD_ETHER;
+-	}
+-}
+-
+-
+ static void at76_work_restart(struct work_struct *work)
+ {
+ 	struct at76_priv *priv = container_of(work, struct at76_priv,
+@@ -4711,10 +4711,9 @@ static void at76_work_restart(struct work_struct *work)
+ 	mutex_lock(&amp;priv-&gt;mtx);
+ 
+ 	at76_startup_device(priv);
+-	at76_set_monitor_mode(priv);
+-
+ 	netif_carrier_off(priv-&gt;netdev);	/* disable running netdev watchdog */
+ 	netif_stop_queue(priv-&gt;netdev);	/* stop tx data packets */
++
+ 	if (priv-&gt;iw_mode != IW_MODE_MONITOR) {
+ 		priv-&gt;istate = SCANNING;
+ 		schedule_work(&amp;priv-&gt;work_scan);
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000092.html">[at76c503a-develop] [PATCH 04/10] Remove support for channel	scanning in monitor mode
+</A></li>
+	<LI>Next message: <A HREF="000093.html">[at76c503a-develop] [PATCH 06/10] Run at76_usb.h through Lindent
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#91">[ date ]</a>
+              <a href="thread.html#91">[ thread ]</a>
+              <a href="subject.html#91">[ subject ]</a>
+              <a href="author.html#91">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">More information about the at76c503a-develop
+mailing list</a><br>
+</body></html>

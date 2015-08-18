@@ -1,0 +1,367 @@
+From proski at gnu.org  Sat Sep  1 05:32:33 2007
+From: proski at gnu.org (Pavel Roskin)
+Date: Fri, 31 Aug 2007 23:32:33 -0400
+Subject: [at76c503a-develop] mac80211 conversion of at76_usb
+Message-ID: <1188617553.9555.29.camel@dv>
+
+Hello!
+
+We need some coordinated plan for further development of at76_usb.
+
+My git repository is located at http://git.80211libre.org/at76_usb.git
+It cannot be cloned by cg-clone, but it can be cloned by git-clone and
+used with Cogito (although I would recommend StGIT or plain git
+instead).
+
+I intend to get rid of any private repositories and to move the
+development to the kernel git repository.  But it needs to be done in
+such way that the current mac80211 conversion efforts are not lost.
+
+The files in the wireless-dev/at76 branch are not current.  I don't know
+how they got into the kernel, but it's revision called "Fixes suggested
+by checkpatch.pl" from June 24.  I have tagged it as
+"initial_kernel_git_appearance" in my repository.
+
+It's 57 revisions away from the tip, which is version 0.16.  There are
+no major changes, but some patches are quite intrusive, such as the one
+that eliminates all uses of err().
+
+Kalle started his work on a commit somewhere between
+"initial_kernel_git_appearance" and the tip.  I have tagged that point
+as "kalle_start".  Then Kalle rebased his changes to the revision in the
+kernel, which is older.
+
+It's very unfortunate, and I'm sorry that I could not prevent that
+useless effort.  I hope no significant changes have been done after the
+rebase.
+
+I suggest following plan:
+
+1) I prepare and submit patches that bring the kernel version to
+"kalle_start".
+
+2) Kalle reverts the rebase and re-applies the changes made after the
+rebase.
+
+3) Kalle's changes go to a separate branch in my repository.
+
+4) I rebase Kalle's changes on top of the HEAD.
+
+5) Patches leading to 0.16 are submitted to the kernel.
+
+5) The remaining issues with mac80211 are fixed.
+
+6) The mac80211 patches are submitted to the kernel.
+
+-- 
+Regards,
+Pavel Roskin
+
+
+
+From proski at gnu.org  Sat Sep  1 23:05:49 2007
+From: proski at gnu.org (Pavel Roskin)
+Date: Sat, 01 Sep 2007 17:05:49 -0400
+Subject: [at76c503a-develop] mac80211 conversion of at76_usb
+In-Reply-To: <873axyk163.fsf@litku.valot.fi>
+References: <1188617553.9555.29.camel@dv> <873axyk163.fsf@litku.valot.fi>
+Message-ID: <20070901170549.r6scuu1w2ssgoow0@webmail.spamcop.net>
+
+Hello, Kalle!
+
+Quoting Kalle Valo <Kalle.Valo at iki.fi>:
+
+>> 4) I rebase Kalle's changes on top of the HEAD.
+>
+> Sounds good. I can do the rebase on top of the HEAD, if needed.
+
+It would be great.  Hopefully, there will be few problems.  If I  
+remember correctly, there is one moderately important fix (correct  
+turning off the radio) and one large intrusive change (getting rid of  
+err()).  The rest is pretty minor.  Some of the changes are in the  
+code removed during conversion.
+
+>> 5) Patches leading to 0.16 are submitted to the kernel.
+
+> This is very important. I would prefer to work from wireless-dev. Also
+> we would get more exposure that way.
+
+That's my goal too.  I just didn't want to force you to rebase your changes.
+
+>> 5) The remaining issues with mac80211 are fixed.
+>>
+>> 6) The mac80211 patches are submitted to the kernel.
+>
+> Just to warn that it might take a long time for these two items. I'm
+> not that familiar with mac80211, yet.
+
+I understand the issue is with transmission.  It's probably some  
+stupid error that will be found.  We'll need to make some minimal  
+sanity checks, like sparse and testing on kernels with debugging  
+enabled.  At this point, it should be fine to submit the changes to  
+the kernel.
+
+> BTW, what's the preferred way of communication?
+> at76c503a-develop at lists.berlios.de list?
+
+Yes, as long it's not required to involve all linux-wireless folks.
+
+-- 
+Regards,
+Pavel Roskin
+
+
+From proski at gnu.org  Sun Sep  2 17:49:29 2007
+From: proski at gnu.org (Pavel Roskin)
+Date: Sun, 02 Sep 2007 11:49:29 -0400
+Subject: [at76c503a-develop] mac80211 conversion of at76_usb
+In-Reply-To: <87odgl35w6.fsf@litku.valot.fi>
+References: <1188617553.9555.29.camel@dv> <873axyk163.fsf@litku.valot.fi>
+	<20070901170549.r6scuu1w2ssgoow0@webmail.spamcop.net>
+	<87sl5x3c2y.fsf@litku.valot.fi> <87odgl35w6.fsf@litku.valot.fi>
+Message-ID: <20070902114929.onwne6an4k4cs0g4@webmail.spamcop.net>
+
+Quoting Kalle Valo <Kalle.Valo at iki.fi>:
+
+> Git rocks, as usual. The rebase was relatively easy compared to
+> manually rebasing. It took less than an hour. Removal of priv->netdev
+> and it's use in debug messsages was the reason for most of the manual
+> work.
+>
+> But all is well now and I will post a patch today evening. Hopefully I
+> have transmission working by that time.
+
+Thank you!  Please post the patch in any case.  Hopefully we'll fix  
+what needs to be fixed.
+
+-- 
+Regards,
+Pavel Roskin
+
+
+From proski at gnu.org  Mon Sep  3 05:36:03 2007
+From: proski at gnu.org (Pavel Roskin)
+Date: Sun, 02 Sep 2007 23:36:03 -0400
+Subject: [at76c503a-develop] mac80211 conversion of at76_usb
+In-Reply-To: <87veas27l1.fsf@litku.valot.fi>
+References: <1188617553.9555.29.camel@dv> <873axyk163.fsf@litku.valot.fi>
+	<20070901170549.r6scuu1w2ssgoow0@webmail.spamcop.net>
+	<87sl5x3c2y.fsf@litku.valot.fi> <87odgl35w6.fsf@litku.valot.fi>
+	<20070902114929.onwne6an4k4cs0g4@webmail.spamcop.net>
+	<87veas27l1.fsf@litku.valot.fi>
+Message-ID: <20070902233603.fi8x6dol6ows8ooc@webmail.spamcop.net>
+
+Hello, Kalle!
+
+Quoting Kalle Valo <Kalle.Valo at iki.fi>:
+
+> I have attached the patch. I must warn that it's far from finished.
+> There are lots of fixmes andc commented out code. I can clean it up
+> later, but now my focus is to get transmission working. Yes, I still
+> don't have transmission working :(
+
+Just in case, please make sure you deal with APs with no encryption.   
+Encryption can complicate things at this stage.  Please make sure that  
+the system scripts don't set any WEP key.
+
+> Receiving seems to work well, at least mac80211 can send scan results
+> to user space. I also managed to get the firmware send probe requests
+> and ack the probe responses from AP.
+
+That's a sign that transmission is working.  Please check is the  
+firmware sends the probe requests by itself or they come from mac80211.
+
+> But authentication frames created
+> by mac80211 are not sent to the air and I don't know why. If anyone
+> has any hints why this might be happening, I would be really grateful.
+
+Just random ideas:
+
+1) Wrong padding.  The firmware is very sensitive to it.  Try to  
+increase padding.
+
+2) Check if at76_tx_callback() is called.
+
+3) Trace all calls to at76_set_card_command() to see which commands  
+are sent to the firmware in the original and in the new driver.  Check  
+the command results.
+
+4) More specifically, check when CMD_JOIN is called in both drivers  
+and whether is succeeds.  I think it's called much later, but check it  
+anyway.
+
+5) Try compiling with sparse:
+make C=2 CF="-Wall -D__CHECK_ENDIAN__"
+
+6) Check everything related to tx_urb.
+
+7) Dump and compare Atmel Tx headers in both drivers.
+
+I won't be able to check anything until Tuesday, but I'll try to help  
+you with what I know.
+
+> I ripped off code quite a lot and tried to simplify the driver. Maybe
+> I removed some needed functionality?
+
+Maybe URB status is not cleared after the first transmission or  
+something like that.  Maybe something is not initialized anymore.
+
+Good luck!
+
+-- 
+Regards,
+Pavel Roskin
+
+
+From proski at gnu.org  Mon Sep  3 06:17:13 2007
+From: proski at gnu.org (Pavel Roskin)
+Date: Mon, 03 Sep 2007 00:17:13 -0400
+Subject: [at76c503a-develop] mac80211 conversion of at76_usb
+In-Reply-To: <87veas27l1.fsf@litku.valot.fi>
+References: <1188617553.9555.29.camel@dv> <873axyk163.fsf@litku.valot.fi>
+	<20070901170549.r6scuu1w2ssgoow0@webmail.spamcop.net>
+	<87sl5x3c2y.fsf@litku.valot.fi> <87odgl35w6.fsf@litku.valot.fi>
+	<20070902114929.onwne6an4k4cs0g4@webmail.spamcop.net>
+	<87veas27l1.fsf@litku.valot.fi>
+Message-ID: <20070903001713.dz8h6mzig4w80sck@webmail.spamcop.net>
+
+Hello again,
+
+I downloaded the patch and looked at the code.  I don't see anything  
+obviously wrong.  Sparse reports minor issues with integer conversion,  
+but they cannot affect transmission.  I'm away from the hardware, so I  
+cannot test any functionality.
+
+I have committed the patch to the repository, just to make it easier  
+for others to look at the code.  I don't think we need any branches,  
+since the full focus of the development should be on mac80211  
+conversion.
+
+But the patch is applied temporarily.  I'm going to remove it from top  
+and replace with something more reasonable.  Maybe I'll split some  
+easy parts into separate patches.  Maybe I'll start a separate  
+"cleaned-up" branch, which would eventually replace "master", and from  
+which the patches for the kernel will be sent.  The final patches will  
+be properly signed off and commented.
+
+I would prefer not to have knowingly broken revisions in the code we  
+are going to submit to the kernel.
+
+Once again, to everybody - the converted driver is in my git  
+repository.  Please get it and try to fix it.
+
+-- 
+Regards,
+Pavel Roskin
+
+
+From proski at gnu.org  Mon Sep 10 07:19:37 2007
+From: proski at gnu.org (Pavel Roskin)
+Date: Mon, 10 Sep 2007 01:19:37 -0400
+Subject: [at76c503a-develop] mac80211 conversion of at76_usb
+In-Reply-To: <87veas27l1.fsf@litku.valot.fi>
+References: <1188617553.9555.29.camel@dv> <873axyk163.fsf@litku.valot.fi>
+	<20070901170549.r6scuu1w2ssgoow0@webmail.spamcop.net>
+	<87sl5x3c2y.fsf@litku.valot.fi> <87odgl35w6.fsf@litku.valot.fi>
+	<20070902114929.onwne6an4k4cs0g4@webmail.spamcop.net>
+	<87veas27l1.fsf@litku.valot.fi>
+Message-ID: <1189401577.25360.2.camel@dv>
+
+Hello, Kalle!
+
+On Sun, 2007-09-02 at 22:25 +0300, Kalle Valo wrote:
+
+> I ripped off code quite a lot and tried to simplify the driver. Maybe
+> I removed some needed functionality?
+
+I see that your patch removes printing MAC address on startup.  Look for
+"%s: MAC address %s\n".  It's a minor issue, but it indicates that
+something went wrong at some point.
+
+I feel uneasy about applying such a massive patch that does so many
+things at once, especially if there are signs that some code was lost in
+the rebase process.
+
+So I moved your changes to a separate branch "mac80211-kalle" and reset
+the "master" branch to what it was before.
+
+I also applied a patch that switches the driver from net/ieee80211.h to
+net/mac80211.h.  Even though I had to bring some stuff from
+net/ieee80211.h into at76_usb.h temporarily, it's worth the trouble.
+This change that can be clearly separated from the rest of the changes.
+The patch is short and it doesn't break anything for me.
+
+I think the next step should be the conversion without any cleanup (I'm
+even fine with compiler warnings about unused functions), and then all
+cleanup should be done as separate commits.  Any changes to the
+debugging code should be separate too.
+
+I do appreciate your efforts, as they show that the mac80211 conversion
+is possible, but I cannot just take the code as is and massage it into
+something working.
+
+My patches that bring the driver in the at76 branch of the kernel more
+up-to-date with my repository haven't been applied yet, so the kernel
+version of the driver is not suitable for development yet.
+
+-- 
+Regards,
+Pavel Roskin
+
+
+
+From proski at gnu.org  Wed Sep 26 10:19:07 2007
+From: proski at gnu.org (Pavel Roskin)
+Date: Wed, 26 Sep 2007 04:19:07 -0400
+Subject: [at76c503a-develop] [PATCH] at76_usb: Add ID for Corega
+	Wireless LAN USB-11 mini	(0x07aa, 0x0011)
+In-Reply-To: <759eb87f0709241057x76bf342ekce99c08f55f30e4f@mail.gmail.com>
+References: <759eb87f0709241057x76bf342ekce99c08f55f30e4f@mail.gmail.com>
+Message-ID: <1190794747.19988.1.camel@dv>
+
+On Tue, 2007-09-25 at 01:57 +0800, Weihua Yao wrote:
+> From b9d7d5c41f694938db5bd009ddc381596207db0f Mon Sep 17 00:00:00 2001
+> From: Weihua Yao <weihuayao at gmail.com>
+> Date: Tue, 25 Sep 2007 01:40:19 +0800
+> Subject: [PATCH] Add ID for Corega Wireless LAN USB-11 mini (0x07aa,0x0011)
+
+Thank you!  I've added this ID, as well as (0x07aa,0x0018) for mini2.
+
+-- 
+Regards,
+Pavel Roskin
+
+
+
+From proski at gnu.org  Sun Sep 30 10:25:01 2007
+From: proski at gnu.org (Pavel Roskin)
+Date: Sun, 30 Sep 2007 04:25:01 -0400
+Subject: [at76c503a-develop] [ANNOUNCE] at76_usb 0.17 released
+Message-ID: <1191140701.17780.9.camel@dv>
+
+Hello!
+
+Version 0.17 of the at76_usb driver has been released.
+
+This is a stability release that includes only a handful of fixes.
+
+- The default network device names will now start with "wlan", as in
+  versions prior to 0.16.
+
+- Fixed support for Belkin F5D6050.
+
+- Added support for Corega Wireless LAN USB-11 mini and mini2.
+
+- Improved messages in the kernel log.
+
+- Packets captured in monitor mode use correct value for the protocol.
+
+The driver is compatible with Linux 2.6.20 and newer, including the
+forthcoming version 2.6.23.
+
+-- 
+Regards,
+Pavel Roskin
+
+
+

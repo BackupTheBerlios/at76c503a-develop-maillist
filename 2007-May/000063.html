@@ -1,0 +1,311 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [at76c503a-develop] [PATCH 1/6] Merge at76_do_probe() into	at76_probe()
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/at76c503a-develop/2007-May/index.html" >
+   <LINK REL="made" HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%201/6%5D%20Merge%20at76_do_probe%28%29%20into%0A%09at76_probe%28%29&In-Reply-To=%3C20070502000041.14011.47848.stgit%40dv.roinet.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000060.html">
+   <LINK REL="Next"  HREF="000065.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[at76c503a-develop] [PATCH 1/6] Merge at76_do_probe() into	at76_probe()</H1>
+    <B>Pavel Roskin</B> 
+    <A HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%201/6%5D%20Merge%20at76_do_probe%28%29%20into%0A%09at76_probe%28%29&In-Reply-To=%3C20070502000041.14011.47848.stgit%40dv.roinet.com%3E"
+       TITLE="[at76c503a-develop] [PATCH 1/6] Merge at76_do_probe() into	at76_probe()">proski at gnu.org
+       </A><BR>
+    <I>Wed May  2 02:00:41 CEST 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000060.html">[at76c503a-develop] Status of the driver
+</A></li>
+        <LI>Next message: <A HREF="000065.html">[at76c503a-develop] [PATCH 3/6] Reorder the functions to avoid most	forward declarations
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#63">[ date ]</a>
+              <a href="thread.html#63">[ thread ]</a>
+              <a href="subject.html#63">[ subject ]</a>
+              <a href="author.html#63">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>The split was artificial, not across a logical boundary. 
+at76_do_probe() was only called by at76_probe() in one place.  Both
+functions were dealing with similar issues.  The &quot;interface&quot; variable
+wasn't passed to at76_do_probe(), it was calculated from altconfig.
+Reformat the resulting function.
+
+Signed-off-by: Pavel Roskin &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">proski at gnu.org</A>&gt;
+---
+
+ at76_usb.c |  160 +++++++++++++++++++++++++++---------------------------------
+ 1 files changed, 73 insertions(+), 87 deletions(-)
+
+diff --git a/at76_usb.c b/at76_usb.c
+index 83eb5d3..649b1ce 100644
+--- a/at76_usb.c
++++ b/at76_usb.c
+@@ -6084,19 +6084,33 @@ static int at76_get_fw_info(u8 *fw_data, int fw_size,
+ 	return 0;
+ }
+ 
+-/**
+- * at76_do_probe - have a look at the firmware
+- */
+-static int at76_do_probe(struct usb_device *udev, u8 *fw_data, int fw_size,
+-			     u32 board_type)
++static int at76_probe(struct usb_interface *interface,
++		      const struct usb_device_id *id)
+ {
+-	struct usb_interface *intf = udev-&gt;actconfig-&gt;interface[0];
+ 	int ret;
+-	struct at76_priv *dev = NULL;
++	struct at76_priv *dev;
++	int board_type = (int)id-&gt;driver_info;
++	const char *const fw_name = firmwares[board_type].fwname;
++	const struct firmware *fw = firmwares[board_type].fw;
++	struct usb_device *udev = interface_to_usbdev(interface);
+ 	int op_mode;
+ 	char *id_str;
+ 	u32 version;
+ 
++	if (fw == NULL) {
++		at76_dbg(DBG_FW, &quot;downloading firmware %s&quot;, fw_name);
++		ret = request_firmware(&amp;fw, fw_name, &amp;udev-&gt;dev);
++		if (ret == 0) {
++			at76_dbg(DBG_FW, &quot;got it.&quot;);
++		} else {
++			err(&quot;firmware %s not found.&quot;, fw_name);
++			err(&quot;You may need to download the firmware from &quot;
++			    &quot;<A HREF="https://developer.berlios.de/projects/at76c503a/">https://developer.berlios.de/projects/at76c503a/</A>&quot;);
++			return ret;
++		}
++	} else
++		at76_dbg(DBG_FW, &quot;re-using previously loaded fw&quot;);
++
+ 	usb_get_dev(udev);
+ 
+ 	if ((dev = at76_alloc_new_device(udev, (u8) board_type)) == NULL) {
+@@ -6106,8 +6120,8 @@ static int at76_do_probe(struct usb_device *udev, u8 *fw_data, int fw_size,
+ 
+ 	op_mode = at76_get_op_mode(udev);
+ 
+-	usb_set_intfdata(intf, dev);
+-	dev-&gt;interface = intf;
++	usb_set_intfdata(interface, dev);
++	dev-&gt;interface = interface;
+ 
+ 	at76_dbg(DBG_DEVSTART, &quot;opmode %d&quot;, op_mode);
+ 
+@@ -6121,65 +6135,64 @@ static int at76_do_probe(struct usb_device *udev, u8 *fw_data, int fw_size,
+ 		goto error;
+ 	}
+ 
+-	if (op_mode != OPMODE_NORMAL_NIC_WITH_FLASH &amp;&amp;
+-	    op_mode != OPMODE_NORMAL_NIC_WITHOUT_FLASH) {
++	if (op_mode != OPMODE_NORMAL_NIC_WITH_FLASH
++	    &amp;&amp; op_mode != OPMODE_NORMAL_NIC_WITHOUT_FLASH) {
+ 
+ 		at76_dbg(DBG_DEVSTART, &quot;need to download firmware&quot;);
+ 
+-		/* disassem. the firmware */
+-		if ((ret =
+-		     at76_get_fw_info(fw_data, fw_size, &amp;dev-&gt;board_type,
+-					  &amp;version, &amp;id_str, &amp;dev-&gt;intfw,
+-					  &amp;dev-&gt;intfw_size, &amp;dev-&gt;extfw,
+-					  &amp;dev-&gt;extfw_size))) {
++		/* parse the firmware */
++		ret = at76_get_fw_info(fw-&gt;data, fw-&gt;size,
++				       &amp;dev-&gt;board_type, &amp;version, &amp;id_str,
++				       &amp;dev-&gt;intfw, &amp;dev-&gt;intfw_size,
++				       &amp;dev-&gt;extfw, &amp;dev-&gt;extfw_size);
++		if (ret)
+ 			goto error;
+-		}
+ 
+-		at76_dbg(DBG_DEVSTART, &quot;firmware board %u version %u.%u.%u#%u &quot;
+-		         &quot;(int %x:%tx, ext %x:%tx)&quot;,
+-		         dev-&gt;board_type, version &gt;&gt; 24, (version &gt;&gt; 16) &amp; 0xff,
+-		         (version &gt;&gt; 8) &amp; 0xff, version &amp; 0xff,
+-		         dev-&gt;intfw_size, dev-&gt;intfw - fw_data,
+-		         dev-&gt;extfw_size, dev-&gt;extfw - fw_data);
++		at76_dbg(DBG_DEVSTART,
++			 &quot;firmware board %u version %u.%u.%u#%u &quot;
++			 &quot;(int %x:%tx, ext %x:%tx)&quot;, dev-&gt;board_type,
++			 version &gt;&gt; 24, (version &gt;&gt; 16) &amp; 0xff,
++			 (version &gt;&gt; 8) &amp; 0xff, version &amp; 0xff, dev-&gt;intfw_size,
++			 dev-&gt;intfw - fw-&gt;data, dev-&gt;extfw_size,
++			 dev-&gt;extfw - fw-&gt;data);
+ 		if (*id_str)
+-			at76_dbg(DBG_DEVSTART, &quot;firmware id %s&quot;,id_str);
++			at76_dbg(DBG_DEVSTART, &quot;firmware id %s&quot;, id_str);
+ 
+ 		if (dev-&gt;board_type != board_type) {
+-			err(&quot;inconsistent board types %u != %u&quot;,
+-			    board_type, dev-&gt;board_type);
++			err(&quot;inconsistent board types %u != %u&quot;, board_type,
++			    dev-&gt;board_type);
+ 			at76_delete_device(dev);
+ 			goto error;
+ 		}
+ 
+ 		/* download internal firmware part */
+ 		at76_dbg(DBG_DEVSTART, &quot;downloading internal firmware&quot;);
+-		         dev-&gt;istate = INTFW_DOWNLOAD;
+-		         schedule_work(&amp;dev-&gt;work_internal_fw);
++		dev-&gt;istate = INTFW_DOWNLOAD;
++		schedule_work(&amp;dev-&gt;work_internal_fw);
+ 
+ 	} else {
+-		/* internal firmware already inside the device */
+-		/* get firmware version to test if external firmware is loaded */
+-		/* This works only for newer firmware, e.g. the Intersil 0.90.x
+-		   says &quot;control timeout on ep0in&quot; and subsequent at76_get_op_mode() fail
+-		   too :-( */
++		/* Internal firmware already inside the device.  Get firmware
++		 * version to test if external firmware is loaded.
++		 * This works only for newer firmware, e.g. the Intersil 0.90.x
++		 * says &quot;control timeout on ep0in&quot; and subsequent
++		 * at76_get_op_mode() fail too :-( */
+ 		int force_fw_dwl = 0;
+ 
+-		/* disassem. the firmware */
+-		if ((ret =
+-		     at76_get_fw_info(fw_data, fw_size, &amp;dev-&gt;board_type,
+-					  &amp;version, &amp;id_str, &amp;dev-&gt;intfw,
+-					  &amp;dev-&gt;intfw_size, &amp;dev-&gt;extfw,
+-					  &amp;dev-&gt;extfw_size))) {
++		/* parse the firmware */
++		ret = at76_get_fw_info(fw-&gt;data, fw-&gt;size,
++				       &amp;dev-&gt;board_type, &amp;version, &amp;id_str,
++				       &amp;dev-&gt;intfw, &amp;dev-&gt;intfw_size,
++				       &amp;dev-&gt;extfw, &amp;dev-&gt;extfw_size);
++		if (ret)
+ 			goto error;
+-		}
+ 
+-		/* if version &gt;= 0.100.x.y or device with built-in flash we can query the device
+-		 * for the fw version */
++		/* if version &gt;= 0.100.x.y or device with built-in flash we can
++		 * query the device for the fw version */
+ 		if (version &gt;= ((0 &lt;&lt; 24) | (100 &lt;&lt; 16))
+ 		    || (op_mode == OPMODE_NORMAL_NIC_WITH_FLASH)) {
+-			ret =
+-			    at76_get_mib(udev, MIB_FW_VERSION, &amp;dev-&gt;fw_version,
+-					 sizeof(dev-&gt;fw_version));
++			ret = at76_get_mib(udev, MIB_FW_VERSION,
++					   &amp;dev-&gt;fw_version,
++					   sizeof(dev-&gt;fw_version));
+ 		} else {
+ 			/* force fw download only if the device has no flash inside */
+ 			force_fw_dwl = 1;
+@@ -6191,19 +6204,22 @@ static int at76_do_probe(struct usb_device *udev, u8 *fw_data, int fw_size,
+ 			&amp;&amp; (dev-&gt;fw_version.patch == 0)
+ 			&amp;&amp; (dev-&gt;fw_version.build == 0))) {
+ 			if (force_fw_dwl)
+-				at76_dbg(DBG_DEVSTART, &quot;forced download of external firmware part&quot;);
++				at76_dbg(DBG_DEVSTART,
++					 &quot;forced download of external firmware part&quot;);
+ 			else
+-				at76_dbg(DBG_DEVSTART, &quot;cannot get firmware (ret %d) or all zeros &quot;
+-				         &quot;- download external firmware&quot;, ret);
++				at76_dbg(DBG_DEVSTART,
++					 &quot;cannot get firmware (ret %d) or all zeros &quot;
++					 &quot;- download external firmware&quot;, ret);
+ 			at76_dbg(DBG_DEVSTART,
+-			         &quot;firmware board %u version %u.%u.%u#%u &quot;
+-			         &quot;(int %x:%tx, ext %x:%tx)&quot;, dev-&gt;board_type,
+-			         version &gt;&gt; 24, (version &gt;&gt; 16) &amp; 0xff,
+-			         (version &gt;&gt; 8) &amp; 0xff, version &amp; 0xff,
+-			         dev-&gt;intfw_size, dev-&gt;intfw - fw_data,
+-			         dev-&gt;extfw_size, dev-&gt;extfw - fw_data);
++				 &quot;firmware board %u version %u.%u.%u#%u &quot;
++				 &quot;(int %x:%tx, ext %x:%tx)&quot;, dev-&gt;board_type,
++				 version &gt;&gt; 24, (version &gt;&gt; 16) &amp; 0xff,
++				 (version &gt;&gt; 8) &amp; 0xff, version &amp; 0xff,
++				 dev-&gt;intfw_size, dev-&gt;intfw - fw-&gt;data,
++				 dev-&gt;extfw_size, dev-&gt;extfw - fw-&gt;data);
+ 			if (*id_str)
+-				at76_dbg(DBG_DEVSTART, &quot;firmware id %s&quot;,id_str);
++				at76_dbg(DBG_DEVSTART, &quot;firmware id %s&quot;,
++					 id_str);
+ 
+ 			if (dev-&gt;board_type != board_type) {
+ 				err(&quot;inconsistent board types %u != %u&quot;,
+@@ -6221,43 +6237,13 @@ static int at76_do_probe(struct usb_device *udev, u8 *fw_data, int fw_size,
+ 			}
+ 		}
+ 	}
+-
+ 	return 0;
+ 
+-error:
++      error:
+ 	usb_put_dev(udev);
+ 	return ret;
+ }
+ 
+-static int at76_probe(struct usb_interface *interface,
+-		      const struct usb_device_id *id)
+-{
+-	int ret;
+-
+-	struct usb_device *udev;
+-	int boardtype = (int)id-&gt;driver_info;
+-	const char *const fw_name = firmwares[boardtype].fwname;
+-	const struct firmware *fw = firmwares[boardtype].fw;
+-	udev = interface_to_usbdev(interface);
+-
+-	if (fw == NULL) {
+-		at76_dbg(DBG_FW, &quot;downloading firmware %s&quot;, fw_name);
+-		ret = request_firmware(&amp;fw, fw_name, &amp;udev-&gt;dev);
+-		if (ret == 0) {
+-			at76_dbg(DBG_FW, &quot;got it.&quot;);
+-		} else {
+-			err(&quot;firmware %s not found.&quot;, fw_name);
+-			err(&quot;You may need to download the firmware from &quot;
+-			    &quot;<A HREF="https://developer.berlios.de/projects/at76c503a/">https://developer.berlios.de/projects/at76c503a/</A>&quot;);
+-			return ret;
+-		}
+-	} else
+-		at76_dbg(DBG_FW, &quot;re-using previously loaded fw&quot;);
+-
+-	ret = at76_do_probe(udev, fw-&gt;data, fw-&gt;size, boardtype);
+-	return ret;
+-}
+-
+ static void at76_disconnect(struct usb_interface *interface)
+ {
+ 	struct at76_priv *priv;
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000060.html">[at76c503a-develop] Status of the driver
+</A></li>
+	<LI>Next message: <A HREF="000065.html">[at76c503a-develop] [PATCH 3/6] Reorder the functions to avoid most	forward declarations
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#63">[ date ]</a>
+              <a href="thread.html#63">[ thread ]</a>
+              <a href="subject.html#63">[ subject ]</a>
+              <a href="author.html#63">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">More information about the at76c503a-develop
+mailing list</a><br>
+</body></html>

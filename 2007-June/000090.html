@@ -1,0 +1,163 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [at76c503a-develop] [PATCH 02/10] Rename request structures to make	them distinct from	functions
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/at76c503a-develop/2007-June/index.html" >
+   <LINK REL="made" HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%2002/10%5D%20Rename%20request%20structures%20to%20make%0A%09them%20distinct%20from%09functions&In-Reply-To=%3C20070605010352.32602.88687.stgit%40dv.roinet.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000088.html">
+   <LINK REL="Next"  HREF="000089.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[at76c503a-develop] [PATCH 02/10] Rename request structures to make	them distinct from	functions</H1>
+    <B>Pavel Roskin</B> 
+    <A HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%2002/10%5D%20Rename%20request%20structures%20to%20make%0A%09them%20distinct%20from%09functions&In-Reply-To=%3C20070605010352.32602.88687.stgit%40dv.roinet.com%3E"
+       TITLE="[at76c503a-develop] [PATCH 02/10] Rename request structures to make	them distinct from	functions">proski at gnu.org
+       </A><BR>
+    <I>Tue Jun  5 03:03:52 CEST 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000088.html">[at76c503a-develop] [PATCH 01/10] Merge at76_handle_mgmt_timeout()	and	at76_work_mgmt_timeout()
+</A></li>
+        <LI>Next message: <A HREF="000089.html">[at76c503a-develop] [PATCH 03/10] Don't document endianess in	comments, it's documented by the type
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#90">[ date ]</a>
+              <a href="thread.html#90">[ thread ]</a>
+              <a href="subject.html#90">[ subject ]</a>
+              <a href="author.html#90">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>at76_start_scan was both a function and a structure.  Use &quot;req&quot; in the
+structure names to indicate that they are requests.
+
+Signed-off-by: Pavel Roskin &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">proski at gnu.org</A>&gt;
+---
+
+ at76_usb.c |   16 ++++++++--------
+ at76_usb.h |    6 +++---
+ 2 files changed, 11 insertions(+), 11 deletions(-)
+
+diff --git a/at76_usb.c b/at76_usb.c
+index 8a13e1e..758a2b8 100644
+--- a/at76_usb.c
++++ b/at76_usb.c
+@@ -1476,9 +1476,9 @@ static int at76_get_current_channel(struct at76_priv *priv)
+  */
+ static int at76_start_scan(struct at76_priv *priv, int use_essid, int ir_step)
+ {
+-	struct at76_start_scan scan;
++	struct at76_req_scan scan;
+ 
+-	memset(&amp;scan, 0, sizeof(struct at76_start_scan));
++	memset(&amp;scan, 0, sizeof(struct at76_req_scan));
+ 	memset(scan.bssid, 0xff, ETH_ALEN);
+ 
+ 	if (use_essid) {
+@@ -1533,9 +1533,9 @@ static int at76_start_scan(struct at76_priv *priv, int use_essid, int ir_step)
+ 
+ static int at76_start_ibss(struct at76_priv *priv)
+ {
+-	struct at76_start_bss bss;
++	struct at76_req_ibss bss;
+ 
+-	memset(&amp;bss, 0, sizeof(struct at76_start_bss));
++	memset(&amp;bss, 0, sizeof(struct at76_req_ibss));
+ 	memset(bss.bssid, 0xff, ETH_ALEN);
+ 	memcpy(bss.essid, priv-&gt;essid, IW_ESSID_MAX_SIZE);
+ 	bss.essid_size = priv-&gt;essid_size;
+@@ -1543,18 +1543,18 @@ static int at76_start_ibss(struct at76_priv *priv)
+ 	bss.channel = priv-&gt;channel;
+ 
+ 	return at76_set_card_command(priv-&gt;udev, CMD_START_IBSS, &amp;bss,
+-				     sizeof(struct at76_start_bss));
++				     sizeof(struct at76_req_ibss));
+ }
+ 
+ 
+ /* idx points into priv-&gt;bss */
+ static int at76_join_bss(struct at76_priv *priv, struct bss_info *ptr)
+ {
+-	struct at76_join join;
++	struct at76_req_join join;
+ 
+ 	at76_assert(ptr != NULL);
+ 
+-	memset(&amp;join, 0, sizeof(struct at76_join));
++	memset(&amp;join, 0, sizeof(struct at76_req_join));
+ 	memcpy(join.bssid, ptr-&gt;bssid, ETH_ALEN);
+ 	memcpy(join.essid, ptr-&gt;ssid, ptr-&gt;ssid_len);
+ 	join.essid_size = ptr-&gt;ssid_len;
+@@ -1566,7 +1566,7 @@ static int at76_join_bss(struct at76_priv *priv, struct bss_info *ptr)
+ 	         priv-&gt;netdev-&gt;name, mac2str(join.bssid),
+ 	         join.essid, join.bss_type, join.channel, le16_to_cpu(join.timeout));
+ 	return at76_set_card_command(priv-&gt;udev, CMD_JOIN, &amp;join,
+-				     sizeof(struct at76_join));
++				     sizeof(struct at76_req_join));
+ }
+ 
+ 
+diff --git a/at76_usb.h b/at76_usb.h
+index 7fd61f5..428a562 100644
+--- a/at76_usb.h
++++ b/at76_usb.h
+@@ -222,7 +222,7 @@ struct at76_tx_buffer {
+ #define SCAN_TYPE_ACTIVE  0
+ #define SCAN_TYPE_PASSIVE 1
+ 
+-struct at76_start_scan {
++struct at76_req_scan {
+ 	u8 bssid[ETH_ALEN];
+ 	u8 essid[32];
+ 	u8 scan_type;
+@@ -234,7 +234,7 @@ struct at76_start_scan {
+ 	u8 international_scan;
+ } __attribute__ ((packed));
+ 
+-struct at76_start_bss {
++struct at76_req_ibss {
+ 	u8 bssid[ETH_ALEN];
+ 	u8 essid[32];
+ 	u8 bss_type;
+@@ -243,7 +243,7 @@ struct at76_start_bss {
+ 	u8 reserved[3];
+ } __attribute__ ((packed));
+ 
+-struct at76_join {
++struct at76_req_join {
+ 	u8 bssid[ETH_ALEN];
+ 	u8 essid[32];
+ 	u8 bss_type;
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000088.html">[at76c503a-develop] [PATCH 01/10] Merge at76_handle_mgmt_timeout()	and	at76_work_mgmt_timeout()
+</A></li>
+	<LI>Next message: <A HREF="000089.html">[at76c503a-develop] [PATCH 03/10] Don't document endianess in	comments, it's documented by the type
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#90">[ date ]</a>
+              <a href="thread.html#90">[ thread ]</a>
+              <a href="subject.html#90">[ subject ]</a>
+              <a href="author.html#90">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">More information about the at76c503a-develop
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,219 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [at76c503a-develop] [PATCH 06/12] Avoid assignments inside	conditions, they are hard to read
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/at76c503a-develop/2007-June/index.html" >
+   <LINK REL="made" HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%2006/12%5D%20Avoid%20assignments%20inside%0A%09conditions%2C%20they%20are%20hard%20to%20read&In-Reply-To=%3C20070621035625.18384.622.stgit%40dv.roinet.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000138.html">
+   <LINK REL="Next"  HREF="000140.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[at76c503a-develop] [PATCH 06/12] Avoid assignments inside	conditions, they are hard to read</H1>
+    <B>Pavel Roskin</B> 
+    <A HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%2006/12%5D%20Avoid%20assignments%20inside%0A%09conditions%2C%20they%20are%20hard%20to%20read&In-Reply-To=%3C20070621035625.18384.622.stgit%40dv.roinet.com%3E"
+       TITLE="[at76c503a-develop] [PATCH 06/12] Avoid assignments inside	conditions, they are hard to read">proski at gnu.org
+       </A><BR>
+    <I>Thu Jun 21 05:56:25 CEST 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000138.html">[at76c503a-develop] [PATCH 05/12] Implement 5 second timeout in	at76_wait_completion()
+</A></li>
+        <LI>Next message: <A HREF="000140.html">[at76c503a-develop] [PATCH 07/12] Re-examine and simplify code	where &quot;return&quot; is followed	by &quot;else&quot;
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#139">[ date ]</a>
+              <a href="thread.html#139">[ thread ]</a>
+              <a href="subject.html#139">[ subject ]</a>
+              <a href="author.html#139">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Signed-off-by: Pavel Roskin &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">proski at gnu.org</A>&gt;
+---
+
+ at76_usb.c |   45 ++++++++++++++++++++++++++++++---------------
+ 1 files changed, 30 insertions(+), 15 deletions(-)
+
+diff --git a/at76_usb.c b/at76_usb.c
+index 3b1a1a4..3e84c7b 100644
+--- a/at76_usb.c
++++ b/at76_usb.c
+@@ -719,7 +719,8 @@ static int at76_download_external_fw(struct usb_device *udev, u8 *buf, int size)
+ 		at76_dbg(DBG_DEVSTART,
+ 			 &quot;ext fw, size left = %5d, bsize = %4d, i = %2d&quot;,
+ 			 size, bsize, i);
+-		if ((ret = at76_load_ext_fw_block(udev, i, block, bsize)) &lt; 0) {
++		ret = at76_load_ext_fw_block(udev, i, block, bsize);
++		if (ret &lt; 0) {
+ 			err(&quot;loading %dth firmware block failed: %d&quot;, i, ret);
+ 			goto exit;
+ 		}
+@@ -730,7 +731,8 @@ static int at76_download_external_fw(struct usb_device *udev, u8 *buf, int size)
+ 
+ 	/* for fw &gt;= 0.100, the device needs
+ 	   an extra empty block: */
+-	if ((ret = at76_load_ext_fw_block(udev, i, block, 0)) &lt; 0) {
++	ret = at76_load_ext_fw_block(udev, i, block, 0);
++	if (ret &lt; 0) {
+ 		err(&quot;loading %dth firmware block failed: %d&quot;, ret, i);
+ 		goto exit;
+ 	}
+@@ -1623,7 +1625,8 @@ static int at76_send_mgmt_bulk(struct at76_priv *priv,
+ 
+ 	spin_lock_irqsave(&amp;priv-&gt;mgmt_spinlock, flags);
+ 
+-	if ((urb_status = priv-&gt;write_urb-&gt;status) == -EINPROGRESS) {
++	urb_status = priv-&gt;write_urb-&gt;status;
++	if (urb_status == -EINPROGRESS) {
+ 		oldbuf = priv-&gt;next_mgmt_bulk;	/* to kfree below */
+ 		priv-&gt;next_mgmt_bulk = txbuf;
+ 		txbuf = NULL;
+@@ -1999,7 +2002,8 @@ static void at76_handle_mgmt_timeout_scan(struct at76_priv *priv)
+ 	int status, ret;
+ 	struct mib_mdomain mdomain;
+ 
+-	if ((status = at76_get_cmd_status(priv-&gt;udev, CMD_SCAN)) &lt; 0) {
++	status = at76_get_cmd_status(priv-&gt;udev, CMD_SCAN);
++	if (status &lt; 0) {
+ 		err(&quot;%s: %s: at76_get_cmd_status failed with %d&quot;,
+ 		    priv-&gt;netdev-&gt;name, __FUNCTION__, status);
+ 		status = CMD_STATUS_IN_PROGRESS;
+@@ -2033,7 +2037,8 @@ static void at76_handle_mgmt_timeout_scan(struct at76_priv *priv)
+ 
+ 	case 1:
+ 		at76_assert(priv-&gt;international_roaming);
+-		if ((ret = at76_get_mib_mdomain(priv, &amp;mdomain)) &lt; 0) {
++		ret = at76_get_mib_mdomain(priv, &amp;mdomain);
++		if (ret &lt; 0) {
+ 			err(&quot;at76_get_mib_mdomain returned %d&quot;, ret);
+ 		} else {
+ 			at76_dbg(DBG_MIB, &quot;%s: MIB MDOMAIN: channel_list %s &quot;
+@@ -2043,7 +2048,8 @@ static void at76_handle_mgmt_timeout_scan(struct at76_priv *priv)
+ 				 hex2str(mdomain.tx_powerlevel,
+ 					 sizeof(mdomain.tx_powerlevel)));
+ 		}
+-		if ((ret = at76_start_scan(priv, 0, 1)) &lt; 0) {
++		ret = at76_start_scan(priv, 0, 1);
++		if (ret &lt; 0) {
+ 			err(&quot;%s: %s: start_scan (ANY) failed with %d&quot;,
+ 			    priv-&gt;netdev-&gt;name, __FUNCTION__, ret);
+ 		}
+@@ -2054,7 +2060,8 @@ static void at76_handle_mgmt_timeout_scan(struct at76_priv *priv)
+ 		break;
+ 
+ 	case 2:
+-		if ((ret = at76_start_scan(priv, 1, 1)) &lt; 0) {
++		ret = at76_start_scan(priv, 1, 1);
++		if (ret &lt; 0) {
+ 			err(&quot;%s: %s: start_scan (SSID) failed with %d&quot;,
+ 			    priv-&gt;netdev-&gt;name, __FUNCTION__, ret);
+ 		}
+@@ -3877,7 +3884,8 @@ static int at76_open(struct net_device *netdev)
+ 	priv-&gt;last_scan = jiffies;
+ 	priv-&gt;nr_submit_rx_tries = NR_SUBMIT_RX_TRIES;	/* init counter */
+ 
+-	if ((ret = at76_submit_rx_urb(priv)) &lt; 0) {
++	ret = at76_submit_rx_urb(priv);
++	if (ret &lt; 0) {
+ 		err(&quot;%s: open: submit_rx_urb failed: %d&quot;, netdev-&gt;name, ret);
+ 		goto err;
+ 	}
+@@ -3988,7 +3996,8 @@ static int at76_init_new_device(struct at76_priv *priv,
+ 	at76_dbg(DBG_DEVSTART, &quot;USB interface: %d endpoints&quot;,
+ 		 interface-&gt;cur_altsetting-&gt;desc.bNumEndpoints);
+ 
+-	if ((ret = at76_alloc_urbs(priv, interface)) &lt; 0)
++	ret = at76_alloc_urbs(priv, interface);
++	if (ret &lt; 0)
+ 		goto error;
+ 
+ 	/* get firmware version */
+@@ -4131,11 +4140,13 @@ static int at76_load_internal_fw(struct usb_device *udev, struct fwentry *fwe)
+ 	at76_dbg(DBG_DEVSTART, &quot;sending REMAP&quot;);
+ 
+ 	/* no REMAP for 505A (see SF driver) */
+-	if (need_remap)
+-		if ((ret = at76_remap(udev)) &lt; 0) {
++	if (need_remap) {
++		ret = at76_remap(udev);
++		if (ret &lt; 0) {
+ 			err(&quot;sending REMAP failed with %d&quot;, ret);
+ 			goto end_internal_fw;
+ 		}
++	}
+ 
+ 	at76_dbg(DBG_DEVSTART, &quot;sleeping for 2 seconds&quot;);
+ 	schedule_timeout_interruptible(2 * HZ + 1);
+@@ -4295,7 +4306,8 @@ static void at76_work_join(struct work_struct *work)
+ 	spin_unlock_irqrestore(&amp;priv-&gt;bss_list_spinlock, flags);
+ 
+ 	if (priv-&gt;curr_bss != NULL) {
+-		if ((ret = at76_join_bss(priv, priv-&gt;curr_bss)) &lt; 0) {
++		ret = at76_join_bss(priv, priv-&gt;curr_bss);
++		if (ret &lt; 0) {
+ 			err(&quot;%s: join_bss failed with %d&quot;,
+ 			    priv-&gt;netdev-&gt;name, ret);
+ 			goto end_join;
+@@ -4667,7 +4679,8 @@ static void at76_work_scan(struct work_struct *work)
+ 		at76_free_bss_list(priv);
+ 
+ 	priv-&gt;scan_runs = 2;
+-	if ((ret = at76_start_scan(priv, 0, 1)) &lt; 0) {
++	ret = at76_start_scan(priv, 0, 1);
++	if (ret &lt; 0) {
+ 		err(&quot;%s: %s: start_scan failed with %d&quot;,
+ 		    priv-&gt;netdev-&gt;name, __FUNCTION__, ret);
+ 	} else {
+@@ -5614,7 +5627,8 @@ static void at76_rx_data(struct at76_priv *priv)
+ 	if (at76_debug &amp; DBG_RX_DATA_CONTENT)
+ 		at76_dbg_dumpbuf(&quot;packet&quot;, skb-&gt;data + AT76_RX_HDRLEN, length);
+ 
+-	if ((skb = at76_check_for_rx_frags(priv)) == NULL)
++	skb = at76_check_for_rx_frags(priv);
++	if (skb == NULL)
+ 		return;
+ 
+ 	/* if an skb is returned, the at76_rx_buffer and the FCS is already removed */
+@@ -5666,7 +5680,8 @@ static void at76_rx_monitor_mode(struct at76_priv *priv)
+ 
+ 	skblen = sizeof(struct at76_rx_radiotap) + length;
+ 
+-	if ((skb = dev_alloc_skb(skblen)) == NULL) {
++	skb = dev_alloc_skb(skblen);
++	if (skb == NULL) {
+ 		err(&quot;%s: MONITOR MODE: dev_alloc_skb for radiotap header &quot;
+ 		    &quot;returned NULL&quot;, priv-&gt;netdev-&gt;name);
+ 		return;
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000138.html">[at76c503a-develop] [PATCH 05/12] Implement 5 second timeout in	at76_wait_completion()
+</A></li>
+	<LI>Next message: <A HREF="000140.html">[at76c503a-develop] [PATCH 07/12] Re-examine and simplify code	where &quot;return&quot; is followed	by &quot;else&quot;
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#139">[ date ]</a>
+              <a href="thread.html#139">[ thread ]</a>
+              <a href="subject.html#139">[ subject ]</a>
+              <a href="author.html#139">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">More information about the at76c503a-develop
+mailing list</a><br>
+</body></html>

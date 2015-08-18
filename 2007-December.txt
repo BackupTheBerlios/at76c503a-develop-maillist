@@ -1,0 +1,302 @@
+From kalle.valo at iki.fi  Thu Dec 13 19:41:13 2007
+From: kalle.valo at iki.fi (Kalle Valo)
+Date: Thu, 13 Dec 2007 20:41:13 +0200
+Subject: [at76c503a-develop] mac80211 conversion of at76_usb
+References: <1188617553.9555.29.camel@dv> <873axyk163.fsf@litku.valot.fi>
+	<20070901170549.r6scuu1w2ssgoow0@webmail.spamcop.net>
+	<87sl5x3c2y.fsf@litku.valot.fi> <87odgl35w6.fsf@litku.valot.fi>
+	<20070902114929.onwne6an4k4cs0g4@webmail.spamcop.net>
+	<87veas27l1.fsf@litku.valot.fi> <1189401577.25360.2.camel@dv>
+	<87d4uqe8dm.fsf@litku.valot.fi> <1194231218.1967.10.camel@dv>
+Message-ID: <87r6hqxws6.fsf@litku.valot.fi>
+
+[resend because my first email didn't get to the list, CCing Pavel so
+that this won't get lost anymore]
+
+Pavel Roskin <proski at gnu.org> writes:
+
+> But I think one way to approach the problem would be to add the mac80211
+> based device without removing the network device.  This way, you have
+> the old and the new code side-by side, there are no warnings about
+> unused functions.
+>
+> You could make the new implementation call the old one temporarily.  You
+> could insert debug statements and see if the new and the old interface
+> do the same thing to the hardware.
+
+This was a really good advice, thank you. Having the old and new
+stacks available in the same driver helped a lot with debugging.
+
+> I don't think you'll be able to split the patch after the fact.  It
+> would be easier to make separate changes.  With StGIT, you can always
+> return to the old patches to adjust them as necessary.
+
+Again good advice, much appreciated. StGIT is really handy, I will
+start using it a lot more.
+
+> The first patch would be to add device registration.  Then the rx and tx
+> functions (you could make the rx function deliver packets to whichever
+> interface is up).  Then whatever else is needed for mac80211 support.
+> Then removal of netdev and the trivial cleanups.  Then deeper cleanups.
+
+I have the mac80211 port somewhat working now. My current stgit
+patches are available here which should follow your advice:
+
+http://www.valot.fi/kalle/at76/mac80211-port/20071209/
+
+Please note that this is early work, for example removal of the old
+legacy interface is still not done. Scanning, associating and pinging
+to an open mode AP works does work. PSM, WEP and monitor mode are not
+implemented. But I would prefer to hear any comments people might have
+so that I can fix them up early.
+
+The first three patches add debugging code which I need for mac80211
+development. In principle I could drop them, but it would prefer to
+have them in the driver.
+
+Pavel, what's your opinion about add-mac80211-support patch, is it too
+large? It only adds lines, there are no line removals, so basically it
+should be quite safe. If you want, I can split it up.
+
+I'm planning to add rest of the features/cleanups as separate patches
+to avoid large patches. As usual, I will be working slowly but
+hopefully we have something ready by the end of this year.
+
+-- 
+Kalle Valo
+
+
+From proski at gnu.org  Sat Dec 15 14:10:38 2007
+From: proski at gnu.org (Pavel Roskin)
+Date: Sat, 15 Dec 2007 08:10:38 -0500
+Subject: [at76c503a-develop] mac80211 conversion of at76_usb
+In-Reply-To: <87r6hqxws6.fsf@litku.valot.fi>
+References: <1188617553.9555.29.camel@dv> <873axyk163.fsf@litku.valot.fi>
+	<20070901170549.r6scuu1w2ssgoow0@webmail.spamcop.net>
+	<87sl5x3c2y.fsf@litku.valot.fi> <87odgl35w6.fsf@litku.valot.fi>
+	<20070902114929.onwne6an4k4cs0g4@webmail.spamcop.net>
+	<87veas27l1.fsf@litku.valot.fi> <1189401577.25360.2.camel@dv>
+	<87d4uqe8dm.fsf@litku.valot.fi> <1194231218.1967.10.camel@dv>
+	<87r6hqxws6.fsf@litku.valot.fi>
+Message-ID: <20071215081038.pqe2h2zxq880wg0c@webmail.spamcop.net>
+
+Hello, Kalle!
+
+> I have the mac80211 port somewhat working now. My current stgit
+> patches are available here which should follow your advice:
+>
+> http://www.valot.fi/kalle/at76/mac80211-port/20071209/
+
+That's great news!
+
+I suggest that you use "stg export -np" to make the patches numbered  
+and to add ".diff" at the end.
+
+It would be great if you run scripts/checkpatch.pl from the Linux  
+sources on it to catch come trivial style errors.
+
+I had to replace "%d" with "%zd" on lines 5406 and 5461 because size_t  
+is 64-bit on 64-systems and doesn't fit int.
+
+> Please note that this is early work, for example removal of the old
+> legacy interface is still not done. Scanning, associating and pinging
+> to an open mode AP works does work. PSM, WEP and monitor mode are not
+> implemented. But I would prefer to hear any comments people might have
+> so that I can fix them up early.
+
+I suggest that you keep the patches separate.  It's much easier to  
+join them if required than to split a combined patch.
+
+> The first three patches add debugging code which I need for mac80211
+> development. In principle I could drop them, but it would prefer to
+> have them in the driver.
+
+I have no problems with it at all.
+
+> Pavel, what's your opinion about add-mac80211-support patch, is it too
+> large? It only adds lines, there are no line removals, so basically it
+> should be quite safe. If you want, I can split it up.
+
+Actually, it's surprisingly short at 15k!
+
+> I'm planning to add rest of the features/cleanups as separate patches
+> to avoid large patches. As usual, I will be working slowly but
+> hopefully we have something ready by the end of this year.
+
+That's great.  Please let me know if you want your patches to be  
+published in my repository.
+
+-- 
+Regards,
+Pavel Roskin
+
+
+From kalle.valo at iki.fi  Sat Dec 15 17:01:24 2007
+From: kalle.valo at iki.fi (Kalle Valo)
+Date: Sat, 15 Dec 2007 18:01:24 +0200
+Subject: [at76c503a-develop] mac80211 conversion of at76_usb
+In-Reply-To: <20071215081038.pqe2h2zxq880wg0c@webmail.spamcop.net>
+References: <1188617553.9555.29.camel@dv>
+	<873axyk163.fsf@litku.valot.fi>	<20070901170549.r6scuu1w2ssgoow0@webmail.spamcop.net>	<87sl5x3c2y.fsf@litku.valot.fi>
+	<87odgl35w6.fsf@litku.valot.fi>	<20070902114929.onwne6an4k4cs0g4@webmail.spamcop.net>	<87veas27l1.fsf@litku.valot.fi>
+	<1189401577.25360.2.camel@dv>	<87d4uqe8dm.fsf@litku.valot.fi>
+	<1194231218.1967.10.camel@dv>	<87r6hqxws6.fsf@litku.valot.fi>
+	<20071215081038.pqe2h2zxq880wg0c@webmail.spamcop.net>
+Message-ID: <4763FA54.6020209@iki.fi>
+
+Pavel Roskin wrote:
+> Hello, Kalle!
+
+Hi Pavel!
+
+>> I have the mac80211 port somewhat working now. My current stgit
+>> patches are available here which should follow your advice:
+>>
+>> http://www.valot.fi/kalle/at76/mac80211-port/20071209/
+> 
+> That's great news!
+> 
+> I suggest that you use "stg export -np" to make the patches numbered and 
+> to add ".diff" at the end.
+
+OK, I will do that next time.
+
+
+> It would be great if you run scripts/checkpatch.pl from the Linux 
+> sources on it to catch come trivial style errors.
+
+I will do that also. Also I haven't run sparse at all yet. I will run 
+these two with my second patch set.
+
+> I had to replace "%d" with "%zd" on lines 5406 and 5461 because size_t 
+> is 64-bit on 64-systems and doesn't fit int.
+
+Will fix, thanks.
+
+>> Please note that this is early work, for example removal of the old
+>> legacy interface is still not done. Scanning, associating and pinging
+>> to an open mode AP works does work. PSM, WEP and monitor mode are not
+>> implemented. But I would prefer to hear any comments people might have
+>> so that I can fix them up early.
+> 
+> I suggest that you keep the patches separate.  It's much easier to join 
+> them if required than to split a combined patch.
+
+Good idea. I will just clean up the current patches and will add any new 
+features as a new patch.
+
+>> The first three patches add debugging code which I need for mac80211
+>> development. In principle I could drop them, but it would prefer to
+>> have them in the driver.
+> 
+> I have no problems with it at all.
+
+Excellent. They make my life easier.
+
+>> Pavel, what's your opinion about add-mac80211-support patch, is it too
+>> large? It only adds lines, there are no line removals, so basically it
+>> should be quite safe. If you want, I can split it up.
+> 
+> Actually, it's surprisingly short at 15k!
+
+Well, mac80211 simply rocks. After the port is finished, I will collect 
+some statistics just to prove how much mac80211 helps WLAN driver 
+development.
+
+>> I'm planning to add rest of the features/cleanups as separate patches
+>> to avoid large patches. As usual, I will be working slowly but
+>> hopefully we have something ready by the end of this year.
+> 
+> That's great.  Please let me know if you want your patches to be 
+> published in my repository.
+
+I have to do some cleanup first, so it's better that you do not apply 
+the patches to any tree yet.
+
+
+From kalle.valo at iki.fi  Thu Dec 27 10:45:01 2007
+From: kalle.valo at iki.fi (Kalle Valo)
+Date: Thu, 27 Dec 2007 11:45:01 +0200
+Subject: [at76c503a-develop] mac80211 conversion of at76_usb
+In-Reply-To: <20071215081038.pqe2h2zxq880wg0c@webmail.spamcop.net>
+References: <1188617553.9555.29.camel@dv>
+	<873axyk163.fsf@litku.valot.fi>	<20070901170549.r6scuu1w2ssgoow0@webmail.spamcop.net>	<87sl5x3c2y.fsf@litku.valot.fi>
+	<87odgl35w6.fsf@litku.valot.fi>	<20070902114929.onwne6an4k4cs0g4@webmail.spamcop.net>	<87veas27l1.fsf@litku.valot.fi>
+	<1189401577.25360.2.camel@dv>	<87d4uqe8dm.fsf@litku.valot.fi>
+	<1194231218.1967.10.camel@dv>	<87r6hqxws6.fsf@litku.valot.fi>
+	<20071215081038.pqe2h2zxq880wg0c@webmail.spamcop.net>
+Message-ID: <4773741D.5030600@iki.fi>
+
+Hi Pavel!
+
+Pavel Roskin wrote:
+>> I have the mac80211 port somewhat working now. My current stgit
+>> patches are available here which should follow your advice:
+>>
+>> http://www.valot.fi/kalle/at76/mac80211-port/20071209/
+> 
+> That's great news!
+> 
+> I suggest that you use "stg export -np" to make the patches numbered  
+> and to add ".diff" at the end.
+
+I have now updated my patchset and it's available here:
+
+http://www.valot.fi/kalle/at76/mac80211-port/20071227/
+
+It's now much more complete than the earlier one, for example it removes 
+the old stack and netdev altogether.
+
+> It would be great if you run scripts/checkpatch.pl from the Linux  
+> sources on it to catch come trivial style errors.
+
+I have run both checkpatch and sparse, and all errors should be fixed now.
+
+There are few compiler warnings:
+
+at76_usb.c:884: warning: 'at76_set_associd' defined but not used
+at76_usb.c:902: warning: 'at76_set_listen_interval' defined but not used
+at76_usb.c:988: warning: 'at76_add_mac_address' defined but not used
+at76_usb.c:1232: warning: 'at76_get_current_bssid' defined but not used
+at76_usb.c:1259: warning: 'at76_get_current_channel' defined but not used
+
+This is because I haven't yet implemented a debug interface for the 
+driver, but I will do that next. Pavel, what's your opinion of having a 
+debugfs interface? I think other wireless drivers use that already.
+
+> I had to replace "%d" with "%zd" on lines 5406 and 5461 because size_t  
+> is 64-bit on 64-systems and doesn't fit int.
+
+Thanks, fixed.
+
+>> I'm planning to add rest of the features/cleanups as separate patches
+>> to avoid large patches. As usual, I will be working slowly but
+>> hopefully we have something ready by the end of this year.
+> 
+> That's great.  Please let me know if you want your patches to be  
+> published in my repository.
+
+Most of the features are now implemented, but there is still something 
+missing. Here's the TODO from the patchset:
+
+  * TODO for the mac80211 port:
+  * o adhoc support
+  * o RTS/CTS support
+  * o Power Save Mode support
+  * o support for short/long preambles
+  * o export variables through debugfs/sysfs
+
+I haven't run stress tests of any sort and I'm sure there's plenty of 
+bugs also. But my plan is first to implement all the features and then 
+start hunting bugs.
+
+But please distribute the patches as you see fit. I think we should 
+start thinking about asking comments from linux-wireless list. And, 
+after the missing features are implemented, try to get the driver 
+included to 2.6.26. Earlier we do this the better. mac80211 is changing 
+quite fast and it would be easier from development perspective to have 
+the driver in mainline.
+
+Kalle
+
+

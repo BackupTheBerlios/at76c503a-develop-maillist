@@ -1,0 +1,163 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [at76c503a-develop] [PATCH 5/7] Clean up handling of ethernet	frames in the tx path
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/at76c503a-develop/2007-July/index.html" >
+   <LINK REL="made" HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%205/7%5D%20Clean%20up%20handling%20of%20ethernet%0A%09frames%20in%20the%20tx%20path&In-Reply-To=%3C20070712065344.16841.22223.stgit%40dv.roinet.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000179.html">
+   <LINK REL="Next"  HREF="000181.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[at76c503a-develop] [PATCH 5/7] Clean up handling of ethernet	frames in the tx path</H1>
+    <B>Pavel Roskin</B> 
+    <A HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%205/7%5D%20Clean%20up%20handling%20of%20ethernet%0A%09frames%20in%20the%20tx%20path&In-Reply-To=%3C20070712065344.16841.22223.stgit%40dv.roinet.com%3E"
+       TITLE="[at76c503a-develop] [PATCH 5/7] Clean up handling of ethernet	frames in the tx path">proski at gnu.org
+       </A><BR>
+    <I>Thu Jul 12 08:53:44 CEST 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000179.html">[at76c503a-develop] [PATCH 4/7] Fix sloppiness in debug directives
+</A></li>
+        <LI>Next message: <A HREF="000181.html">[at76c503a-develop] [PATCH 6/7] Clean up eth frame conversion in	the rx path
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#180">[ date ]</a>
+              <a href="thread.html#180">[ thread ]</a>
+              <a href="subject.html#180">[ subject ]</a>
+              <a href="author.html#180">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Use more standard definitions for ethernet frames.  Fix peeking beyond
+the end of skb for pathologically short frames.
+
+Signed-off-by: Pavel Roskin &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">proski at gnu.org</A>&gt;
+---
+
+ at76_usb.c |   43 +++++++++++++++++++++----------------------
+ 1 files changed, 21 insertions(+), 22 deletions(-)
+
+diff --git a/at76_usb.c b/at76_usb.c
+index cbf4bda..d843771 100644
+--- a/at76_usb.c
++++ b/at76_usb.c
+@@ -3636,6 +3636,7 @@ static int at76_tx(struct sk_buff *skb, struct net_device *netdev)
+ 	struct ieee80211_hdr_3addr *i802_11_hdr =
+ 	    (struct ieee80211_hdr_3addr *)tx_buffer-&gt;packet;
+ 	u8 *payload = i802_11_hdr-&gt;payload;
++	struct ethhdr *eh = (struct ethhdr *)skb-&gt;data;
+ 
+ 	if (netif_queue_stopped(netdev)) {
+ 		err(&quot;%s: %s called while netdev is stopped&quot;, netdev-&gt;name,
+@@ -3653,7 +3654,7 @@ static int at76_tx(struct sk_buff *skb, struct net_device *netdev)
+ 		return 0;
+ 	}
+ 
+-	if (skb-&gt;len &lt; 2 * ETH_ALEN) {
++	if (skb-&gt;len &lt; ETH_HLEN) {
+ 		err(&quot;%s: %s: skb too short (%d)&quot;, priv-&gt;netdev-&gt;name,
+ 		    __func__, skb-&gt;len);
+ 		dev_kfree_skb(skb);
+@@ -3662,36 +3663,34 @@ static int at76_tx(struct sk_buff *skb, struct net_device *netdev)
+ 
+ 	at76_ledtrig_tx_activity();	/* tell the ledtrigger we send a packet */
+ 
+-	/* we can get rid of memcpy, if we set netdev-&gt;hard_header_len
+-	   to 8 + IEEE80211_3ADDR_LEN, because then we have enough space
+-	   at76_dbg(DBG_TX, &quot;skb-&gt;data - skb-&gt;head = %d&quot;, skb-&gt;data - skb-&gt;head); */
++	/* we can get rid of memcpy if we set netdev-&gt;hard_header_len to
++	   reserve enough space, but we would need to keep the skb around */
+ 
+-	if (ntohs(*(__be16 *)(skb-&gt;data + 2 * ETH_ALEN)) &lt;= 1518) {
++	if (ntohs(eh-&gt;h_proto) &lt;= ETH_DATA_LEN) {
+ 		/* this is a 802.3 packet */
+-		if (skb-&gt;data[2 * ETH_ALEN + 2] == rfc1042sig[0] &amp;&amp;
+-		    skb-&gt;data[2 * ETH_ALEN + 2 + 1] == rfc1042sig[1]) {
++		if (skb-&gt;len &gt;= ETH_HLEN + sizeof(rfc1042sig)
++		    &amp;&amp; skb-&gt;data[ETH_HLEN] == rfc1042sig[0]
++		    &amp;&amp; skb-&gt;data[ETH_HLEN + 1] == rfc1042sig[1]) {
+ 			/* higher layer delivered SNAP header - keep it */
+-			memcpy(payload, skb-&gt;data + 2 * ETH_ALEN + 2,
+-			       skb-&gt;len - 2 * ETH_ALEN - 2);
+-			wlen = IEEE80211_3ADDR_LEN + skb-&gt;len -
+-			    2 * ETH_ALEN - 2;
++			memcpy(payload, skb-&gt;data + ETH_HLEN,
++			       skb-&gt;len - ETH_HLEN);
++			wlen = IEEE80211_3ADDR_LEN + skb-&gt;len - ETH_HLEN;
+ 		} else {
+ 			err(&quot;%s: %s: no support for non-SNAP 802.2 packets &quot;
+ 			    &quot;(DSAP 0x%02x SSAP 0x%02x cntrl 0x%02x)&quot;,
+ 			    priv-&gt;netdev-&gt;name, __func__,
+-			    skb-&gt;data[2 * ETH_ALEN + 2],
+-			    skb-&gt;data[2 * ETH_ALEN + 2 + 1],
+-			    skb-&gt;data[2 * ETH_ALEN + 2 + 2]);
++			    skb-&gt;data[ETH_HLEN], skb-&gt;data[ETH_HLEN + 1],
++			    skb-&gt;data[ETH_HLEN + 2]);
+ 			dev_kfree_skb(skb);
+ 			return 0;
+ 		}
+ 	} else {
+ 		/* add RFC 1042 header in front */
+ 		memcpy(payload, rfc1042sig, sizeof(rfc1042sig));
+-		memcpy(payload + sizeof(rfc1042sig),
+-		       skb-&gt;data + 2 * ETH_ALEN, skb-&gt;len - 2 * ETH_ALEN);
+-		wlen = IEEE80211_3ADDR_LEN + sizeof(rfc1042sig) +
+-		    skb-&gt;len - 2 * ETH_ALEN;
++		memcpy(payload + sizeof(rfc1042sig), &amp;eh-&gt;h_proto,
++		       skb-&gt;len - offsetof(struct ethhdr, h_proto));
++		wlen = IEEE80211_3ADDR_LEN + sizeof(rfc1042sig) + skb-&gt;len -
++		    offsetof(struct ethhdr, h_proto);
+ 	}
+ 
+ 	/* make wireless header */
+@@ -3702,13 +3701,13 @@ static int at76_tx(struct sk_buff *skb, struct net_device *netdev)
+ 			 IW_MODE_INFRA ? IEEE80211_FCTL_TODS : 0));
+ 
+ 	if (priv-&gt;iw_mode == IW_MODE_ADHOC) {
+-		memcpy(i802_11_hdr-&gt;addr1, skb-&gt;data, ETH_ALEN);	/* destination */
+-		memcpy(i802_11_hdr-&gt;addr2, skb-&gt;data + ETH_ALEN, ETH_ALEN);	/* source */
++		memcpy(i802_11_hdr-&gt;addr1, eh-&gt;h_dest, ETH_ALEN);
++		memcpy(i802_11_hdr-&gt;addr2, eh-&gt;h_source, ETH_ALEN);
+ 		memcpy(i802_11_hdr-&gt;addr3, priv-&gt;bssid, ETH_ALEN);
+ 	} else if (priv-&gt;iw_mode == IW_MODE_INFRA) {
+ 		memcpy(i802_11_hdr-&gt;addr1, priv-&gt;bssid, ETH_ALEN);
+-		memcpy(i802_11_hdr-&gt;addr2, skb-&gt;data + ETH_ALEN, ETH_ALEN);	/* source */
+-		memcpy(i802_11_hdr-&gt;addr3, skb-&gt;data, ETH_ALEN);	/* destination */
++		memcpy(i802_11_hdr-&gt;addr2, eh-&gt;h_source, ETH_ALEN);
++		memcpy(i802_11_hdr-&gt;addr3, eh-&gt;h_dest, ETH_ALEN);
+ 	}
+ 
+ 	i802_11_hdr-&gt;duration_id = cpu_to_le16(0);
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000179.html">[at76c503a-develop] [PATCH 4/7] Fix sloppiness in debug directives
+</A></li>
+	<LI>Next message: <A HREF="000181.html">[at76c503a-develop] [PATCH 6/7] Clean up eth frame conversion in	the rx path
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#180">[ date ]</a>
+              <a href="thread.html#180">[ thread ]</a>
+              <a href="subject.html#180">[ subject ]</a>
+              <a href="author.html#180">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">More information about the at76c503a-develop
+mailing list</a><br>
+</body></html>

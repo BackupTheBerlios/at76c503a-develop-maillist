@@ -1,0 +1,156 @@
+From agx at sigxcpu.org  Tue Oct 16 19:43:08 2007
+From: agx at sigxcpu.org (Guido Guenther)
+Date: Tue, 16 Oct 2007 19:43:08 +0200
+Subject: [at76c503a-develop] [ANNOUNCE] at76_usb 0.17 released
+In-Reply-To: <1191140701.17780.9.camel@dv>
+References: <1191140701.17780.9.camel@dv>
+Message-ID: <20071016174308.GA13363@bogon.ms20.nix>
+
+Hi Pavel,
+On Sun, Sep 30, 2007 at 04:25:01AM -0400, Pavel Roskin wrote:
+> - The default network device names will now start with "wlan", as in
+>   versions prior to 0.16.
+Any specific reason for this?
+Cheers,
+ -- Guido
+
+
+From proski at gnu.org  Wed Oct 17 01:12:48 2007
+From: proski at gnu.org (Pavel Roskin)
+Date: Tue, 16 Oct 2007 19:12:48 -0400
+Subject: [at76c503a-develop] [ANNOUNCE] at76_usb 0.17 released
+In-Reply-To: <20071016174308.GA13363@bogon.ms20.nix>
+References: <1191140701.17780.9.camel@dv>
+	<20071016174308.GA13363@bogon.ms20.nix>
+Message-ID: <1192576368.16458.3.camel@dv>
+
+
+On Tue, 2007-10-16 at 19:43 +0200, Guido Guenther wrote:
+> Hi Pavel,
+> On Sun, Sep 30, 2007 at 04:25:01AM -0400, Pavel Roskin wrote:
+> > - The default network device names will now start with "wlan", as in
+> >   versions prior to 0.16.
+> Any specific reason for this?
+
+1) We should not change it arbitrarily.  One user has complained about
+breakage, and it took me and him some time to figure it out.
+
+2) That's the name the driver would use once converted to mac80211.
+
+3) It's not an ethernet device.  Only old wireless drivers use "eth"
+names (e.g. orinoco), mostly due to the tradition.
+
+-- 
+Regards,
+Pavel Roskin
+
+
+
+From agx at sigxcpu.org  Wed Oct 17 13:06:58 2007
+From: agx at sigxcpu.org (Guido Guenther)
+Date: Wed, 17 Oct 2007 13:06:58 +0200
+Subject: [at76c503a-develop] [ANNOUNCE] at76_usb 0.17 released
+In-Reply-To: <1192576368.16458.3.camel@dv>
+References: <1191140701.17780.9.camel@dv>
+	<20071016174308.GA13363@bogon.ms20.nix>
+	<1192576368.16458.3.camel@dv>
+Message-ID: <20071017110658.GA16517@bogon.ms20.nix>
+
+On Tue, Oct 16, 2007 at 07:12:48PM -0400, Pavel Roskin wrote:
+> 2) That's the name the driver would use once converted to mac80211.
+That's a good point.
+
+> 3) It's not an ethernet device.  Only old wireless drivers use "eth"
+> names (e.g. orinoco), mostly due to the tradition.
+I changed the name since wireless drivers were _supposed_ to be called
+ethX (although not ethernet at all) to actually get a chance to be
+included in the kernel. There were several threads on LKML discussing
+this - glad this changed now. Thanks for the clarification.
+Cheers,
+ -- Guido
+
+
+From milan.plzik at gmail.com  Tue Oct 23 17:40:48 2007
+From: milan.plzik at gmail.com (Milan Plzik)
+Date: Tue, 23 Oct 2007 17:40:48 +0200
+Subject: [at76c503a-develop] Implementing support for WPA-enabled firmware
+Message-ID: <1193154049.24189.32.camel@localhost>
+
+  Hello
+
+  I would like to start implementing support for firmwares of version
+1.x (which should also support WPA). Is there any official documentation
+to interface of this firmware? From what I have been trying to get from
+Atmel, the only result I got is that "this hardware is not supported
+anymore". So, the only way so far is to document Atmel's own
+atmelwlandriver and  implement these changes to at76c503 driver.
+
+  Err, and to not forgot -- is such effort desired? I mean, would
+support for WPA firmware help, if mac80211 conversion succeeds? I can
+imagine that WPA enc/dec would be handled in chip itself by firmware, so
+from this point of view probably yes, at least for ipaqs with builtin
+at76c503a wifi.
+
+	Milan
+
+
+
+From proski at gnu.org  Wed Oct 24 04:50:12 2007
+From: proski at gnu.org (Pavel Roskin)
+Date: Tue, 23 Oct 2007 22:50:12 -0400
+Subject: [at76c503a-develop] Implementing support for
+	WPA-enabled	firmware
+In-Reply-To: <1193154049.24189.32.camel@localhost>
+References: <1193154049.24189.32.camel@localhost>
+Message-ID: <1193194212.1940.26.camel@dv>
+
+Hello, Milan!
+
+On Tue, 2007-10-23 at 17:40 +0200, Milan Plzik wrote:
+
+>   I would like to start implementing support for firmwares of version
+> 1.x (which should also support WPA). Is there any official documentation
+> to interface of this firmware?
+
+Let's call the firmware 1.103 for clarity, since 1.x would cover e.g.
+1.101, which doesn't support WPA.
+
+>  From what I have been trying to get from
+> Atmel, the only result I got is that "this hardware is not supported
+> anymore". So, the only way so far is to document Atmel's own
+> atmelwlandriver and  implement these changes to at76c503 driver.
+
+That's correct.  The Atmel's driver is still available on CVS:
+
+cvs -d :pserver:anonymous at atmelwlandriver.cvs.sourceforge.net:/cvsroot/atmelwlandriver co atmelwlandriver
+
+In particular, "struct mib_mac_wep" has to be changed (see
+MAC_ENCRYPTION_MIB in src/includes/usb/mib.h in the Atmel sources).
+
+Some reserved fields are no longer reserved in the Tx buffer.  Look for
+CipherType in the Atmel sources.
+
+Also, 1.103 firmware doesn't provide the FCS in the received packets.
+
+>   Err, and to not forgot -- is such effort desired? I mean, would
+> support for WPA firmware help, if mac80211 conversion succeeds? I can
+> imagine that WPA enc/dec would be handled in chip itself by firmware, so
+> from this point of view probably yes, at least for ipaqs with builtin
+> at76c503a wifi.
+
+Yes, slow embedded devices will benefit most.
+
+Supporting WPA and non-WPA firmware would be tricky, so I guess Intersil
+radio support will have to be dropped.  There is no WPA capable firmware
+for those devices, and they are so obsolete, that I could not find any
+on eBay, unlike the newer designs.
+
+I think it would be great to switch to WPA-capable firmware, but only
+after switching to mac80211.
+
+-- 
+Regards,
+Pavel Roskin
+
+
+

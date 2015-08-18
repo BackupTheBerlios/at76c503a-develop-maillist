@@ -1,0 +1,90 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [at76c503a-develop] Adding the at76_usb wireless driver
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/at76c503a-develop/2007-January/index.html" >
+   <LINK REL="made" HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20Adding%20the%20at76_usb%20wireless%20driver&In-Reply-To=%3C45A5F5C7.7010100%40buttersideup.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000005.html">
+   <LINK REL="Next"  HREF="000007.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[at76c503a-develop] Adding the at76_usb wireless driver</H1>
+    <B>Tim Small</B> 
+    <A HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20Adding%20the%20at76_usb%20wireless%20driver&In-Reply-To=%3C45A5F5C7.7010100%40buttersideup.com%3E"
+       TITLE="[at76c503a-develop] Adding the at76_usb wireless driver">tim at buttersideup.com
+       </A><BR>
+    <I>Thu Jan 11 09:31:03 CET 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000005.html">[at76c503a-develop] Adding the at76_usb wireless driver
+</A></li>
+        <LI>Next message: <A HREF="000007.html">[at76c503a-develop] at76c503: sometimes the device reset doesn't	work
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8">[ date ]</a>
+              <a href="thread.html#8">[ thread ]</a>
+              <a href="subject.html#8">[ subject ]</a>
+              <a href="author.html#8">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Pavel Roskin wrote:
+&gt;<i> In fact, I don't think there was even a chip called at76c503a.
+</I>Yes, there is.
+&gt;<i>   And calling the
+</I>&gt;<i> driver at76c50x would imply non-USB chips such as at76c504.  What really
+</I>&gt;<i> matters is that it's a USB driver, so at76_usb seems appropriate,
+</I>&gt;<i> although I tent to think that atmel_usb may be even better for
+</I>&gt;<i> consistency.
+</I>&gt;<i>   
+</I>Hmm, I think the problem is that atmel_usb could easily become 
+non-descriptive / ambiguous, as Atmel make a variety of USB chips, and 
+are likely to make more in the future.  I'd propose something like:
+
+1. atmel_wifi_usb
+
+or
+
+2. at76c50x_usb
+
+&gt;<i> The driver was tested (and is in pracitical use) on at least i386 and
+</I>&gt;<i> powerpc.
+</I>&gt;<i>   
+</I>FWIW, until recently I was using it (reasonably heavily, 24/7) on arm as 
+well...
+
+
+Cheers,
+
+Tim.
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000005.html">[at76c503a-develop] Adding the at76_usb wireless driver
+</A></li>
+	<LI>Next message: <A HREF="000007.html">[at76c503a-develop] at76c503: sometimes the device reset doesn't	work
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#8">[ date ]</a>
+              <a href="thread.html#8">[ thread ]</a>
+              <a href="subject.html#8">[ subject ]</a>
+              <a href="author.html#8">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">More information about the at76c503a-develop
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,186 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [at76c503a-develop] [PATCH 02/12] Replace a work/timer combination	for restarts with a	delayed work
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/at76c503a-develop/2007-June/index.html" >
+   <LINK REL="made" HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%2002/12%5D%20Replace%20a%20work/timer%20combination%0A%09for%20restarts%20with%20a%09delayed%20work&In-Reply-To=%3C20070621035604.18384.48590.stgit%40dv.roinet.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000134.html">
+   <LINK REL="Next"  HREF="000136.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[at76c503a-develop] [PATCH 02/12] Replace a work/timer combination	for restarts with a	delayed work</H1>
+    <B>Pavel Roskin</B> 
+    <A HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%2002/12%5D%20Replace%20a%20work/timer%20combination%0A%09for%20restarts%20with%20a%09delayed%20work&In-Reply-To=%3C20070621035604.18384.48590.stgit%40dv.roinet.com%3E"
+       TITLE="[at76c503a-develop] [PATCH 02/12] Replace a work/timer combination	for restarts with a	delayed work">proski at gnu.org
+       </A><BR>
+    <I>Thu Jun 21 05:56:04 CEST 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000134.html">[at76c503a-develop] [PATCH 01/12] Fix recent breakage in	at76_set_listen_interval()
+</A></li>
+        <LI>Next message: <A HREF="000136.html">[at76c503a-develop] [PATCH 03/12] Minor comment fixes
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#135">[ date ]</a>
+              <a href="thread.html#135">[ thread ]</a>
+              <a href="subject.html#135">[ subject ]</a>
+              <a href="author.html#135">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Decrease the delay to half second.  It's enough to cover all requests
+from one iwconfig command, and improves the response time.
+
+Cancel the delayed work in at76_stop().  We don't need any restarts if
+the interface is down.
+
+Signed-off-by: Pavel Roskin &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">proski at gnu.org</A>&gt;
+---
+
+ at76_usb.c |   26 +++++++-------------------
+ at76_usb.h |    4 +---
+ 2 files changed, 8 insertions(+), 22 deletions(-)
+
+diff --git a/at76_usb.c b/at76_usb.c
+index 9cfe3bb..686777c 100644
+--- a/at76_usb.c
++++ b/at76_usb.c
+@@ -1930,13 +1930,6 @@ static int at76_disassoc_req(struct at76_priv *priv, struct bss_info *bss)
+ 	return at76_send_mgmt_bulk(priv, tx_buffer);
+ }
+ 
+-/* the restart timer timed out */
+-static void at76_restart_timeout(unsigned long par)
+-{
+-	struct at76_priv *priv = (struct at76_priv *)par;
+-	schedule_work(&amp;priv-&gt;work_restart);
+-}
+-
+ /* we got to check the bss_list for old entries */
+ static void at76_bss_list_timeout(unsigned long par)
+ {
+@@ -2182,7 +2175,6 @@ static void at76_delete_device(struct at76_priv *priv)
+ 	at76_free_bss_list(priv);
+ 	del_timer_sync(&amp;priv-&gt;bss_list_timer);
+ 	del_timer_sync(&amp;priv-&gt;mgmt_timer);
+-	del_timer_sync(&amp;priv-&gt;restart_timer);
+ 
+ 	if (priv-&gt;istate == CONNECTED) {
+ 		at76_iwevent_bss_disconnect(priv-&gt;netdev);
+@@ -2343,10 +2335,9 @@ static int at76_iw_handler_commit(struct net_device *netdev,
+ 		netif_stop_queue(priv-&gt;netdev);
+ 	}
+ 
+-	/* do the restart after two seconds to catch
+-	 * following ioctl's (from more params of iwconfig)
+-	 * in _one_ restart */
+-	mod_timer(&amp;priv-&gt;restart_timer, jiffies + 2 * HZ);
++	/* Wait half second before the restart to process subsequent
++	 * requests from the same iwconfig in a single restart */
++	schedule_delayed_work(&amp;priv-&gt;dwork_restart, HZ / 2);
+ 
+ 	return 0;
+ }
+@@ -3898,7 +3889,7 @@ static int at76_open(struct net_device *netdev)
+ 
+ 	priv-&gt;open_count++;
+ 
+-	schedule_work(&amp;priv-&gt;work_restart);
++	schedule_delayed_work(&amp;priv-&gt;dwork_restart, 0);
+ 
+ 	at76_dbg(DBG_PROC_ENTRY, &quot;at76_open end&quot;);
+       err:
+@@ -3932,6 +3923,7 @@ static int at76_stop(struct net_device *netdev)
+ 	}
+ 
+ 	del_timer_sync(&amp;priv-&gt;mgmt_timer);
++	cancel_delayed_work(&amp;priv-&gt;dwork_restart);
+ 
+ 	spin_lock_irqsave(&amp;priv-&gt;mgmt_spinlock, flags);
+ 	if (priv-&gt;next_mgmt_bulk) {
+@@ -4646,7 +4638,7 @@ static int at76_startup_device(struct at76_priv *priv)
+ static void at76_work_restart(struct work_struct *work)
+ {
+ 	struct at76_priv *priv = container_of(work, struct at76_priv,
+-					      work_restart);
++					      dwork_restart.work);
+ 
+ 	mutex_lock(&amp;priv-&gt;mtx);
+ 
+@@ -5854,17 +5846,13 @@ static struct at76_priv *at76_alloc_new_device(struct usb_device *udev)
+ 	INIT_WORK(&amp;priv-&gt;work_join, at76_work_join);
+ 	INIT_WORK(&amp;priv-&gt;work_mgmt_timeout, at76_work_mgmt_timeout);
+ 	INIT_WORK(&amp;priv-&gt;work_new_bss, at76_work_new_bss);
+-	INIT_WORK(&amp;priv-&gt;work_restart, at76_work_restart);
+ 	INIT_WORK(&amp;priv-&gt;work_scan, at76_work_scan);
+ 	INIT_WORK(&amp;priv-&gt;work_set_promisc, at76_work_set_promisc);
+ 	INIT_WORK(&amp;priv-&gt;work_submit_rx, at76_work_submit_rx);
++	INIT_DELAYED_WORK(&amp;priv-&gt;dwork_restart, at76_work_restart);
+ 
+ 	priv-&gt;open_count = 0;
+ 
+-	init_timer(&amp;priv-&gt;restart_timer);
+-	priv-&gt;restart_timer.data = (unsigned long)priv;
+-	priv-&gt;restart_timer.function = at76_restart_timeout;
+-
+ 	init_timer(&amp;priv-&gt;mgmt_timer);
+ 	priv-&gt;mgmt_timer.data = (unsigned long)priv;
+ 	priv-&gt;mgmt_timer.function = at76_mgmt_timeout;
+diff --git a/at76_usb.h b/at76_usb.h
+index 0854ad7..67ab610 100644
+--- a/at76_usb.h
++++ b/at76_usb.h
+@@ -470,10 +470,10 @@ struct at76_priv {
+ 	struct work_struct work_join;
+ 	struct work_struct work_mgmt_timeout;
+ 	struct work_struct work_new_bss;
+-	struct work_struct work_restart;
+ 	struct work_struct work_scan;
+ 	struct work_struct work_set_promisc;
+ 	struct work_struct work_submit_rx;
++	struct delayed_work dwork_restart;
+ 
+ 	int nr_submit_rx_tries;	/* number of tries to submit an rx urb left */
+ 	struct tasklet_struct rx_tasklet;
+@@ -540,8 +540,6 @@ struct at76_priv {
+ 	} scan_state;
+ 	time_t last_scan;
+ 
+-	struct timer_list restart_timer;	/* the timer we use to delay the restart a bit */
+-
+ 	struct timer_list mgmt_timer;	/* the timer we use to repeat auth_req etc. */
+ 	int retries;		/* counts backwards while re-trying to send auth/assoc_req's */
+ 	u8 pm_mode;		/* power management mode: AT76_PM_{OFF, ON, SMART} */
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000134.html">[at76c503a-develop] [PATCH 01/12] Fix recent breakage in	at76_set_listen_interval()
+</A></li>
+	<LI>Next message: <A HREF="000136.html">[at76c503a-develop] [PATCH 03/12] Minor comment fixes
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#135">[ date ]</a>
+              <a href="thread.html#135">[ thread ]</a>
+              <a href="subject.html#135">[ subject ]</a>
+              <a href="author.html#135">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">More information about the at76c503a-develop
+mailing list</a><br>
+</body></html>

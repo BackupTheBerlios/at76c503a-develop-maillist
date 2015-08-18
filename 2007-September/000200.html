@@ -1,0 +1,102 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [at76c503a-develop] mac80211 conversion of at76_usb
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/at76c503a-develop/2007-September/index.html" >
+   <LINK REL="made" HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20mac80211%20conversion%20of%20at76_usb&In-Reply-To=%3C1189401577.25360.2.camel%40dv%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000199.html">
+   <LINK REL="Next"  HREF="000201.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[at76c503a-develop] mac80211 conversion of at76_usb</H1>
+    <B>Pavel Roskin</B> 
+    <A HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20mac80211%20conversion%20of%20at76_usb&In-Reply-To=%3C1189401577.25360.2.camel%40dv%3E"
+       TITLE="[at76c503a-develop] mac80211 conversion of at76_usb">proski at gnu.org
+       </A><BR>
+    <I>Mon Sep 10 07:19:37 CEST 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000199.html">[at76c503a-develop] mac80211 conversion of at76_usb
+</A></li>
+        <LI>Next message: <A HREF="000201.html">[at76c503a-develop] [PATCH] at76_usb: Add ID for Corega	Wireless LAN USB-11 mini	(0x07aa, 0x0011)
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#200">[ date ]</a>
+              <a href="thread.html#200">[ thread ]</a>
+              <a href="subject.html#200">[ subject ]</a>
+              <a href="author.html#200">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hello, Kalle!
+
+On Sun, 2007-09-02 at 22:25 +0300, Kalle Valo wrote:
+
+&gt;<i> I ripped off code quite a lot and tried to simplify the driver. Maybe
+</I>&gt;<i> I removed some needed functionality?
+</I>
+I see that your patch removes printing MAC address on startup.  Look for
+&quot;%s: MAC address %s\n&quot;.  It's a minor issue, but it indicates that
+something went wrong at some point.
+
+I feel uneasy about applying such a massive patch that does so many
+things at once, especially if there are signs that some code was lost in
+the rebase process.
+
+So I moved your changes to a separate branch &quot;mac80211-kalle&quot; and reset
+the &quot;master&quot; branch to what it was before.
+
+I also applied a patch that switches the driver from net/ieee80211.h to
+net/mac80211.h.  Even though I had to bring some stuff from
+net/ieee80211.h into at76_usb.h temporarily, it's worth the trouble.
+This change that can be clearly separated from the rest of the changes.
+The patch is short and it doesn't break anything for me.
+
+I think the next step should be the conversion without any cleanup (I'm
+even fine with compiler warnings about unused functions), and then all
+cleanup should be done as separate commits.  Any changes to the
+debugging code should be separate too.
+
+I do appreciate your efforts, as they show that the mac80211 conversion
+is possible, but I cannot just take the code as is and massage it into
+something working.
+
+My patches that bring the driver in the at76 branch of the kernel more
+up-to-date with my repository haven't been applied yet, so the kernel
+version of the driver is not suitable for development yet.
+
+-- 
+Regards,
+Pavel Roskin
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000199.html">[at76c503a-develop] mac80211 conversion of at76_usb
+</A></li>
+	<LI>Next message: <A HREF="000201.html">[at76c503a-develop] [PATCH] at76_usb: Add ID for Corega	Wireless LAN USB-11 mini	(0x07aa, 0x0011)
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#200">[ date ]</a>
+              <a href="thread.html#200">[ thread ]</a>
+              <a href="subject.html#200">[ subject ]</a>
+              <a href="author.html#200">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">More information about the at76c503a-develop
+mailing list</a><br>
+</body></html>

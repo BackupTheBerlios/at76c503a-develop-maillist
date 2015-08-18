@@ -1,0 +1,115 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [at76c503a-develop] [PATCH 15/19] Make at76_match_mode() more	readable
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/at76c503a-develop/2007-July/index.html" >
+   <LINK REL="made" HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%2015/19%5D%20Make%20at76_match_mode%28%29%20more%0A%09readable&In-Reply-To=%3C20070710062140.29117.38083.stgit%40dv.roinet.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000162.html">
+   <LINK REL="Next"  HREF="000165.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[at76c503a-develop] [PATCH 15/19] Make at76_match_mode() more	readable</H1>
+    <B>Pavel Roskin</B> 
+    <A HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%2015/19%5D%20Make%20at76_match_mode%28%29%20more%0A%09readable&In-Reply-To=%3C20070710062140.29117.38083.stgit%40dv.roinet.com%3E"
+       TITLE="[at76c503a-develop] [PATCH 15/19] Make at76_match_mode() more	readable">proski at gnu.org
+       </A><BR>
+    <I>Tue Jul 10 08:21:40 CEST 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000162.html">[at76c503a-develop] [PATCH 14/19] Eliminate unneeded comma operator
+</A></li>
+        <LI>Next message: <A HREF="000165.html">[at76c503a-develop] [PATCH 16/19] Make at76_dump_mib_mac_wep() more	readable
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#160">[ date ]</a>
+              <a href="thread.html#160">[ thread ]</a>
+              <a href="subject.html#160">[ subject ]</a>
+              <a href="author.html#160">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Signed-off-by: Pavel Roskin &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">proski at gnu.org</A>&gt;
+---
+
+ at76_usb.c |   34 +++++++++++++++++++---------------
+ 1 files changed, 19 insertions(+), 15 deletions(-)
+
+diff --git a/at76_usb.c b/at76_usb.c
+index ffabc67..d0721de 100644
+--- a/at76_usb.c
++++ b/at76_usb.c
+@@ -4158,22 +4158,26 @@ static inline int at76_match_mode(struct at76_priv *priv, struct bss_info *ptr)
+ static int at76_match_rates(struct at76_priv *priv, struct bss_info *ptr)
+ {
+ 	int i;
+-	u8 *rate;
+-
+-	for (i = 0, rate = ptr-&gt;rates; i &lt; ptr-&gt;rates_len; i++, rate++)
+-		if (*rate &amp; 0x80) {
+-			/* this is a basic rate we have to support
+-			   (see IEEE802.11, ch. 7.3.2.2) */
+-			if (*rate != (0x80 | hw_rates[0])
+-			    &amp;&amp; *rate != (0x80 | hw_rates[1])
+-			    &amp;&amp; *rate != (0x80 | hw_rates[2])
+-			    &amp;&amp; *rate != (0x80 | hw_rates[3])) {
+-				at76_dbg(DBG_BSS_MATCH,
+-					 &quot;%s: bss table entry %p: basic rate %02x not supported&quot;,
+-					 priv-&gt;netdev-&gt;name, ptr, *rate);
+-				return 0;
+-			}
++
++	for (i = 0; i &lt; ptr-&gt;rates_len; i++) {
++		u8 rate = ptr-&gt;rates[i];
++
++		if (!(rate &amp; 0x80))
++			continue;
++
++		/* this is a basic rate we have to support
++		   (see IEEE802.11, ch. 7.3.2.2) */
++		if (rate != (0x80 | hw_rates[0])
++		    &amp;&amp; rate != (0x80 | hw_rates[1])
++		    &amp;&amp; rate != (0x80 | hw_rates[2])
++		    &amp;&amp; rate != (0x80 | hw_rates[3])) {
++			at76_dbg(DBG_BSS_MATCH,
++				 &quot;%s: bss table entry %p: basic rate %02x not &quot;
++				 &quot;supported&quot;, priv-&gt;netdev-&gt;name, ptr, rate);
++			return 0;
+ 		}
++	}
++
+ 	/* if we use short preamble, the bss must support it */
+ 	if (priv-&gt;preamble_type == PREAMBLE_TYPE_SHORT &amp;&amp;
+ 	    !(ptr-&gt;capa &amp; WLAN_CAPABILITY_SHORT_PREAMBLE)) {
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000162.html">[at76c503a-develop] [PATCH 14/19] Eliminate unneeded comma operator
+</A></li>
+	<LI>Next message: <A HREF="000165.html">[at76c503a-develop] [PATCH 16/19] Make at76_dump_mib_mac_wep() more	readable
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#160">[ date ]</a>
+              <a href="thread.html#160">[ thread ]</a>
+              <a href="subject.html#160">[ subject ]</a>
+              <a href="author.html#160">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">More information about the at76c503a-develop
+mailing list</a><br>
+</body></html>

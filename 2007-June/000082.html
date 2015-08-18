@@ -1,0 +1,163 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [at76c503a-develop] [PATCH 07/11] Internal firmware download should	just sleep without	any timers
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/at76c503a-develop/2007-June/index.html" >
+   <LINK REL="made" HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%2007/11%5D%20Internal%20firmware%20download%20should%0A%09just%20sleep%20without%09any%20timers&In-Reply-To=%3C20070602180034.28397.68595.stgit%40dv.roinet.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000081.html">
+   <LINK REL="Next"  HREF="000083.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[at76c503a-develop] [PATCH 07/11] Internal firmware download should	just sleep without	any timers</H1>
+    <B>Pavel Roskin</B> 
+    <A HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%2007/11%5D%20Internal%20firmware%20download%20should%0A%09just%20sleep%20without%09any%20timers&In-Reply-To=%3C20070602180034.28397.68595.stgit%40dv.roinet.com%3E"
+       TITLE="[at76c503a-develop] [PATCH 07/11] Internal firmware download should	just sleep without	any timers">proski at gnu.org
+       </A><BR>
+    <I>Sat Jun  2 20:00:34 CEST 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000081.html">[at76c503a-develop] [PATCH 06/11] Don't ignore errors during	firmware download
+</A></li>
+        <LI>Next message: <A HREF="000083.html">[at76c503a-develop] [PATCH 08/11] Delete all timers on disconnect	to be safe
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#82">[ date ]</a>
+              <a href="thread.html#82">[ thread ]</a>
+              <a href="subject.html#82">[ subject ]</a>
+              <a href="author.html#82">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Timers are justified if they are scheduled in the interrupt context or
+if they are modified.  Neither is the case.
+
+Signed-off-by: Pavel Roskin &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">proski at gnu.org</A>&gt;
+---
+
+ at76_usb.c |   29 +++--------------------------
+ at76_usb.h |    4 ----
+ 2 files changed, 3 insertions(+), 30 deletions(-)
+
+diff --git a/at76_usb.c b/at76_usb.c
+index 14baefc..e31a734 100644
+--- a/at76_usb.c
++++ b/at76_usb.c
+@@ -1994,14 +1994,6 @@ static int at76_disassoc_req(struct at76_priv *priv, struct bss_info *bss)
+ }
+ 
+ 
+-/* the firmware download timeout (after remap) */
+-static void at76_fw_dl_timeout(unsigned long par)
+-{
+-	struct at76_priv *priv = (struct at76_priv *)par;
+-	schedule_work(&amp;priv-&gt;work_reset_device);
+-}
+-
+-
+ /* the restart timer timed out */
+ static void at76_restart_timeout(unsigned long par)
+ {
+@@ -4334,7 +4326,9 @@ static int at76_load_internal_fw(struct at76_priv *priv)
+ 
+ 	at76_dbg(DBG_DEVSTART, &quot;sleeping for 2 seconds&quot;);
+ 	priv-&gt;istate = EXTFW_DOWNLOAD;
+-	mod_timer(&amp;priv-&gt;fw_dl_timer, jiffies + 2 * HZ + 1);
++	schedule_timeout_interruptible(2 * HZ + 1);
++	usb_reset_device(priv-&gt;udev);
++	priv-&gt;istate = WAIT_FOR_DISCONNECT;
+ 
+   end_internal_fw:
+ 	mutex_unlock(&amp;priv-&gt;mtx);
+@@ -4599,18 +4593,6 @@ static void at76_work_new_bss(struct work_struct *work)
+ }
+ 
+ 
+-static void at76_work_reset_device(struct work_struct *work)
+-{
+-	struct at76_priv *priv = container_of(work, struct at76_priv,
+-					     work_reset_device);
+-
+-	mutex_lock(&amp;priv-&gt;mtx);
+-	usb_reset_device(priv-&gt;udev);
+-	priv-&gt;istate = WAIT_FOR_DISCONNECT;
+-	mutex_unlock(&amp;priv-&gt;mtx);
+-}
+-
+-
+ static int at76_startup_device(struct at76_priv *priv)
+ {
+ 	struct at76_card_config *ccfg = &amp;priv-&gt;card_config;
+@@ -6129,7 +6111,6 @@ static struct at76_priv *at76_alloc_new_device(struct usb_device *udev,
+ 	INIT_WORK(&amp;priv-&gt;work_join, at76_work_join);
+ 	INIT_WORK(&amp;priv-&gt;work_mgmt_timeout, at76_work_mgmt_timeout);
+ 	INIT_WORK(&amp;priv-&gt;work_new_bss, at76_work_new_bss);
+-	INIT_WORK(&amp;priv-&gt;work_reset_device, at76_work_reset_device);
+ 	INIT_WORK(&amp;priv-&gt;work_restart, at76_work_restart);
+ 	INIT_WORK(&amp;priv-&gt;work_scan, at76_work_scan);
+ 	INIT_WORK(&amp;priv-&gt;work_set_promisc, at76_work_set_promisc);
+@@ -6146,10 +6127,6 @@ static struct at76_priv *at76_alloc_new_device(struct usb_device *udev,
+ 	priv-&gt;mgmt_timer.data = (unsigned long)priv;
+ 	priv-&gt;mgmt_timer.function = at76_mgmt_timeout;
+ 
+-	init_timer(&amp;priv-&gt;fw_dl_timer);
+-	priv-&gt;fw_dl_timer.data = (unsigned long)priv;
+-	priv-&gt;fw_dl_timer.function = at76_fw_dl_timeout;
+-
+ 	spin_lock_init(&amp;priv-&gt;mgmt_spinlock);
+ 	priv-&gt;next_mgmt_bulk = NULL;
+ 	priv-&gt;istate = INTFW_DOWNLOAD;
+diff --git a/at76_usb.h b/at76_usb.h
+index 474049c..7fd61f5 100644
+--- a/at76_usb.h
++++ b/at76_usb.h
+@@ -473,7 +473,6 @@ struct at76_priv {
+ 	struct work_struct work_join;
+ 	struct work_struct work_mgmt_timeout;
+ 	struct work_struct work_new_bss;
+-	struct work_struct work_reset_device;
+ 	struct work_struct work_restart;
+ 	struct work_struct work_scan;
+ 	struct work_struct work_set_promisc;
+@@ -576,9 +575,6 @@ struct at76_priv {
+ 	/* store rx fragments until complete */
+ 	struct rx_data_buf rx_data[NR_RX_DATA_BUF];
+ 
+-	/* firmware downloading stuff */
+-	struct timer_list fw_dl_timer;	/* timer used to wait after REMAP
+-					   until device is reset */
+ 	int extfw_size;
+ 	int intfw_size;
+ 	/* these point into a buffer managed by the firmware dl functions, no need to dealloc */
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000081.html">[at76c503a-develop] [PATCH 06/11] Don't ignore errors during	firmware download
+</A></li>
+	<LI>Next message: <A HREF="000083.html">[at76c503a-develop] [PATCH 08/11] Delete all timers on disconnect	to be safe
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#82">[ date ]</a>
+              <a href="thread.html#82">[ thread ]</a>
+              <a href="subject.html#82">[ subject ]</a>
+              <a href="author.html#82">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">More information about the at76c503a-develop
+mailing list</a><br>
+</body></html>

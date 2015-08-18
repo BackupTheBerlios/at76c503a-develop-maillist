@@ -1,0 +1,107 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [at76c503a-develop] Implementing support for	WPA-enabled	firmware
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/at76c503a-develop/2007-October/index.html" >
+   <LINK REL="made" HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20Implementing%20support%20for%0A%09WPA-enabled%09firmware&In-Reply-To=%3C1193194212.1940.26.camel%40dv%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000206.html">
+   
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[at76c503a-develop] Implementing support for	WPA-enabled	firmware</H1>
+    <B>Pavel Roskin</B> 
+    <A HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20Implementing%20support%20for%0A%09WPA-enabled%09firmware&In-Reply-To=%3C1193194212.1940.26.camel%40dv%3E"
+       TITLE="[at76c503a-develop] Implementing support for	WPA-enabled	firmware">proski at gnu.org
+       </A><BR>
+    <I>Wed Oct 24 04:50:12 CEST 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000206.html">[at76c503a-develop] Implementing support for WPA-enabled firmware
+</A></li>
+        
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#207">[ date ]</a>
+              <a href="thread.html#207">[ thread ]</a>
+              <a href="subject.html#207">[ subject ]</a>
+              <a href="author.html#207">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hello, Milan!
+
+On Tue, 2007-10-23 at 17:40 +0200, Milan Plzik wrote:
+
+&gt;<i>   I would like to start implementing support for firmwares of version
+</I>&gt;<i> 1.x (which should also support WPA). Is there any official documentation
+</I>&gt;<i> to interface of this firmware?
+</I>
+Let's call the firmware 1.103 for clarity, since 1.x would cover e.g.
+1.101, which doesn't support WPA.
+
+&gt;<i>  From what I have been trying to get from
+</I>&gt;<i> Atmel, the only result I got is that &quot;this hardware is not supported
+</I>&gt;<i> anymore&quot;. So, the only way so far is to document Atmel's own
+</I>&gt;<i> atmelwlandriver and  implement these changes to at76c503 driver.
+</I>
+That's correct.  The Atmel's driver is still available on CVS:
+
+cvs -d :pserver:<A HREF="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">anonymous at atmelwlandriver.cvs.sourceforge.net</A>:/cvsroot/atmelwlandriver co atmelwlandriver
+
+In particular, &quot;struct mib_mac_wep&quot; has to be changed (see
+MAC_ENCRYPTION_MIB in src/includes/usb/mib.h in the Atmel sources).
+
+Some reserved fields are no longer reserved in the Tx buffer.  Look for
+CipherType in the Atmel sources.
+
+Also, 1.103 firmware doesn't provide the FCS in the received packets.
+
+&gt;<i>   Err, and to not forgot -- is such effort desired? I mean, would
+</I>&gt;<i> support for WPA firmware help, if mac80211 conversion succeeds? I can
+</I>&gt;<i> imagine that WPA enc/dec would be handled in chip itself by firmware, so
+</I>&gt;<i> from this point of view probably yes, at least for ipaqs with builtin
+</I>&gt;<i> at76c503a wifi.
+</I>
+Yes, slow embedded devices will benefit most.
+
+Supporting WPA and non-WPA firmware would be tricky, so I guess Intersil
+radio support will have to be dropped.  There is no WPA capable firmware
+for those devices, and they are so obsolete, that I could not find any
+on eBay, unlike the newer designs.
+
+I think it would be great to switch to WPA-capable firmware, but only
+after switching to mac80211.
+
+-- 
+Regards,
+Pavel Roskin
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000206.html">[at76c503a-develop] Implementing support for WPA-enabled firmware
+</A></li>
+	
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#207">[ date ]</a>
+              <a href="thread.html#207">[ thread ]</a>
+              <a href="subject.html#207">[ subject ]</a>
+              <a href="author.html#207">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">More information about the at76c503a-develop
+mailing list</a><br>
+</body></html>

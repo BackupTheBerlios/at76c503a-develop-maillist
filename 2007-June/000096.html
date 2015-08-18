@@ -1,0 +1,153 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [at76c503a-develop] [PATCH 09/10] Remove at76_ieee80211_fixup(),	it's not used
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/at76c503a-develop/2007-June/index.html" >
+   <LINK REL="made" HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%2009/10%5D%20Remove%20at76_ieee80211_fixup%28%29%2C%0A%09it%27s%20not%20used&In-Reply-To=%3C20070605010429.32602.22229.stgit%40dv.roinet.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000095.html">
+   <LINK REL="Next"  HREF="000097.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[at76c503a-develop] [PATCH 09/10] Remove at76_ieee80211_fixup(),	it's not used</H1>
+    <B>Pavel Roskin</B> 
+    <A HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%2009/10%5D%20Remove%20at76_ieee80211_fixup%28%29%2C%0A%09it%27s%20not%20used&In-Reply-To=%3C20070605010429.32602.22229.stgit%40dv.roinet.com%3E"
+       TITLE="[at76c503a-develop] [PATCH 09/10] Remove at76_ieee80211_fixup(),	it's not used">proski at gnu.org
+       </A><BR>
+    <I>Tue Jun  5 03:04:29 CEST 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000095.html">[at76c503a-develop] [PATCH 08/10] Align all labels at position 6,	as Lindent would do
+</A></li>
+        <LI>Next message: <A HREF="000097.html">[at76c503a-develop] [PATCH 10/10] Fully separate scanning and	monitoring
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#96">[ date ]</a>
+              <a href="thread.html#96">[ thread ]</a>
+              <a href="subject.html#96">[ subject ]</a>
+              <a href="author.html#96">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Perhaps it was intended for some kind of &quot;fixed up&quot; monitor mode, but
+the code has no chance to be executed since the monitor mode consumes
+the packets before this point.
+
+Signed-off-by: Pavel Roskin &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">proski at gnu.org</A>&gt;
+---
+
+ at76_usb.c |   62 +-----------------------------------------------------------
+ 1 files changed, 1 insertions(+), 61 deletions(-)
+
+diff --git a/at76_usb.c b/at76_usb.c
+index ce6904a..71d5fd8 100644
+--- a/at76_usb.c
++++ b/at76_usb.c
+@@ -5531,62 +5531,6 @@ static inline void skb_reset_mac_header(struct sk_buff *skb)
+ #endif
+ 
+ 
+-/* Adjust the skb to trim the hardware header and CRC, and set up skb-&gt;mac,
+- * skb-&gt;protocol, etc.
+- */
+-static void at76_ieee80211_fixup(struct sk_buff *skb, int iw_mode)
+-{
+-	struct ieee80211_hdr_3addr *i802_11_hdr;
+-	struct ethhdr *eth_hdr_p;
+-	u8 *src_addr;
+-	u8 *dest_addr;
+-	__be16 proto = 0;
+-
+-	skb_reset_mac_header(skb);
+-	i802_11_hdr = (struct ieee80211_hdr_3addr *)skb-&gt;data;
+-	skb_pull(skb, sizeof(struct ieee80211_hdr_3addr));
+-
+-	src_addr = iw_mode == IW_MODE_ADHOC ? i802_11_hdr-&gt;addr2
+-	    : i802_11_hdr-&gt;addr3;
+-	dest_addr = i802_11_hdr-&gt;addr1;
+-
+-	eth_hdr_p = (struct ethhdr *)skb-&gt;data;
+-	if (!compare_ether_addr(eth_hdr_p-&gt;h_source, src_addr) &amp;&amp;
+-	    !compare_ether_addr(eth_hdr_p-&gt;h_dest, dest_addr)) {
+-		/* There's an ethernet header encapsulated within the data
+-		 * portion, count it as part of the hardware header */
+-		skb_pull(skb, sizeof(struct ethhdr));
+-		proto = eth_hdr_p-&gt;h_proto;
+-	} else if (!memcmp(skb-&gt;data, snapsig, sizeof(snapsig))) {
+-		/* SNAP frame - collapse it */
+-		/* RFC1042/802.1h encapsulated packet.  Treat the SNAP header
+-		 * as part of the HW header and note the protocol. */
+-		/* NOTE: prism2 doesn't collapse Appletalk frames (why?). */
+-		skb_pull(skb, sizeof(rfc1042sig) + 2);
+-		proto = *(__be16 *)(skb-&gt;data - 2);
+-	}
+-
+-	if (ntohs(proto) &gt; 1518) {
+-		skb-&gt;protocol = proto;
+-	} else {
+-#ifdef IEEE_STANDARD
+-		/* According to all standards, we should assume the data
+-		 * portion contains 802.2 LLC information */
+-		skb-&gt;protocol = htons(ETH_P_802_2);
+-#else /* IEEE_STANDARD */
+-		/* Unfortunately, it appears no actual 802.11 implementations
+-		 * follow any standards specs.  They all appear to put a
+-		 * 16-bit ethertype after the 802.11 header instead, so we'll
+-		 * use that (and consider it part of the hardware header). */
+-		/* Note that this means we can never support non-SNAP 802.2
+-		 * frames (because we can't tell when we get one) */
+-		skb-&gt;protocol = *(__be16 *)skb-&gt;data;
+-		skb_pull(skb, 2);
+-#endif /* IEEE_STANDARD */
+-	}
+-}
+-
+-
+ /* check for fragmented data in priv-&gt;rx_skb. If the packet was no fragment
+    or it was the last of a fragment set a skb containing the whole packet
+    is returned for further processing. Otherwise we get NULL and are
+@@ -5852,11 +5796,7 @@ static void at76_rx_data(struct at76_priv *priv)
+ 		skb-&gt;pkt_type = PACKET_OTHERHOST;
+ 	}
+ 
+-	if (netdev-&gt;type == ARPHRD_ETHER) {
+-		at76_ieee80211_to_eth(skb, priv-&gt;iw_mode);
+-	} else {
+-		at76_ieee80211_fixup(skb, priv-&gt;iw_mode);
+-	}
++	at76_ieee80211_to_eth(skb, priv-&gt;iw_mode);
+ 
+ 	netdev-&gt;last_rx = jiffies;
+ 	netif_rx(skb);
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000095.html">[at76c503a-develop] [PATCH 08/10] Align all labels at position 6,	as Lindent would do
+</A></li>
+	<LI>Next message: <A HREF="000097.html">[at76c503a-develop] [PATCH 10/10] Fully separate scanning and	monitoring
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#96">[ date ]</a>
+              <a href="thread.html#96">[ thread ]</a>
+              <a href="subject.html#96">[ subject ]</a>
+              <a href="author.html#96">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">More information about the at76c503a-develop
+mailing list</a><br>
+</body></html>

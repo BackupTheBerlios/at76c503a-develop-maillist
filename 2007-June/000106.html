@@ -1,0 +1,217 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [at76c503a-develop] [PATCH 1/2] Don't use workqueue to reschedule	IBSS creation
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/at76c503a-develop/2007-June/index.html" >
+   <LINK REL="made" HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%201/2%5D%20Don%27t%20use%20workqueue%20to%20reschedule%0A%09IBSS%20creation&In-Reply-To=%3C20070613073707.28252.72349.stgit%40dv.roinet.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000100.html">
+   <LINK REL="Next"  HREF="000107.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[at76c503a-develop] [PATCH 1/2] Don't use workqueue to reschedule	IBSS creation</H1>
+    <B>Pavel Roskin</B> 
+    <A HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%201/2%5D%20Don%27t%20use%20workqueue%20to%20reschedule%0A%09IBSS%20creation&In-Reply-To=%3C20070613073707.28252.72349.stgit%40dv.roinet.com%3E"
+       TITLE="[at76c503a-develop] [PATCH 1/2] Don't use workqueue to reschedule	IBSS creation">proski at gnu.org
+       </A><BR>
+    <I>Wed Jun 13 09:37:07 CEST 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000100.html">[at76c503a-develop] [PATCH 2/2] Don't keep priv-&gt;interface,	use USB interface provided in at76_probe()
+</A></li>
+        <LI>Next message: <A HREF="000107.html">[at76c503a-develop] [PATCH 2/2] Remove module parameters for the	settings controlled by	iwpriv
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#106">[ date ]</a>
+              <a href="thread.html#106">[ thread ]</a>
+              <a href="subject.html#106">[ subject ]</a>
+              <a href="author.html#106">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Scheduling is done in process context, so it can be avoided.  Merge
+at76_work_start_ibss() into at76_start_ibss().
+
+Signed-off-by: Pavel Roskin &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">proski at gnu.org</A>&gt;
+---
+
+ at76_usb.c |   93 ++++++++++++++++++++++++++----------------------------------
+ at76_usb.h |    1 -
+ 2 files changed, 40 insertions(+), 54 deletions(-)
+
+diff --git a/at76_usb.c b/at76_usb.c
+index 6ad97c8..b8709ad 100644
+--- a/at76_usb.c
++++ b/at76_usb.c
+@@ -1558,6 +1558,9 @@ static int at76_start_monitor(struct at76_priv *priv)
+ static int at76_start_ibss(struct at76_priv *priv)
+ {
+ 	struct at76_req_ibss bss;
++	int ret;
++
++	at76_assert(priv-&gt;istate == STARTIBSS);
+ 
+ 	memset(&amp;bss, 0, sizeof(struct at76_req_ibss));
+ 	memset(bss.bssid, 0xff, ETH_ALEN);
+@@ -1566,8 +1569,42 @@ static int at76_start_ibss(struct at76_priv *priv)
+ 	bss.bss_type = ADHOC_MODE;
+ 	bss.channel = priv-&gt;channel;
+ 
+-	return at76_set_card_command(priv-&gt;udev, CMD_START_IBSS, &amp;bss,
+-				     sizeof(struct at76_req_ibss));
++	ret = at76_set_card_command(priv-&gt;udev, CMD_START_IBSS, &amp;bss,
++				    sizeof(struct at76_req_ibss));
++	if (ret &lt; 0) {
++		err(&quot;%s: start_ibss failed: %d&quot;, priv-&gt;netdev-&gt;name, ret);
++		return ret;
++	}
++
++	ret = at76_wait_completion(priv, CMD_START_IBSS);
++	if (ret != CMD_STATUS_COMPLETE) {
++		err(&quot;%s start_ibss failed to complete,%d&quot;,
++		    priv-&gt;netdev-&gt;name, ret);
++		return ret;
++	}
++
++	ret = at76_get_current_bssid(priv);
++	if (ret &lt; 0)
++		return ret;
++
++	ret = at76_get_current_channel(priv);
++	if (ret &lt; 0)
++		return ret;
++
++	/* not sure what this is good for ??? */
++	memset(&amp;priv-&gt;mib_buf, 0, sizeof(struct set_mib_buffer));
++	priv-&gt;mib_buf.type = MIB_MAC_MGMT;
++	priv-&gt;mib_buf.size = 1;
++	priv-&gt;mib_buf.index = IBSS_CHANGE_OK_OFFSET;
++	ret = at76_set_mib(priv, &amp;priv-&gt;mib_buf);
++	if (ret &lt; 0) {
++		err(&quot;%s: set_mib (ibss change ok) failed: %d&quot;, priv-&gt;netdev-&gt;name, ret);
++		return ret;
++	}
++
++	netif_carrier_on(priv-&gt;netdev);
++	netif_start_queue(priv-&gt;netdev);
++	return 0;
+ }
+ 
+ 
+@@ -4410,7 +4447,7 @@ static void at76_work_join(struct work_struct *work)
+ 	/* here we haven't found a matching (i)bss ... */
+ 	if (priv-&gt;iw_mode == IW_MODE_ADHOC) {
+ 		priv-&gt;istate = STARTIBSS;
+-		schedule_work(&amp;priv-&gt;work_start_ibss);
++		at76_start_ibss(priv);
+ 		goto end_join;
+ 	}
+ 	/* haven't found a matching BSS in infra mode - try again */
+@@ -4767,55 +4804,6 @@ static void at76_work_set_promisc(struct work_struct *work)
+ }
+ 
+ 
+-static void at76_work_start_ibss(struct work_struct *work)
+-{
+-	struct at76_priv *priv = container_of(work, struct at76_priv,
+-					     work_start_ibss);
+-	int ret;
+-
+-	mutex_lock(&amp;priv-&gt;mtx);
+-
+-	at76_assert(priv-&gt;istate == STARTIBSS);
+-	ret = at76_start_ibss(priv);
+-	if (ret &lt; 0) {
+-		err(&quot;%s: start_ibss failed: %d&quot;, priv-&gt;netdev-&gt;name, ret);
+-		goto end_startibss;
+-	}
+-
+-	ret = at76_wait_completion(priv, CMD_START_IBSS);
+-	if (ret != CMD_STATUS_COMPLETE) {
+-		err(&quot;%s start_ibss failed to complete,%d&quot;,
+-		    priv-&gt;netdev-&gt;name, ret);
+-		goto end_startibss;
+-	}
+-
+-	ret = at76_get_current_bssid(priv);
+-	if (ret &lt; 0)
+-		goto end_startibss;
+-
+-	ret = at76_get_current_channel(priv);
+-	if (ret &lt; 0)
+-		goto end_startibss;
+-
+-	/* not sure what this is good for ??? */
+-	memset(&amp;priv-&gt;mib_buf, 0, sizeof(struct set_mib_buffer));
+-	priv-&gt;mib_buf.type = MIB_MAC_MGMT;
+-	priv-&gt;mib_buf.size = 1;
+-	priv-&gt;mib_buf.index = IBSS_CHANGE_OK_OFFSET;
+-	ret = at76_set_mib(priv, &amp;priv-&gt;mib_buf);
+-	if (ret &lt; 0) {
+-		err(&quot;%s: set_mib (ibss change ok) failed: %d&quot;, priv-&gt;netdev-&gt;name, ret);
+-		goto end_startibss;
+-	}
+-
+-	netif_carrier_on(priv-&gt;netdev);
+-	netif_start_queue(priv-&gt;netdev);
+-
+-      end_startibss:
+-	mutex_unlock(&amp;priv-&gt;mtx);
+-}
+-
+-
+ static void at76_work_submit_rx(struct work_struct *work)
+ {
+ 	struct at76_priv *priv = container_of(work, struct at76_priv,
+@@ -6004,7 +5992,6 @@ static struct at76_priv *at76_alloc_new_device(struct usb_device *udev)
+ 	INIT_WORK(&amp;priv-&gt;work_restart, at76_work_restart);
+ 	INIT_WORK(&amp;priv-&gt;work_scan, at76_work_scan);
+ 	INIT_WORK(&amp;priv-&gt;work_set_promisc, at76_work_set_promisc);
+-	INIT_WORK(&amp;priv-&gt;work_start_ibss, at76_work_start_ibss);
+ 	INIT_WORK(&amp;priv-&gt;work_submit_rx, at76_work_submit_rx);
+ 
+ 	priv-&gt;open_count = 0;
+diff --git a/at76_usb.h b/at76_usb.h
+index 204fb12..396dfc4 100644
+--- a/at76_usb.h
++++ b/at76_usb.h
+@@ -483,7 +483,6 @@ struct at76_priv {
+ 	struct work_struct work_restart;
+ 	struct work_struct work_scan;
+ 	struct work_struct work_set_promisc;
+-	struct work_struct work_start_ibss;
+ 	struct work_struct work_submit_rx;
+ 
+ 	int nr_submit_rx_tries;	/* number of tries to submit an rx urb left */
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000100.html">[at76c503a-develop] [PATCH 2/2] Don't keep priv-&gt;interface,	use USB interface provided in at76_probe()
+</A></li>
+	<LI>Next message: <A HREF="000107.html">[at76c503a-develop] [PATCH 2/2] Remove module parameters for the	settings controlled by	iwpriv
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#106">[ date ]</a>
+              <a href="thread.html#106">[ thread ]</a>
+              <a href="subject.html#106">[ subject ]</a>
+              <a href="author.html#106">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">More information about the at76c503a-develop
+mailing list</a><br>
+</body></html>

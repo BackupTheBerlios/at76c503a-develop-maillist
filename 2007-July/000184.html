@@ -1,0 +1,140 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [at76c503a-develop] [PATCH 1/2] Update kernel patch for current	wireless-dev.git
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/at76c503a-develop/2007-July/index.html" >
+   <LINK REL="made" HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%201/2%5D%20Update%20kernel%20patch%20for%20current%0A%09wireless-dev.git&In-Reply-To=%3C20070712081648.3693.68357.stgit%40dv.roinet.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000183.html">
+   <LINK REL="Next"  HREF="000185.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[at76c503a-develop] [PATCH 1/2] Update kernel patch for current	wireless-dev.git</H1>
+    <B>Pavel Roskin</B> 
+    <A HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%201/2%5D%20Update%20kernel%20patch%20for%20current%0A%09wireless-dev.git&In-Reply-To=%3C20070712081648.3693.68357.stgit%40dv.roinet.com%3E"
+       TITLE="[at76c503a-develop] [PATCH 1/2] Update kernel patch for current	wireless-dev.git">proski at gnu.org
+       </A><BR>
+    <I>Thu Jul 12 10:16:48 CEST 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000183.html">[at76c503a-develop] at76_usb - fourth submission attempt
+</A></li>
+        <LI>Next message: <A HREF="000185.html">[at76c503a-develop] [PATCH 2/2] Bump version to 0.16
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#184">[ date ]</a>
+              <a href="thread.html#184">[ thread ]</a>
+              <a href="subject.html#184">[ subject ]</a>
+              <a href="author.html#184">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Signed-off-by: Pavel Roskin &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">proski at gnu.org</A>&gt;
+---
+
+ kernel_patch.diff |   32 ++++++++++++++++++--------------
+ 1 files changed, 18 insertions(+), 14 deletions(-)
+
+diff --git a/kernel_patch.diff b/kernel_patch.diff
+index 0ec6f2f..b09aa89 100644
+--- a/kernel_patch.diff
++++ b/kernel_patch.diff
+@@ -1,14 +1,17 @@
+ diff --git a/MAINTAINERS b/MAINTAINERS
+-index 0ad8803..70dcecd 100644
++index 86415f7..e90e60d 100644
+ --- a/MAINTAINERS
+ +++ b/MAINTAINERS
+-@@ -609,6 +609,12 @@ W:	<A HREF="http://www.thekelleys.org.uk/atmel">http://www.thekelleys.org.uk/atmel</A>
++@@ -690,6 +690,15 @@ W:	<A HREF="http://www.thekelleys.org.uk/atmel">http://www.thekelleys.org.uk/atmel</A>
+  W:	<A HREF="http://atmelwlandriver.sourceforge.net/">http://atmelwlandriver.sourceforge.net/</A>
+  S:	Maintained
+  
+ +ATMEL USB WIRELESS DRIVER
+-+M:	<A HREF="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">at76c503a-develop at lists.berlios.de</A>
+++P:	Pavel Roskin
+++M:	<A HREF="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">proski at gnu.org</A>
+++L:	<A HREF="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">linux-wireless at vger.kernel.org</A>
+ +L:	<A HREF="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">at76c503a-user at lists.berlios.de</A>
+++L:	<A HREF="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">at76c503a-develop at lists.berlios.de</A>
+ +W:	<A HREF="http://at76c503a.berlios.de/">http://at76c503a.berlios.de/</A>
+ +S:	Maintained
+ +
+@@ -16,33 +19,34 @@ index 0ad8803..70dcecd 100644
+  P:	David Woodhouse
+  M:	<A HREF="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">dwmw2 at infradead.org</A>
+ diff --git a/drivers/net/wireless/Kconfig b/drivers/net/wireless/Kconfig
+-index ece3d9c..af482a2 100644
++index 7c4d202..f32979b 100644
+ --- a/drivers/net/wireless/Kconfig
+ +++ b/drivers/net/wireless/Kconfig
+-@@ -394,6 +394,14 @@ config PCI_ATMEL
++@@ -403,6 +403,14 @@ config PCI_ATMEL
+          Enable support for PCI and mini-PCI cards containing the
+          Atmel at76c506 chip.
+  
+ +config USB_ATMEL
+ +	tristate &quot;Atmel at76c503/at76c505/at76c505a USB cards&quot;
+-+	depends on NET_RADIO &amp;&amp; USB
+++	depends on WLAN_80211 &amp;&amp; USB
+ +	select FW_LOADER
+ +	---help---
+ +	  Enable support for USB Wireless devices using Atmel at76c503,
+-+	  at76c505 or at76c505a chip.
+++	  at76c505 or at76c505a chips.
+ +
+- # If Pcmcia is compiled in, offer Pcmcia cards...
+- comment &quot;Wireless 802.11b Pcmcia/Cardbus cards support&quot;
+- 	depends on NET_RADIO &amp;&amp; PCMCIA
++ config PCMCIA_HERMES
++ 	tristate &quot;Hermes PCMCIA card support&quot;
++ 	depends on PCMCIA &amp;&amp; HERMES
+ diff --git a/drivers/net/wireless/Makefile b/drivers/net/wireless/Makefile
+-index c613af1..d8d32ea 100644
++index b0f28ca..397c7f0 100644
+ --- a/drivers/net/wireless/Makefile
+ +++ b/drivers/net/wireless/Makefile
+-@@ -31,6 +31,7 @@ obj-$(CONFIG_AIRO_CS)		+= airo_cs.o airo.o
+- obj-$(CONFIG_ATMEL)             += atmel.o
++@@ -32,6 +32,8 @@ obj-$(CONFIG_ATMEL)             += atmel.o
+  obj-$(CONFIG_PCI_ATMEL)         += atmel_pci.o 
+  obj-$(CONFIG_PCMCIA_ATMEL)      += atmel_cs.o
+-+obj-$(CONFIG_USB_ATMEL)	        += at76_usb.o
+  
+++obj-$(CONFIG_USB_ATMEL)	        += at76_usb.o
+++
+  obj-$(CONFIG_PRISM54)		+= prism54/
+  
++ obj-$(CONFIG_HOSTAP)		+= hostap/
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000183.html">[at76c503a-develop] at76_usb - fourth submission attempt
+</A></li>
+	<LI>Next message: <A HREF="000185.html">[at76c503a-develop] [PATCH 2/2] Bump version to 0.16
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#184">[ date ]</a>
+              <a href="thread.html#184">[ thread ]</a>
+              <a href="subject.html#184">[ subject ]</a>
+              <a href="author.html#184">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">More information about the at76c503a-develop
+mailing list</a><br>
+</body></html>

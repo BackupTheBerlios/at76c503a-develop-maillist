@@ -1,0 +1,219 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [at76c503a-develop] [PATCH] Provide compatibility for older kernels	in a separate file
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/at76c503a-develop/2007-June/index.html" >
+   <LINK REL="made" HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%5D%20Provide%20compatibility%20for%20older%20kernels%0A%09in%20a%20separate%20file&In-Reply-To=%3C20070613075900.30273.12081.stgit%40dv.roinet.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000107.html">
+   <LINK REL="Next"  HREF="000109.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[at76c503a-develop] [PATCH] Provide compatibility for older kernels	in a separate file</H1>
+    <B>Pavel Roskin</B> 
+    <A HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%5D%20Provide%20compatibility%20for%20older%20kernels%0A%09in%20a%20separate%20file&In-Reply-To=%3C20070613075900.30273.12081.stgit%40dv.roinet.com%3E"
+       TITLE="[at76c503a-develop] [PATCH] Provide compatibility for older kernels	in a separate file">proski at gnu.org
+       </A><BR>
+    <I>Wed Jun 13 09:59:00 CEST 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000107.html">[at76c503a-develop] [PATCH 2/2] Remove module parameters for the	settings controlled by	iwpriv
+</A></li>
+        <LI>Next message: <A HREF="000109.html">[at76c503a-develop] [PATCH 01/12] Put copyright into compat.h
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#108">[ date ]</a>
+              <a href="thread.html#108">[ thread ]</a>
+              <a href="subject.html#108">[ subject ]</a>
+              <a href="author.html#108">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Remove all Linux 2.6.21 compatibility from the driver - it shouldn't be
+there for kernel submission.  Move all compatibility code to a separate
+file compat.h.  Include it forcedly with the &quot;-include&quot; option.  Add
+a makefile option to disable config.h inclusion.
+
+Provide compatibility as far back as Linux 2.6.19 - it's not really hard
+once the infrastructure is in place.
+
+Signed-off-by: Pavel Roskin &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">proski at gnu.org</A>&gt;
+---
+
+ Makefile   |    4 ++++
+ at76_usb.c |   40 +++++++---------------------------------
+ compat.h   |   43 +++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 54 insertions(+), 33 deletions(-)
+
+diff --git a/Makefile b/Makefile
+index 665906c..7cb3b48 100644
+--- a/Makefile
++++ b/Makefile
+@@ -39,6 +39,10 @@ SPECFILE = at76_usb.spec
+ 
+ DISTFILES = $(SRCS) Makefile README COPYING CHANGELOG kernel_patch.diff
+ 
++ifndef NO_COMPAT_HEADERS
++EXTRA_CFLAGS += -include $(obj)/compat.h
++endif
++
+ # get the version from at76_usb.h
+ ifndef M
+ VERSION = $(shell sed -n 's/^\#define.*DRIVER_VERSION.*&quot;\(.*\)&quot;.*$$/\1/p' at76_usb.h)
+diff --git a/at76_usb.c b/at76_usb.c
+index d6a1e68..5039288 100644
+--- a/at76_usb.c
++++ b/at76_usb.c
+@@ -5455,13 +5455,9 @@ static void at76_ieee80211_to_eth(struct sk_buff *skb, int iw_mode)
+ #endif /* IEEE_STANDARD */
+ 	}
+ 
+-#ifdef SKB_WITH_OVERHEAD
+ 	skb_set_mac_header(skb, -(int)sizeof(struct ethhdr));
+ 	eth_hdr_p = (struct ethhdr *)skb_mac_header(skb);
+-#else
+-	eth_hdr_p = (struct ethhdr *)(skb-&gt;data - sizeof(struct ethhdr));
+-	skb-&gt;mac.raw = (unsigned char *)eth_hdr_p;
+-#endif
++
+ 	if (build_ethhdr) {
+ 		/* This needs to be done in this order (eth_hdr_p-&gt;h_dest may
+ 		 * overlap src_addr) */
+@@ -5494,14 +5490,6 @@ static void at76_ieee80211_to_eth(struct sk_buff *skb, int iw_mode)
+ }
+ 
+ 
+-#ifndef SKB_WITH_OVERHEAD
+-static inline void skb_reset_mac_header(struct sk_buff *skb)
+-{
+-	skb-&gt;mac.raw = skb-&gt;data;
+-}
+-#endif
+-
+-
+ /* check for fragmented data in priv-&gt;rx_skb. If the packet was no fragment
+    or it was the last of a fragment set a skb containing the whole packet
+    is returned for further processing. Otherwise we get NULL and are
+@@ -5543,17 +5531,10 @@ static struct sk_buff *at76_check_for_rx_frags(struct at76_priv *priv)
+ 		 hex2str(priv-&gt;obuf, data,
+ 		    min((int)(sizeof(priv-&gt;obuf) - 1) / 2, 32), '\0'));
+ 
+-#ifdef SKB_WITH_OVERHEAD
+-	at76_dbg(DBG_RX_FRAGS_SKB, &quot;%s: incoming skb: head %p data %p &quot;
+-		 &quot;tail %d end %d len %d&quot;,
+-		 priv-&gt;netdev-&gt;name, skb-&gt;head, skb-&gt;data, skb-&gt;tail,
+-		 skb-&gt;end, skb-&gt;len);
+-#else
+ 	at76_dbg(DBG_RX_FRAGS_SKB, &quot;%s: incoming skb: head %p data %p &quot;
+-		 &quot;tail %p end %p len %d&quot;,
+-		 priv-&gt;netdev-&gt;name, skb-&gt;head, skb-&gt;data, skb-&gt;tail,
+-		 skb-&gt;end, skb-&gt;len);
+-#endif
++		 &quot;tail %p end %p len %d&quot;, priv-&gt;netdev-&gt;name, skb-&gt;head,
++		 skb-&gt;data, skb_tail_pointer(skb), skb_end_pointer(skb),
++		 skb-&gt;len);
+ 
+ 	if (data_len &lt; 0) {
+ 		/* make sure data starts in the buffer */
+@@ -5587,17 +5568,10 @@ static struct sk_buff *at76_check_for_rx_frags(struct at76_priv *priv)
+ 	/* remove FCS at end */
+ 	skb_trim(skb, length);
+ 
+-#ifdef SKB_WITH_OVERHEAD
+-	at76_dbg(DBG_RX_FRAGS_SKB, &quot;%s: trimmed skb: head %p data %p tail %d &quot;
+-		 &quot;end %d len %d data %p data_len %d&quot;,
+-		 priv-&gt;netdev-&gt;name, skb-&gt;head, skb-&gt;data, skb-&gt;tail,
+-		 skb-&gt;end, skb-&gt;len, data, data_len);
+-#else
+ 	at76_dbg(DBG_RX_FRAGS_SKB, &quot;%s: trimmed skb: head %p data %p tail %p &quot;
+-		 &quot;end %p len %d data %p data_len %d&quot;,
+-		 priv-&gt;netdev-&gt;name, skb-&gt;head, skb-&gt;data, skb-&gt;tail,
+-		 skb-&gt;end, skb-&gt;len, data, data_len);
+-#endif
++		 &quot;end %p len %d data %p data_len %d&quot;, priv-&gt;netdev-&gt;name,
++		 skb-&gt;head, skb-&gt;data, skb_tail_pointer(skb),
++		 skb_end_pointer(skb), skb-&gt;len, data, data_len);
+ 
+ 	/* look if we've got a chain for the sender address.
+ 	   afterwards optr points to first free or the oldest entry,
+diff --git a/compat.h b/compat.h
+new file mode 100644
+index 0000000..32a66c7
+--- /dev/null
++++ b/compat.h
+@@ -0,0 +1,43 @@
++/* Compatibility layer for older kernels */
++
++#include &lt;linux/version.h&gt;
++
++#if LINUX_VERSION_CODE &lt; KERNEL_VERSION(2,6,22)
++#include &lt;linux/skbuff.h&gt;
++static inline unsigned char *skb_mac_header(const struct sk_buff *skb)
++{
++	return skb-&gt;mac.raw;
++}
++
++static inline void skb_reset_mac_header(struct sk_buff *skb)
++{
++	skb-&gt;mac.raw = skb-&gt;data;
++}
++
++static inline void skb_set_mac_header(struct sk_buff *skb, const int offset)
++{
++	skb-&gt;mac.raw = skb-&gt;data + offset;
++}
++
++static inline unsigned char *skb_end_pointer(const struct sk_buff *skb)
++{
++	return skb-&gt;end;
++}
++
++static inline unsigned char *skb_tail_pointer(const struct sk_buff *skb)
++{
++	return skb-&gt;tail;
++}
++#endif
++
++#if LINUX_VERSION_CODE &lt; KERNEL_VERSION(2,6,20)
++#undef INIT_WORK
++#define INIT_WORK(_work, _func)						\
++	do {								\
++		INIT_LIST_HEAD(&amp;(_work)-&gt;entry);			\
++		(_work)-&gt;pending = 0;					\
++		PREPARE_WORK((_work), (void (*)(void *))(_func),	\
++			     (void *)(_work));				\
++		init_timer(&amp;(_work)-&gt;timer);				\
++	} while (0)
++#endif
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000107.html">[at76c503a-develop] [PATCH 2/2] Remove module parameters for the	settings controlled by	iwpriv
+</A></li>
+	<LI>Next message: <A HREF="000109.html">[at76c503a-develop] [PATCH 01/12] Put copyright into compat.h
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#108">[ date ]</a>
+              <a href="thread.html#108">[ thread ]</a>
+              <a href="subject.html#108">[ subject ]</a>
+              <a href="author.html#108">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">More information about the at76c503a-develop
+mailing list</a><br>
+</body></html>

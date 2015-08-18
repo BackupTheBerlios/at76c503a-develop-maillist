@@ -1,0 +1,143 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [at76c503a-develop] [PATCH 1/3] Minor final fixes.
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/at76c503a-develop/2008-May/index.html" >
+   <LINK REL="made" HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%201/3%5D%20Minor%20final%20fixes.&In-Reply-To=%3C20080505232825.10104.27541.stgit%40localhost%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000240.html">
+   <LINK REL="Next"  HREF="000242.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[at76c503a-develop] [PATCH 1/3] Minor final fixes.</H1>
+    <B>Milan Plzik</B> 
+    <A HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%201/3%5D%20Minor%20final%20fixes.&In-Reply-To=%3C20080505232825.10104.27541.stgit%40localhost%3E"
+       TITLE="[at76c503a-develop] [PATCH 1/3] Minor final fixes.">milan.plzik at gmail.com
+       </A><BR>
+    <I>Tue May  6 01:28:25 CEST 2008</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000240.html">[at76c503a-develop] WPA-enabling patches
+</A></li>
+        <LI>Next message: <A HREF="000242.html">[at76c503a-develop] [PATCH 2/3] Adds support for WEP operation with	1.103.x firmware.
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#241">[ date ]</a>
+              <a href="thread.html#241">[ thread ]</a>
+              <a href="subject.html#241">[ subject ]</a>
+              <a href="author.html#241">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>- report rate at which was frame received
+- fix the issue with growing latencies (call ieee80211_wake_queues from tx
+  complete handler)
+- tx handler doesn't report ack'ed frame anymore -- the adapter doesn't
+  report ACK status
+- association after loading driver now works at first attempt
+
+Signed-off-by: Milan Plzik &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">milan.plzik at gmail.com</A>&gt;
+---
+
+ drivers/net/wireless/at76_usb.c |   16 ++++++++++------
+ 1 files changed, 10 insertions(+), 6 deletions(-)
+
+diff --git a/drivers/net/wireless/at76_usb.c b/drivers/net/wireless/at76_usb.c
+index 9333f05..f00a670 100644
+--- a/drivers/net/wireless/at76_usb.c
++++ b/drivers/net/wireless/at76_usb.c
+@@ -1607,6 +1607,7 @@ static void at76_rx_tasklet(unsigned long param)
+ 		      priv-&gt;rx_skb-&gt;len, &quot;RX: len=%d&quot;, (int)(priv-&gt;rx_skb-&gt;len - AT76_RX_HDRLEN));
+ 
+ 	rx_status.ssi = buf-&gt;rssi;
++	rx_status.rate_idx = buf-&gt;rx_rate;
+ 	rx_status.flag |= RX_FLAG_DECRYPTED;
+ 	rx_status.flag |= RX_FLAG_IV_STRIPPED;
+ 
+@@ -1706,7 +1707,7 @@ static void at76_mac80211_tx_callback(struct urb *urb)
+ 	switch (urb-&gt;status) {
+ 	case 0:
+ 		/* success */
+-		priv-&gt;tx_status.flags |= IEEE80211_TX_STATUS_ACK;
++		priv-&gt;tx_status.flags |= 0;
+ 		break;
+ 	case -ENOENT:
+ 	case -ECONNRESET:
+@@ -1728,7 +1729,7 @@ static void at76_mac80211_tx_callback(struct urb *urb)
+ 	memset(&amp;priv-&gt;tx_status, 0, sizeof(priv-&gt;tx_status));
+ 	priv-&gt;tx_skb = NULL;
+ 
+-	ieee80211_start_queues(priv-&gt;hw);
++	ieee80211_wake_queues(priv-&gt;hw);
+ }
+ 
+ static int at76_mac80211_tx(struct ieee80211_hw *hw, struct sk_buff *skb,
+@@ -1922,12 +1923,12 @@ static void at76_dwork_hw_scan(struct work_struct *work)
+ 	ieee80211_scan_completed(priv-&gt;hw);
+ 
+ 	if (is_valid_ether_addr(priv-&gt;bssid)) {
+-		ieee80211_start_queues(priv-&gt;hw);
++		ieee80211_wake_queues(priv-&gt;hw);
+ 		at76_join(priv);
+ 	} else
+ 		ieee80211_stop_queues(priv-&gt;hw);
+ 
+-	ieee80211_start_queues(priv-&gt;hw);
++	ieee80211_wake_queues(priv-&gt;hw);
+ 
+ exit:
+ 	return;
+@@ -1990,7 +1991,7 @@ static int at76_config(struct ieee80211_hw *hw, struct ieee80211_conf *conf)
+ 
+ 	if (is_valid_ether_addr(priv-&gt;bssid)) {
+ 		at76_join(priv);
+-		ieee80211_start_queues(priv-&gt;hw);
++		ieee80211_wake_queues(priv-&gt;hw);
+ 	} else {
+ 		ieee80211_stop_queues(priv-&gt;hw);
+ 		at76_start_monitor(priv);
+@@ -2017,9 +2018,12 @@ static int at76_config_interface(struct ieee80211_hw *hw,
+ 	memcpy(priv-&gt;essid, conf-&gt;ssid, conf-&gt;ssid_len);
+ 	priv-&gt;essid_size = conf-&gt;ssid_len;
+ 
+-	if (is_valid_ether_addr(priv-&gt;bssid))
++	if (is_valid_ether_addr(priv-&gt;bssid)) {
+ 		/* mac80211 is joining a bss */
++		ieee80211_wake_queues(priv-&gt;hw);
+ 		at76_join(priv);
++	} else
++		ieee80211_stop_queues(priv-&gt;hw);
+ 
+ 	mutex_unlock(&amp;priv-&gt;mtx);
+ 
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000240.html">[at76c503a-develop] WPA-enabling patches
+</A></li>
+	<LI>Next message: <A HREF="000242.html">[at76c503a-develop] [PATCH 2/3] Adds support for WEP operation with	1.103.x firmware.
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#241">[ date ]</a>
+              <a href="thread.html#241">[ thread ]</a>
+              <a href="subject.html#241">[ subject ]</a>
+              <a href="author.html#241">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">More information about the at76c503a-develop
+mailing list</a><br>
+</body></html>

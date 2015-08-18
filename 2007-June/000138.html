@@ -1,0 +1,110 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [at76c503a-develop] [PATCH 05/12] Implement 5 second timeout in	at76_wait_completion()
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/at76c503a-develop/2007-June/index.html" >
+   <LINK REL="made" HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%2005/12%5D%20Implement%205%20second%20timeout%20in%0A%09at76_wait_completion%28%29&In-Reply-To=%3C20070621035620.18384.60186.stgit%40dv.roinet.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000137.html">
+   <LINK REL="Next"  HREF="000139.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[at76c503a-develop] [PATCH 05/12] Implement 5 second timeout in	at76_wait_completion()</H1>
+    <B>Pavel Roskin</B> 
+    <A HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%2005/12%5D%20Implement%205%20second%20timeout%20in%0A%09at76_wait_completion%28%29&In-Reply-To=%3C20070621035620.18384.60186.stgit%40dv.roinet.com%3E"
+       TITLE="[at76c503a-develop] [PATCH 05/12] Implement 5 second timeout in	at76_wait_completion()">proski at gnu.org
+       </A><BR>
+    <I>Thu Jun 21 05:56:20 CEST 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000137.html">[at76c503a-develop] [PATCH 04/12] Remove unneeded parentheses when	taking an address
+</A></li>
+        <LI>Next message: <A HREF="000139.html">[at76c503a-develop] [PATCH 06/12] Avoid assignments inside	conditions, they are hard to read
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#138">[ date ]</a>
+              <a href="thread.html#138">[ thread ]</a>
+              <a href="subject.html#138">[ subject ]</a>
+              <a href="author.html#138">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Signed-off-by: Pavel Roskin &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">proski at gnu.org</A>&gt;
+---
+
+ at76_usb.c |    8 +++++++-
+ at76_usb.h |    2 ++
+ 2 files changed, 9 insertions(+), 1 deletions(-)
+
+diff --git a/at76_usb.c b/at76_usb.c
+index 8ca14d2..3b1a1a4 100644
+--- a/at76_usb.c
++++ b/at76_usb.c
+@@ -786,8 +786,8 @@ static int at76_wait_completion(struct at76_priv *priv, int cmd)
+ {
+ 	struct net_device *netdev = priv-&gt;netdev;
+ 	int status = 0;
++	unsigned long timeout = jiffies + CMD_COMPLETION_TIMEOUT;
+ 
+-	/* TODO: should timeout */
+ 	do {
+ 		status = at76_get_cmd_status(priv-&gt;udev, cmd);
+ 		if (status &lt; 0) {
+@@ -806,6 +806,12 @@ static int at76_wait_completion(struct at76_priv *priv, int cmd)
+ 			schedule_timeout_interruptible(HZ / 10);	/* 100 ms */
+ 		} else
+ 			break;
++		if (time_after(jiffies, timeout)) {
++			err(&quot;%s: timeout waiting for cmd %d completion&quot;,
++			    netdev-&gt;name, cmd);
++			status = -ETIMEDOUT;
++			break;
++		}
+ 	} while (1);
+ 
+ 	return status;
+diff --git a/at76_usb.h b/at76_usb.h
+index 67ab610..691b837 100644
+--- a/at76_usb.h
++++ b/at76_usb.h
+@@ -621,6 +621,8 @@ struct at76_rx_radiotap {
+ #define BEACON_TIMEOUT 10
+ /* the interval in ticks we poll if scan is completed */
+ #define SCAN_POLL_INTERVAL (HZ/4)
++/* the interval in ticks to wait for a command to be completed */
++#define CMD_COMPLETION_TIMEOUT (5 * HZ)
+ 
+ #define DEF_RTS_THRESHOLD 1536
+ #define DEF_FRAG_THRESHOLD 1536
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000137.html">[at76c503a-develop] [PATCH 04/12] Remove unneeded parentheses when	taking an address
+</A></li>
+	<LI>Next message: <A HREF="000139.html">[at76c503a-develop] [PATCH 06/12] Avoid assignments inside	conditions, they are hard to read
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#138">[ date ]</a>
+              <a href="thread.html#138">[ thread ]</a>
+              <a href="subject.html#138">[ subject ]</a>
+              <a href="author.html#138">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">More information about the at76c503a-develop
+mailing list</a><br>
+</body></html>

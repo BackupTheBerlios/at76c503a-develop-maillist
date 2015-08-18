@@ -1,0 +1,183 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [at76c503a-develop] [PATCH 04/12] Remove unneeded parentheses when	taking an address
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/at76c503a-develop/2007-June/index.html" >
+   <LINK REL="made" HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%2004/12%5D%20Remove%20unneeded%20parentheses%20when%0A%09taking%20an%20address&In-Reply-To=%3C20070621035615.18384.28066.stgit%40dv.roinet.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000136.html">
+   <LINK REL="Next"  HREF="000138.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[at76c503a-develop] [PATCH 04/12] Remove unneeded parentheses when	taking an address</H1>
+    <B>Pavel Roskin</B> 
+    <A HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%2004/12%5D%20Remove%20unneeded%20parentheses%20when%0A%09taking%20an%20address&In-Reply-To=%3C20070621035615.18384.28066.stgit%40dv.roinet.com%3E"
+       TITLE="[at76c503a-develop] [PATCH 04/12] Remove unneeded parentheses when	taking an address">proski at gnu.org
+       </A><BR>
+    <I>Thu Jun 21 05:56:15 CEST 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000136.html">[at76c503a-develop] [PATCH 03/12] Minor comment fixes
+</A></li>
+        <LI>Next message: <A HREF="000138.html">[at76c503a-develop] [PATCH 05/12] Implement 5 second timeout in	at76_wait_completion()
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#137">[ date ]</a>
+              <a href="thread.html#137">[ thread ]</a>
+              <a href="subject.html#137">[ subject ]</a>
+              <a href="author.html#137">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>It's uncommon to see them in the kernel.  Dereferencing a pointer has
+priority over taking an address, and it's well known.  Parentheses don't
+make the code more readable if it looks differently from other drivers.
+
+Signed-off-by: Pavel Roskin &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">proski at gnu.org</A>&gt;
+---
+
+ at76_usb.c |   32 ++++++++++++++++----------------
+ 1 files changed, 16 insertions(+), 16 deletions(-)
+
+diff --git a/at76_usb.c b/at76_usb.c
+index e48cd70..8ca14d2 100644
+--- a/at76_usb.c
++++ b/at76_usb.c
+@@ -2545,10 +2545,10 @@ static int at76_iw_handler_set_spy(struct net_device *netdev,
+ 	at76_dbg(DBG_IOCTL, &quot;%s: SIOCSIWSPY - number of addresses %d&quot;,
+ 		 netdev-&gt;name, data-&gt;length);
+ 
+-	spin_lock_bh(&amp;(priv-&gt;spy_spinlock));
++	spin_lock_bh(&amp;priv-&gt;spy_spinlock);
+ 	ret = iw_handler_set_spy(priv-&gt;netdev, info, (union iwreq_data *)data,
+ 				 extra);
+-	spin_unlock_bh(&amp;(priv-&gt;spy_spinlock));
++	spin_unlock_bh(&amp;priv-&gt;spy_spinlock);
+ 
+ 	return ret;
+ }
+@@ -2561,10 +2561,10 @@ static int at76_iw_handler_get_spy(struct net_device *netdev,
+ 	struct at76_priv *priv = netdev_priv(netdev);
+ 	int ret = 0;
+ 
+-	spin_lock_bh(&amp;(priv-&gt;spy_spinlock));
++	spin_lock_bh(&amp;priv-&gt;spy_spinlock);
+ 	ret = iw_handler_get_spy(priv-&gt;netdev, info,
+ 				 (union iwreq_data *)data, extra);
+-	spin_unlock_bh(&amp;(priv-&gt;spy_spinlock));
++	spin_unlock_bh(&amp;priv-&gt;spy_spinlock);
+ 
+ 	at76_dbg(DBG_IOCTL, &quot;%s: SIOCGIWSPY - number of addresses %d&quot;,
+ 		 netdev-&gt;name, data-&gt;length);
+@@ -2582,10 +2582,10 @@ static int at76_iw_handler_set_thrspy(struct net_device *netdev,
+ 	at76_dbg(DBG_IOCTL, &quot;%s: SIOCSIWTHRSPY - number of addresses %d)&quot;,
+ 		 netdev-&gt;name, data-&gt;length);
+ 
+-	spin_lock_bh(&amp;(priv-&gt;spy_spinlock));
++	spin_lock_bh(&amp;priv-&gt;spy_spinlock);
+ 	ret = iw_handler_set_thrspy(netdev, info, (union iwreq_data *)data,
+ 				    extra);
+-	spin_unlock_bh(&amp;(priv-&gt;spy_spinlock));
++	spin_unlock_bh(&amp;priv-&gt;spy_spinlock);
+ 
+ 	return ret;
+ }
+@@ -2597,10 +2597,10 @@ static int at76_iw_handler_get_thrspy(struct net_device *netdev,
+ 	struct at76_priv *priv = netdev_priv(netdev);
+ 	int ret;
+ 
+-	spin_lock_bh(&amp;(priv-&gt;spy_spinlock));
++	spin_lock_bh(&amp;priv-&gt;spy_spinlock);
+ 	ret = iw_handler_get_thrspy(netdev, info, (union iwreq_data *)data,
+ 				    extra);
+-	spin_unlock_bh(&amp;(priv-&gt;spy_spinlock));
++	spin_unlock_bh(&amp;priv-&gt;spy_spinlock);
+ 
+ 	at76_dbg(DBG_IOCTL, &quot;%s: SIOCGIWTHRSPY - number of addresses %d)&quot;,
+ 		 netdev-&gt;name, data-&gt;length);
+@@ -2677,14 +2677,14 @@ static int at76_iw_handler_set_scan(struct net_device *netdev,
+ 	priv-&gt;scan_state = SCAN_IN_PROGRESS;
+ 
+ 	/* stop pending management stuff */
+-	del_timer_sync(&amp;(priv-&gt;mgmt_timer));
++	del_timer_sync(&amp;priv-&gt;mgmt_timer);
+ 
+-	spin_lock_irqsave(&amp;(priv-&gt;mgmt_spinlock), flags);
++	spin_lock_irqsave(&amp;priv-&gt;mgmt_spinlock, flags);
+ 	if (priv-&gt;next_mgmt_bulk) {
+ 		kfree(priv-&gt;next_mgmt_bulk);
+ 		priv-&gt;next_mgmt_bulk = NULL;
+ 	}
+-	spin_unlock_irqrestore(&amp;(priv-&gt;mgmt_spinlock), flags);
++	spin_unlock_irqrestore(&amp;priv-&gt;mgmt_spinlock, flags);
+ 
+ 	if (netif_running(priv-&gt;netdev)) {
+ 		/* pause network activity */
+@@ -2737,9 +2737,9 @@ static int at76_iw_handler_get_scan(struct net_device *netdev,
+ 		/* scan not yet finished */
+ 		return -EAGAIN;
+ 
+-	spin_lock_irqsave(&amp;(priv-&gt;bss_list_spinlock), flags);
++	spin_lock_irqsave(&amp;priv-&gt;bss_list_spinlock, flags);
+ 
+-	list_for_each_safe(lptr, nptr, &amp;(priv-&gt;bss_list)) {
++	list_for_each_safe(lptr, nptr, &amp;priv-&gt;bss_list) {
+ 		curr_bss = list_entry(lptr, struct bss_info, list);
+ 
+ 		iwe-&gt;cmd = SIOCGIWAP;
+@@ -2833,7 +2833,7 @@ static int at76_iw_handler_get_scan(struct net_device *netdev,
+ 
+ 	}
+ 
+-	spin_unlock_irqrestore(&amp;(priv-&gt;bss_list_spinlock), flags);
++	spin_unlock_irqrestore(&amp;priv-&gt;bss_list_spinlock, flags);
+ 
+ 	data-&gt;length = (curr_pos - extra);
+ 	data-&gt;flags = 0;
+@@ -5713,12 +5713,12 @@ static void at76_iwspy_update(struct at76_priv *priv,
+ 	qual.noise = 0;
+ 	at76_calc_level(priv, buf, &amp;qual);
+ 
+-	spin_lock_bh(&amp;(priv-&gt;spy_spinlock));
++	spin_lock_bh(&amp;priv-&gt;spy_spinlock);
+ 
+ 	if (priv-&gt;spy_data.spy_number &gt; 0) {
+ 		wireless_spy_update(priv-&gt;netdev, hdr-&gt;addr2, &amp;qual);
+ 	}
+-	spin_unlock_bh(&amp;(priv-&gt;spy_spinlock));
++	spin_unlock_bh(&amp;priv-&gt;spy_spinlock);
+ }
+ 
+ static void at76_rx_tasklet(unsigned long param)
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000136.html">[at76c503a-develop] [PATCH 03/12] Minor comment fixes
+</A></li>
+	<LI>Next message: <A HREF="000138.html">[at76c503a-develop] [PATCH 05/12] Implement 5 second timeout in	at76_wait_completion()
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#137">[ date ]</a>
+              <a href="thread.html#137">[ thread ]</a>
+              <a href="subject.html#137">[ subject ]</a>
+              <a href="author.html#137">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">More information about the at76c503a-develop
+mailing list</a><br>
+</body></html>

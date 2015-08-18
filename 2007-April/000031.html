@@ -1,0 +1,335 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [at76c503a-develop] [PATCH 4/6] Use safer declaration for	at76_priv_handlers
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/at76c503a-develop/2007-April/index.html" >
+   <LINK REL="made" HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%204/6%5D%20Use%20safer%20declaration%20for%0A%09at76_priv_handlers&In-Reply-To=%3C20070413065742.1380.79535.stgit%40dv.roinet.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000030.html">
+   <LINK REL="Next"  HREF="000032.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[at76c503a-develop] [PATCH 4/6] Use safer declaration for	at76_priv_handlers</H1>
+    <B>Pavel Roskin</B> 
+    <A HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%204/6%5D%20Use%20safer%20declaration%20for%0A%09at76_priv_handlers&In-Reply-To=%3C20070413065742.1380.79535.stgit%40dv.roinet.com%3E"
+       TITLE="[at76c503a-develop] [PATCH 4/6] Use safer declaration for	at76_priv_handlers">proski at gnu.org
+       </A><BR>
+    <I>Fri Apr 13 08:57:42 CEST 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000030.html">[at76c503a-develop] [PATCH 3/6] Remove unused and write-only fields	from some structures
+</A></li>
+        <LI>Next message: <A HREF="000032.html">[at76c503a-develop] [PATCH 5/6] Remove nickname support
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#31">[ date ]</a>
+              <a href="thread.html#31">[ thread ]</a>
+              <a href="subject.html#31">[ subject ]</a>
+              <a href="author.html#31">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Don't rely on the order of fields.  Specify indices explicitly.  Use
+shorter names for the handlers and for corresponding ioctl numbers.
+
+Signed-off-by: Pavel Roskin &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">proski at gnu.org</A>&gt;
+---
+
+ at76_usb.c |   95 ++++++++++++++++++++++++++++--------------------------------
+ at76_usb.h |   14 ++++-----
+ 2 files changed, 52 insertions(+), 57 deletions(-)
+
+diff --git a/at76_usb.c b/at76_usb.c
+index 840d39a..bad8768 100644
+--- a/at76_usb.c
++++ b/at76_usb.c
+@@ -4489,35 +4489,35 @@ static void at76_iwspy_update(struct at76_priv *dev, struct at76_rx_buffer *buf)
+  * structure that describes the private ioctls/iw handlers of this driver
+  */
+ static const struct iw_priv_args at76_priv_args[] = {
+-	{PRIV_IOCTL_SET_SHORT_PREAMBLE,
++	{AT76_SET_SHORT_PREAMBLE,
+ 	 IW_PRIV_TYPE_INT | IW_PRIV_SIZE_FIXED | 1, 0,
+ 	 &quot;short_preamble&quot;},	/* 0 - long, 1 -short */
+ 
+-	{PRIV_IOCTL_SET_DEBUG,
++	{AT76_SET_DEBUG,
+ 	 /* we must pass the new debug mask as a string,
+ 	  * 'cause iwpriv cannot parse hex numbers
+ 	  * starting with 0x :-(  */
+ 	 IW_PRIV_TYPE_CHAR | 10, 0,
+ 	 &quot;set_debug&quot;},		/* set debug value */
+ 
+-	{PRIV_IOCTL_SET_POWERSAVE_MODE,
++	{AT76_SET_POWERSAVE_MODE,
+ 	 IW_PRIV_TYPE_INT | IW_PRIV_SIZE_FIXED | 1, 0,
+ 	 &quot;powersave_mode&quot;},	/* 1 -  active, 2 - power save,
+ 				   3 - smart power save */
+-	{PRIV_IOCTL_SET_SCAN_TIMES,
++	{AT76_SET_SCAN_TIMES,
+ 	 IW_PRIV_TYPE_INT | IW_PRIV_SIZE_FIXED | 2, 0,
+ 	 &quot;scan_times&quot;},		/* min_channel_time,
+ 				   max_channel_time */
+-	{PRIV_IOCTL_SET_SCAN_MODE,
++	{AT76_SET_SCAN_MODE,
+ 	 IW_PRIV_TYPE_INT | IW_PRIV_SIZE_FIXED | 1, 0,
+ 	 &quot;scan_mode&quot;},		/* 0 - active, 1 - passive scan */
+ 
+-	{PRIV_IOCTL_SET_INTL_ROAMING,
++	{AT76_SET_INTL_ROAMING,
+ 	 IW_PRIV_TYPE_INT | IW_PRIV_SIZE_FIXED | 1, 0,
+ 	 &quot;intl_roaming&quot;},
+ 
+ 	/* needed for Kismet, orinoco mode */
+-	{PRIV_IOCTL_SET_MONITOR_MODE,
++	{AT76_SET_MONITOR_MODE,
+ 	 IW_PRIV_TYPE_INT | IW_PRIV_SIZE_FIXED | 2, 0,
+ 	 &quot;monitor&quot;},		/* param1: monitor mode: 0 (off), 1 (on,Prism header), 
+ 				   2 (on, no Prism header)
+@@ -5513,15 +5513,15 @@ static int at76_iw_handler_get_power(struct net_device *netdev,
+ /*******************************************************************************
+  * Private IOCTLS
+  */
+-static int at76_iw_handler_PRIV_IOCTL_SET_SHORT_PREAMBLE
+-	(struct net_device *netdev, struct iw_request_info *info, 
+-	 char *name, char *extra)
++static int at76_iw_set_short_preamble(struct net_device *netdev,
++				      struct iw_request_info *info, char *name,
++				      char *extra)
+ {
+ 	struct at76_priv *dev = netdev_priv(netdev);
+ 	int val = *((int *)name);
+ 	int ret = -EIWCOMMIT;
+ 
+-	at76_dbg(DBG_IOCTL, &quot;%s: PRIV_IOCTL_SET_SHORT_PREAMBLE, %d&quot;,
++	at76_dbg(DBG_IOCTL, &quot;%s: AT76_SET_SHORT_PREAMBLE, %d&quot;,
+ 	         netdev-&gt;name, val);
+ 
+ 	if (val &lt; 0 || val &gt; 2) {
+@@ -5535,9 +5535,9 @@ static int at76_iw_handler_PRIV_IOCTL_SET_SHORT_PREAMBLE
+ 	return ret;
+ }
+ 
+-static int at76_iw_handler_PRIV_IOCTL_SET_DEBUG
+-	(struct net_device *netdev, struct iw_request_info *info, 
+-	 struct iw_point *data, char *extra)
++static int at76_iw_set_debug(struct net_device *netdev,
++			     struct iw_request_info *info,
++			     struct iw_point *data, char *extra)
+ {
+ 	char *ptr;
+ 	u32 val;
+@@ -5549,13 +5549,13 @@ static int at76_iw_handler_PRIV_IOCTL_SET_DEBUG
+ 			val = DBG_DEFAULTS;
+ 		}
+ 
+-		dbg(&quot;%s: PRIV_IOCTL_SET_DEBUG input %d: %s -&gt; x%x&quot;,
++		dbg(&quot;%s: AT76_SET_DEBUG input %d: %s -&gt; x%x&quot;,
+ 		       netdev-&gt;name, data-&gt;length, extra, val);
+ 	} else {
+ 		val = DBG_DEFAULTS;
+ 	}
+ 
+-	dbg(&quot;%s: PRIV_IOCTL_SET_DEBUG, old 0x%x  new 0x%x&quot;,
++	dbg(&quot;%s: AT76_SET_DEBUG, old 0x%x  new 0x%x&quot;,
+ 	       netdev-&gt;name, at76_debug, val);
+ 
+ 	/* jal: some more output to pin down lockups */
+@@ -5569,15 +5569,15 @@ static int at76_iw_handler_PRIV_IOCTL_SET_DEBUG
+ 	return 0;
+ }
+ 
+-static int at76_iw_handler_PRIV_IOCTL_SET_POWERSAVE_MODE
+-	(struct net_device *netdev, struct iw_request_info *info, 
+-	 char *name, char *extra)
++static int at76_iw_set_powersave_mode(struct net_device *netdev,
++				      struct iw_request_info *info, char *name,
++				      char *extra)
+ {
+ 	struct at76_priv *dev = netdev_priv(netdev);
+ 	int val = *((int *)name);
+ 	int ret = -EIWCOMMIT;
+ 
+-	at76_dbg(DBG_IOCTL, &quot;%s: PRIV_IOCTL_SET_POWERSAVE_MODE, %d (%s)&quot;,
++	at76_dbg(DBG_IOCTL, &quot;%s: AT76_SET_POWERSAVE_MODE, %d (%s)&quot;,
+ 	         netdev-&gt;name, val,
+ 	         val == AT76_PM_OFF ? &quot;active&quot; : val == AT76_PM_ON ? &quot;save&quot; :
+ 	         val == AT76_PM_SMART ? &quot;smart save&quot; : &quot;&lt;invalid&gt;&quot;);
+@@ -5590,16 +5590,16 @@ static int at76_iw_handler_PRIV_IOCTL_SET_POWERSAVE_MODE
+ 	return ret;
+ }
+ 
+-static int at76_iw_handler_PRIV_IOCTL_SET_SCAN_TIMES
+-	(struct net_device *netdev, struct iw_request_info *info, 
+-	 char *name, char *extra)
++static int at76_iw_set_scan_times(struct net_device *netdev,
++				  struct iw_request_info *info, char *name,
++				  char *extra)
+ {
+ 	struct at76_priv *dev = netdev_priv(netdev);
+ 	int mint = *((int *)name);
+ 	int maxt = *((int *)name + 1);
+ 	int ret = -EIWCOMMIT;
+ 
+-	at76_dbg(DBG_IOCTL, &quot;%s: PRIV_IOCTL_SET_SCAN_TIMES - min %d max %d&quot;,
++	at76_dbg(DBG_IOCTL, &quot;%s: AT76_SET_SCAN_TIMES - min %d max %d&quot;,
+ 	         netdev-&gt;name, mint, maxt);
+ 	if (mint &lt;= 0 || maxt &lt;= 0 || mint &gt; maxt) {
+ 		ret = -EINVAL;
+@@ -5617,15 +5617,15 @@ static int at76_iw_handler_PRIV_IOCTL_SET_SCAN_TIMES
+ 	return ret;
+ }
+ 
+-static int at76_iw_handler_PRIV_IOCTL_SET_SCAN_MODE
+-	(struct net_device *netdev, struct iw_request_info *info, 
+-	 char *name, char *extra)
++static int at76_iw_set_scan_mode(struct net_device *netdev,
++				 struct iw_request_info *info, char *name,
++				 char *extra)
+ {
+ 	struct at76_priv *dev = netdev_priv(netdev);
+ 	int val = *((int *)name);
+ 	int ret = -EIWCOMMIT;
+ 
+-	at76_dbg(DBG_IOCTL, &quot;%s: PRIV_IOCTL_SET_SCAN_MODE - mode %s&quot;,
++	at76_dbg(DBG_IOCTL, &quot;%s: AT76_SET_SCAN_MODE - mode %s&quot;,
+ 		 netdev-&gt;name, (val = SCAN_TYPE_ACTIVE) ? &quot;active&quot; : 
+ 		 (val = SCAN_TYPE_PASSIVE) ? &quot;passive&quot; : &quot;&lt;invalid&gt;&quot;);
+ 
+@@ -5655,15 +5655,15 @@ static int at76_set_iroaming(struct at76_priv *dev, int onoff)
+ 	return ret;
+ }
+ 
+-static int at76_iw_handler_PRIV_IOCTL_SET_INTL_ROAMING
+-	(struct net_device *netdev, struct iw_request_info *info, 
+-	 char *name, char *extra)
++static int at76_iw_set_intl_roaming(struct net_device *netdev,
++				    struct iw_request_info *info, char *name,
++				    char *extra)
+ {
+ 	struct at76_priv *dev = netdev_priv(netdev);
+ 	int val = *((int *)name);
+ 	int ret = -EIWCOMMIT;
+ 
+-	at76_dbg(DBG_IOCTL, &quot;%s: PRIV_IOCTL_SET_INTL_ROAMING - mode %s&quot;,
++	at76_dbg(DBG_IOCTL, &quot;%s: AT76_SET_INTL_ROAMING - mode %s&quot;,
+ 	         netdev-&gt;name, (val == IR_OFF) ? &quot;off&quot; :
+ 	         (val == IR_ON) ? &quot;on&quot; : &quot;&lt;invalid&gt;&quot;);
+ 
+@@ -5701,9 +5701,9 @@ static void at76_set_monitor_mode(struct at76_priv *dev, int use_prism)
+ 	}
+ } /* at76_set_monitor_mode */
+ 
+-static int at76_iw_handler_PRIV_IOCTL_SET_MONITOR_MODE
+-	(struct net_device *netdev, struct iw_request_info *info, 
+-	 char *name, char *extra)
++static int at76_iw_set_monitor_mode(struct net_device *netdev,
++				    struct iw_request_info *info, char *name,
++				    char *extra)
+ {
+ 	struct at76_priv *dev = netdev_priv(netdev);
+ 	int *params = ((int *)name);
+@@ -5711,7 +5711,7 @@ static int at76_iw_handler_PRIV_IOCTL_SET_MONITOR_MODE
+ 	int channel = params[1];
+ 	int ret = 0;
+ 
+-	at76_dbg(DBG_IOCTL, &quot;%s: PRIV_IOCTL_SET_MONITOR_MODE - mode %d ch %d&quot;,
++	at76_dbg(DBG_IOCTL, &quot;%s: AT76_SET_MONITOR_MODE - mode %d ch %d&quot;,
+ 	    netdev-&gt;name, mode, channel);
+ 
+ 	if (mode != MM_OFF &amp;&amp; mode != MM_ON &amp;&amp; mode != MM_ON_NO_PRISM)
+@@ -5782,22 +5782,17 @@ static const iw_handler	at76_handlers[] =
+         [SIOCGIWPOWER -SIOCIWFIRST] = (iw_handler) at76_iw_handler_get_power,
+ };
+ 
++#define AT76_SET_PRIV(h, f) [h - SIOCIWFIRSTPRIV] = (iw_handler) f
++
+ /*structure that advertises the private iw handlers of this driver */
+ static const iw_handler at76_priv_handlers[] = {
+-	(iw_handler) at76_iw_handler_PRIV_IOCTL_SET_SHORT_PREAMBLE,
+-	(iw_handler) NULL,
+-	(iw_handler) at76_iw_handler_PRIV_IOCTL_SET_DEBUG,
+-	(iw_handler) NULL,
+-	(iw_handler) at76_iw_handler_PRIV_IOCTL_SET_POWERSAVE_MODE,
+-	(iw_handler) NULL,
+-	(iw_handler) at76_iw_handler_PRIV_IOCTL_SET_SCAN_TIMES,
+-	(iw_handler) NULL,
+-	(iw_handler) at76_iw_handler_PRIV_IOCTL_SET_SCAN_MODE,
+-	(iw_handler) NULL,
+-	(iw_handler) at76_iw_handler_PRIV_IOCTL_SET_INTL_ROAMING,
+-	(iw_handler) NULL,
+-	(iw_handler) at76_iw_handler_PRIV_IOCTL_SET_MONITOR_MODE,
+-	(iw_handler) NULL,
++	AT76_SET_PRIV(AT76_SET_SHORT_PREAMBLE, at76_iw_set_short_preamble),
++	AT76_SET_PRIV(AT76_SET_DEBUG, at76_iw_set_debug),
++	AT76_SET_PRIV(AT76_SET_POWERSAVE_MODE, at76_iw_set_powersave_mode),
++	AT76_SET_PRIV(AT76_SET_SCAN_TIMES, at76_iw_set_scan_times),
++	AT76_SET_PRIV(AT76_SET_SCAN_MODE, at76_iw_set_scan_mode),
++	AT76_SET_PRIV(AT76_SET_INTL_ROAMING, at76_iw_set_intl_roaming),
++	AT76_SET_PRIV(AT76_SET_MONITOR_MODE, at76_iw_set_monitor_mode),
+ };
+ 
+ static const struct iw_handler_def at76_handler_def =
+diff --git a/at76_usb.h b/at76_usb.h
+index e486bbf..47a7771 100644
+--- a/at76_usb.h
++++ b/at76_usb.h
+@@ -29,19 +29,19 @@
+ 
+ /* our private ioctl's */
+ /* set preamble length*/
+-#define PRIV_IOCTL_SET_SHORT_PREAMBLE  (SIOCIWFIRSTPRIV + 0x0)
++#define AT76_SET_SHORT_PREAMBLE  (SIOCIWFIRSTPRIV + 0x0)
+ /* set debug parameter */
+-#define PRIV_IOCTL_SET_DEBUG           (SIOCIWFIRSTPRIV + 0x2)
++#define AT76_SET_DEBUG           (SIOCIWFIRSTPRIV + 0x2)
+ /* set power save mode (incl. the Atmel proprietary smart save mode */
+-#define PRIV_IOCTL_SET_POWERSAVE_MODE  (SIOCIWFIRSTPRIV + 0x4)
++#define AT76_SET_POWERSAVE_MODE  (SIOCIWFIRSTPRIV + 0x4)
+ /* set min and max channel times for scan */
+-#define PRIV_IOCTL_SET_SCAN_TIMES      (SIOCIWFIRSTPRIV + 0x6)
++#define AT76_SET_SCAN_TIMES      (SIOCIWFIRSTPRIV + 0x6)
+ /* set scan mode */
+-#define PRIV_IOCTL_SET_SCAN_MODE       (SIOCIWFIRSTPRIV + 0x8)
++#define AT76_SET_SCAN_MODE       (SIOCIWFIRSTPRIV + 0x8)
+ /* set international roaming */
+-#define PRIV_IOCTL_SET_INTL_ROAMING    (SIOCIWFIRSTPRIV + 0x10)
++#define AT76_SET_INTL_ROAMING    (SIOCIWFIRSTPRIV + 0x10)
+ /* set monitor mode */
+-#define PRIV_IOCTL_SET_MONITOR_MODE    (SIOCIWFIRSTPRIV + 0x12)
++#define AT76_SET_MONITOR_MODE    (SIOCIWFIRSTPRIV + 0x12)
+ 
+ #define DEVICE_VENDOR_REQUEST_OUT    0x40
+ #define DEVICE_VENDOR_REQUEST_IN     0xc0
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000030.html">[at76c503a-develop] [PATCH 3/6] Remove unused and write-only fields	from some structures
+</A></li>
+	<LI>Next message: <A HREF="000032.html">[at76c503a-develop] [PATCH 5/6] Remove nickname support
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#31">[ date ]</a>
+              <a href="thread.html#31">[ thread ]</a>
+              <a href="subject.html#31">[ subject ]</a>
+              <a href="author.html#31">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">More information about the at76c503a-develop
+mailing list</a><br>
+</body></html>

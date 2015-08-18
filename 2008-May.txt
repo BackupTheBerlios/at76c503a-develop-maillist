@@ -1,0 +1,1180 @@
+From milan.plzik at gmail.com  Thu May  1 17:44:03 2008
+From: milan.plzik at gmail.com (Milan Plzik)
+Date: Thu, 01 May 2008 17:44:03 +0200
+Subject: [at76c503a-develop] [PATCH] Update of at76_usb to be
+	in	sync	with mac80211 API.
+In-Reply-To: <20080428220929.eb4pxj66808oos44-cebfxv@fcnzpbc.arg@webmail.spamcop.net>
+References: <20080422212220.12672.57437.stgit@localhost>
+	<1208941392.6722.6.camel@localhost> <877iejwxm9.fsf@litku.valot.fi>
+	<20080428220929.eb4pxj66808oos44-cebfxv@fcnzpbc.arg@webmail.spamcop.net>
+Message-ID: <1209656643.6740.27.camel@localhost>
+
+
+On Po, 2008-04-28 at 22:09 -0400, Pavel Roskin wrote:
+> Quoting Kalle Valo <Kalle.Valo at iki.fi>:
+> 
+> > John Linville applied the at76_usb mac80211 port to his
+> > wireless-testing tree[1]. In my opinion it's best to base your patches
+> > on that tree.
+> 
+> I agree.  The master branch is always maintained.  It there are any  
+> merge conflicts, they should be easy to resolve.  It's not like there  
+> is any active development of the driver going on now.
+> 
+
+  Ok, my patches will apply to wireless-testing master. :)
+
+  Btw, was the driver tested after converting it to mac80211 ? The
+driver started working properly only after few modifications I had to (I
+will send the patches soon, just after I'll make sure they are properly
+cleaned up) -- e.g. driver was reporting the device returns FCS in
+frames, but the device I have from Joerg Albert (at76c503a one) doesn't
+do anything like that -- at wLength contains only length of valid frame.
+But maybe some other at76 variants send also FCS -- atmelwlandrivers
+suggests something like that in src/usb/rx.c
+
+	Milan
+
+
+
+From proski at gnu.org  Thu May  1 20:30:58 2008
+From: proski at gnu.org (Pavel Roskin)
+Date: Thu, 01 May 2008 14:30:58 -0400
+Subject: [at76c503a-develop] [PATCH] Update of at76_usb to
+	be	in	sync	with mac80211 API.
+In-Reply-To: <1209656643.6740.27.camel@localhost>
+References: <20080422212220.12672.57437.stgit@localhost>
+	<1208941392.6722.6.camel@localhost> <877iejwxm9.fsf@litku.valot.fi>
+	<20080428220929.eb4pxj66808oos44-cebfxv@fcnzpbc.arg@webmail.spamcop.net>
+	<1209656643.6740.27.camel@localhost>
+Message-ID: <1209666658.3843.9.camel@dv>
+
+On Thu, 2008-05-01 at 17:44 +0200, Milan Plzik wrote:
+
+>   Ok, my patches will apply to wireless-testing master. :)
+> 
+>   Btw, was the driver tested after converting it to mac80211 ?
+
+It was tested and found to be not very good.  But the patches were
+applied anyway in the hope that somebody will fix the remaining issues
+eventually.
+
+>  The
+> driver started working properly only after few modifications I had to (I
+> will send the patches soon, just after I'll make sure they are properly
+> cleaned up) -- e.g. driver was reporting the device returns FCS in
+> frames, but the device I have from Joerg Albert (at76c503a one) doesn't
+> do anything like that -- at wLength contains only length of valid frame.
+> But maybe some other at76 variants send also FCS -- atmelwlandrivers
+> suggests something like that in src/usb/rx.c
+
+I think you are trying to use the WPA enabled firmware (1.103), which
+doesn't provide the FCS and also has a different format for WEP keys.
+
+-- 
+Regards,
+Pavel Roskin
+
+
+From milan.plzik at gmail.com  Thu May  1 20:45:32 2008
+From: milan.plzik at gmail.com (Milan Plzik)
+Date: Thu, 01 May 2008 20:45:32 +0200
+Subject: [at76c503a-develop] [PATCH] Update of at76_usb to be in
+	sync	with mac80211 API.
+In-Reply-To: <1209666658.3843.9.camel@dv>
+References: <20080422212220.12672.57437.stgit@localhost>
+	<1208941392.6722.6.camel@localhost> <877iejwxm9.fsf@litku.valot.fi>
+	<20080428220929.eb4pxj66808oos44-cebfxv@fcnzpbc.arg@webmail.spamcop.net>
+	<1209656643.6740.27.camel@localhost>  <1209666658.3843.9.camel@dv>
+Message-ID: <1209667533.6740.42.camel@localhost>
+
+
+On ?t, 2008-05-01 at 14:30 -0400, Pavel Roskin wrote:
+> On Thu, 2008-05-01 at 17:44 +0200, Milan Plzik wrote:
+> 
+> >   Ok, my patches will apply to wireless-testing master. :)
+> > 
+> >   Btw, was the driver tested after converting it to mac80211 ?
+> 
+> It was tested and found to be not very good.  But the patches were
+> applied anyway in the hope that somebody will fix the remaining issues
+> eventually.
+
+  Ok:) This is what I wanted to know, I did not want to do changes in
+the code whichis not directly related to new firmware, as I found out
+that 0.90.x firmware doesn't seem to be able to associate with any AP I
+have, so I have no way to test it.
+
+> 
+> >  The
+> > driver started working properly only after few modifications I had to (I
+> > will send the patches soon, just after I'll make sure they are properly
+> > cleaned up) -- e.g. driver was reporting the device returns FCS in
+> > frames, but the device I have from Joerg Albert (at76c503a one) doesn't
+> > do anything like that -- at wLength contains only length of valid frame.
+> > But maybe some other at76 variants send also FCS -- atmelwlandrivers
+> > suggests something like that in src/usb/rx.c
+> 
+> I think you are trying to use the WPA enabled firmware (1.103), which
+> doesn't provide the FCS and also has a different format for WEP keys.
+> 
+
+  Yes, I was using this firmware. So I probably should check all
+abovementioned conditions + presence of the WPA firmware before deciding
+whether to report FCS or not (prepared patch actually does that). I have
+just one issue to solve before I will submit at least something (it
+looks like with current driver, first association attempt after loading
+the driver doesn't work properly).
+
+	Milan
+
+
+
+From proski at gnu.org  Thu May  1 21:04:01 2008
+From: proski at gnu.org (Pavel Roskin)
+Date: Thu, 01 May 2008 15:04:01 -0400
+Subject: [at76c503a-develop] [PATCH] Update of at76_usb to be
+	in	sync	with mac80211 API.
+In-Reply-To: <1209667533.6740.42.camel@localhost>
+References: <20080422212220.12672.57437.stgit@localhost>
+	<1208941392.6722.6.camel@localhost> <877iejwxm9.fsf@litku.valot.fi>
+	<20080428220929.eb4pxj66808oos44-cebfxv@fcnzpbc.arg@webmail.spamcop.net>
+	<1209656643.6740.27.camel@localhost>  <1209666658.3843.9.camel@dv>
+	<1209667533.6740.42.camel@localhost>
+Message-ID: <1209668641.3843.31.camel@dv>
+
+On Thu, 2008-05-01 at 20:45 +0200, Milan Plzik wrote:
+> On ?t, 2008-05-01 at 14:30 -0400, Pavel Roskin wrote:
+> > I think you are trying to use the WPA enabled firmware (1.103), which
+> > doesn't provide the FCS and also has a different format for WEP keys.
+> > 
+> 
+>   Yes, I was using this firmware. So I probably should check all
+> abovementioned conditions + presence of the WPA firmware before deciding
+> whether to report FCS or not (prepared patch actually does that). I have
+> just one issue to solve before I will submit at least something (it
+> looks like with current driver, first association attempt after loading
+> the driver doesn't work properly).
+
+I think we don't need to support more than one firmware at once.  I'm
+absolutely fine with dropping Intersil radio support and going to 1.103
+firmware across the board.  Cards with Intersil radio are simply
+impossible to get anymore.  I've never heard of anyone with such card.
+We should not use them as an excuse for not going forward.  That means
+that we don't need to put any conditional.  We should simply reject the
+firmware with the wrong version.
+
+That said, I would prefer that we don't mix fixes and changes needed to
+switch to the newer firmware.  But if the older firmware doesn't work
+for you, then it's fine to do both.  I think I'll be able to split it
+nicely.
+
+-- 
+Regards,
+Pavel Roskin
+
+
+From milan.plzik at gmail.com  Thu May  1 22:26:03 2008
+From: milan.plzik at gmail.com (Milan Plzik)
+Date: Thu, 01 May 2008 22:26:03 +0200
+Subject: [at76c503a-develop] [PATCH 1/4] Fix possible mutex double-locking
+Message-ID: <20080501202603.7338.7111.stgit@localhost>
+
+After finishing scan, at76_dwork_hw_scan locks priv->mtx and calls
+ieee80211_scan_completed, which in turn can possibly call at76_config,
+which tries to lock the mutex again.
+
+Signed-off-by: Milan Plzik <milan.plzik at gmail.com>
+---
+
+ 0 files changed, 0 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/net/wireless/at76_usb.c b/drivers/net/wireless/at76_usb.c
+index 33fa026..e1769c0 100644
+--- a/drivers/net/wireless/at76_usb.c
++++ b/drivers/net/wireless/at76_usb.c
+@@ -1900,8 +1900,6 @@ static void at76_dwork_hw_scan(struct work_struct *work)
+ 					      dwork_hw_scan.work);
+ 	int ret;
+ 
+-	mutex_lock(&priv->mtx);
+-
+ 	ret = at76_get_cmd_status(priv->udev, CMD_SCAN);
+ 	at76_dbg(DBG_MAC80211, "%s: CMD_SCAN status 0x%02x", __func__, ret);
+ 
+@@ -1912,16 +1910,14 @@ static void at76_dwork_hw_scan(struct work_struct *work)
+ 				   SCAN_POLL_INTERVAL);
+ 		goto exit;
+ 	}
+-
++	
+ 	ieee80211_scan_completed(priv->hw);
+ 
+ 	if (is_valid_ether_addr(priv->bssid))
+ 		at76_join(priv);
+ 
+-	ieee80211_start_queues(priv->hw);
+-
+ exit:
+-	mutex_unlock(&priv->mtx);
++	return;
+ }
+ 
+ static int at76_hw_scan(struct ieee80211_hw *hw, u8 *ssid, size_t len)
+
+
+
+From milan.plzik at gmail.com  Thu May  1 22:26:13 2008
+From: milan.plzik at gmail.com (Milan Plzik)
+Date: Thu, 01 May 2008 22:26:13 +0200
+Subject: [at76c503a-develop] [PATCH 2/4] Don't leave queues stopped when not
+	neccessary.
+In-Reply-To: <20080501202603.7338.7111.stgit@localhost>
+References: <20080501202603.7338.7111.stgit@localhost>
+Message-ID: <20080501202613.7338.20569.stgit@localhost>
+
+at76_usb driver doesn't enable transmit queue very often -- in fact the 
+only place where queues are being started is tx callback handler. This
+patch adds calls to ieee80211_start_queues to proper places, so the card 
+will not hang in state with queues stopped.
+
+Signed-off-by: Milan Plzik <milan.plzik at gmail.com>
+---
+
+ 0 files changed, 0 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/net/wireless/at76_usb.c b/drivers/net/wireless/at76_usb.c
+index e1769c0..ca6207f 100644
+--- a/drivers/net/wireless/at76_usb.c
++++ b/drivers/net/wireless/at76_usb.c
+@@ -1913,8 +1913,13 @@ static void at76_dwork_hw_scan(struct work_struct *work)
+ 	
+ 	ieee80211_scan_completed(priv->hw);
+ 
+-	if (is_valid_ether_addr(priv->bssid))
++	if (is_valid_ether_addr(priv->bssid)) {
++		iee80211_start_queues(priv->hw);
+ 		at76_join(priv);
++	else
++		ieee80211_stop_queues(priv->hw);
++
++	ieee80211_start_queues(priv->hw);
+ 
+ exit:
+ 	return;
+@@ -1975,10 +1980,13 @@ static int at76_config(struct ieee80211_hw *hw, struct ieee80211_conf *conf)
+ 
+ 	priv->channel = conf->channel->hw_value;
+ 
+-	if (is_valid_ether_addr(priv->bssid))
++	if (is_valid_ether_addr(priv->bssid)) {
+ 		at76_join(priv);
+-	else
++		ieee80211_start_queues(priv->hw);
++	} else {
++		ieee80211_stop_queues(priv->hw);
+ 		at76_start_monitor(priv);
++	};
+ 
+ 	mutex_unlock(&priv->mtx);
+ 
+
+
+
+From milan.plzik at gmail.com  Thu May  1 22:28:02 2008
+From: milan.plzik at gmail.com (Milan Plzik)
+Date: Thu, 01 May 2008 22:28:02 +0200
+Subject: [at76c503a-develop] [PATCH 3/4] Remove usage of data which were
+	already skb_pull-ed.
+In-Reply-To: <20080501202603.7338.7111.stgit@localhost>
+References: <20080501202603.7338.7111.stgit@localhost>
+Message-ID: <20080501202802.7338.84826.stgit@localhost>
+
+at76_rx_tasklet makes use of data referenced by 'buf' despite of the fact
+they were already marked as free by skb_pull. This patch delays skb_pull, so
+data will remain valid.
+
+Signed-off-by: Milan Plzik <milan.plzik at gmail.com>
+---
+
+ 0 files changed, 0 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/net/wireless/at76_usb.c b/drivers/net/wireless/at76_usb.c
+index ca6207f..b514763 100644
+--- a/drivers/net/wireless/at76_usb.c
++++ b/drivers/net/wireless/at76_usb.c
+@@ -1594,15 +1594,16 @@ static void at76_rx_tasklet(unsigned long param)
+ 		 wiphy_name(priv->hw->wiphy), buf->rx_rate, buf->rssi,
+ 		 buf->noise_level, buf->link_quality);
+ 
+-	skb_pull(priv->rx_skb, AT76_RX_HDRLEN);
+-	skb_trim(priv->rx_skb, le16_to_cpu(buf->wlength));
+-	at76_dbg_dump(DBG_RX_DATA, priv->rx_skb->data,
+-		      priv->rx_skb->len, "RX: len=%d", priv->rx_skb->len);
++
++	skb_trim(priv->rx_skb, le16_to_cpu(buf->wlength) + AT76_RX_HDRLEN);
++	at76_dbg_dump(DBG_RX_DATA, &priv->rx_skb->data[AT76_RX_HDRLEN],
++		      priv->rx_skb->len, "RX: len=%d", priv->rx_skb->len - AT76_RX_HDRLEN);
+ 
+ 	rx_status.ssi = buf->rssi;
+ 	rx_status.flag |= RX_FLAG_DECRYPTED;
+ 	rx_status.flag |= RX_FLAG_IV_STRIPPED;
+ 
++	skb_pull(priv->rx_skb, AT76_RX_HDRLEN);
+ 	at76_dbg(DBG_MAC80211, "calling ieee80211_rx_irqsafe(): %d/%d",
+ 		 priv->rx_skb->len, priv->rx_skb->data_len);
+ 	ieee80211_rx_irqsafe(priv->hw, priv->rx_skb, &rx_status);
+
+
+
+From milan.plzik at gmail.com  Thu May  1 22:30:12 2008
+From: milan.plzik at gmail.com (Milan Plzik)
+Date: Thu, 01 May 2008 22:30:12 +0200
+Subject: [at76c503a-develop] [PATCH] Some at76-based devices don't include
+	FCS in received frames.
+Message-ID: <20080501203012.7458.3289.stgit@localhost>
+
+Make at76_init_new_device to register device with hwflag
+IEEE80211_HW_RX_INCLUDES_FCS only in case when it is not proven otherwise
+(with firmware 1.103 and, according to atmelwlandriver, with rfmd, r505 and
+r505_2958 devices, the frame doesn't include FCS).
+
+Signed-off-by: Milan Plzik <milan.plzik at gmail.com>
+---
+
+ 0 files changed, 0 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/net/wireless/at76_usb.c b/drivers/net/wireless/at76_usb.c
+index b514763..cacb8da 100644
+--- a/drivers/net/wireless/at76_usb.c
++++ b/drivers/net/wireless/at76_usb.c
+@@ -106,6 +106,8 @@
+ 
+ static int at76_debug = DBG_DEFAULTS;
+ 
++#define FIRMWARE_IS_WPA(ver) ((ver.major == 1) && (ver.minor == 103))
++
+ /* Protect against concurrent firmware loading and parsing */
+ static struct mutex fw_mutex;
+ 
+@@ -306,6 +308,11 @@ static inline int at76_is_503rfmd(enum board_type board)
+ 	return (board == BOARD_503 || board == BOARD_503_ACC);
+ }
+ 
++static inline int at76_is_505(enum board_type board)
++{
++	return (board == BOARD_505 || BOARD_505_2958);
++}
++
+ static inline int at76_is_505a(enum board_type board)
+ {
+ 	return (board == BOARD_505A || board == BOARD_505AMX);
+@@ -1597,7 +1604,7 @@ static void at76_rx_tasklet(unsigned long param)
+ 
+ 	skb_trim(priv->rx_skb, le16_to_cpu(buf->wlength) + AT76_RX_HDRLEN);
+ 	at76_dbg_dump(DBG_RX_DATA, &priv->rx_skb->data[AT76_RX_HDRLEN],
+-		      priv->rx_skb->len, "RX: len=%d", priv->rx_skb->len - AT76_RX_HDRLEN);
++		      priv->rx_skb->len, "RX: len=%d", (int)(priv->rx_skb->len - AT76_RX_HDRLEN));
+ 
+ 	rx_status.ssi = buf->rssi;
+ 	rx_status.flag |= RX_FLAG_DECRYPTED;
+@@ -2278,7 +2285,13 @@ static int at76_init_new_device(struct at76_priv *priv,
+ 
+ 	/* mac80211 initialisation */
+ 	priv->hw->wiphy->bands[IEEE80211_BAND_2GHZ] = &at76_supported_band;
+-	priv->hw->flags = IEEE80211_HW_RX_INCLUDES_FCS;
++
++	if (FIRMWARE_IS_WPA(priv->fw_version) && 
++		(at76_is_503rfmd(priv->board_type) || 
++		 at76_is_505(priv->board_type)))
++		priv->hw->flags = 0;
++	else
++		priv->hw->flags = IEEE80211_HW_RX_INCLUDES_FCS;
+ 
+ 	SET_IEEE80211_DEV(priv->hw, &interface->dev);
+ 	SET_IEEE80211_PERM_ADDR(priv->hw, priv->mac_addr);
+
+
+
+From milan.plzik at gmail.com  Thu May  1 22:37:52 2008
+From: milan.plzik at gmail.com (Milan Plzik)
+Date: Thu, 01 May 2008 22:37:52 +0200
+Subject: [at76c503a-develop] [PATCH] Don't leave queues stopped when not
+	neccessary.
+Message-ID: <20080501203705.9201.99984.stgit@localhost>
+
+Sending once again, previous patch was a bit faulty, I apparently left
+some typos there and forgot to test whether it's compilable. This one 
+should be correct.
+
+at76_usb driver doesn't enable transmit queue very often -- in fact the 
+only place where queues are being started is tx callback handler. This
+patch adds calls to ieee80211_start_queues to proper places, so the card 
+will not hang in state with queues stopped.
+
+Signed-off-by: Milan Plzik <milan.plzik at gmail.com>
+---
+
+ drivers/net/wireless/at76_usb.c |   14 +++++++++++---
+ 1 files changed, 11 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/net/wireless/at76_usb.c b/drivers/net/wireless/at76_usb.c
+index e1769c0..15b4186 100644
+--- a/drivers/net/wireless/at76_usb.c
++++ b/drivers/net/wireless/at76_usb.c
+@@ -1913,8 +1913,13 @@ static void at76_dwork_hw_scan(struct work_struct *work)
+ 	
+ 	ieee80211_scan_completed(priv->hw);
+ 
+-	if (is_valid_ether_addr(priv->bssid))
++	if (is_valid_ether_addr(priv->bssid)) {
++		ieee80211_start_queues(priv->hw);
+ 		at76_join(priv);
++	} else
++		ieee80211_stop_queues(priv->hw);
++
++	ieee80211_start_queues(priv->hw);
+ 
+ exit:
+ 	return;
+@@ -1975,10 +1980,13 @@ static int at76_config(struct ieee80211_hw *hw, struct ieee80211_conf *conf)
+ 
+ 	priv->channel = conf->channel->hw_value;
+ 
+-	if (is_valid_ether_addr(priv->bssid))
++	if (is_valid_ether_addr(priv->bssid)) {
+ 		at76_join(priv);
+-	else
++		ieee80211_start_queues(priv->hw);
++	} else {
++		ieee80211_stop_queues(priv->hw);
+ 		at76_start_monitor(priv);
++	};
+ 
+ 	mutex_unlock(&priv->mtx);
+ 
+
+
+
+From milan.plzik at gmail.com  Thu May  1 23:07:47 2008
+From: milan.plzik at gmail.com (Milan Plzik)
+Date: Thu, 01 May 2008 23:07:47 +0200
+Subject: [at76c503a-develop] [PATCH] Fix the last missing
+	ieee80211_start/stop_queues pair
+Message-ID: <20080501210745.12319.47065.stgit@localhost>
+
+This was causing problems when the driver was not able to associate at
+first iwconfig call after driver loading, subsequent calls worked fine.
+
+Signed-off-by: Milan Plzik <milan.plzik at gmail.com>
+---
+
+ 0 files changed, 0 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/net/wireless/at76_usb.c b/drivers/net/wireless/at76_usb.c
+index 9333f05..3b5af83 100644
+--- a/drivers/net/wireless/at76_usb.c
++++ b/drivers/net/wireless/at76_usb.c
+@@ -2017,9 +2017,12 @@ static int at76_config_interface(struct ieee80211_hw *hw,
+ 	memcpy(priv->essid, conf->ssid, conf->ssid_len);
+ 	priv->essid_size = conf->ssid_len;
+ 
+-	if (is_valid_ether_addr(priv->bssid))
++	if (is_valid_ether_addr(priv->bssid)) {
+ 		/* mac80211 is joining a bss */
++		ieee80211_start_queues(priv->hw);
+ 		at76_join(priv);
++	} else
++		ieee80211_stop_queues(priv->hw);
+ 
+ 	mutex_unlock(&priv->mtx);
+ 
+
+
+
+From milan.plzik at gmail.com  Tue May  6 01:24:55 2008
+From: milan.plzik at gmail.com (Milan Plzik)
+Date: Tue, 06 May 2008 01:24:55 +0200
+Subject: [at76c503a-develop] WPA-enabling patches
+Message-ID: <1210029895.6927.17.camel@localhost>
+
+  Hello,
+
+  few days ago I finished another set of patches, which (at least for
+me) enable support for 1.103 firmware -- both WEP and WPA/TKIP worked
+nicely for me (I guess WPA2 worked as well, but I have no idea how to
+find out whether wpa_supplicant used WPA or WPA2).
+
+  Atmelwlandriver enabled support for AES/CCMP only for 505A and 505AMX
+devices, so I have no idea how to test it, but it is implemented too.
+I'm not sure whether key_rsc is handled properly, as I don't have exact
+idea what does it do nor its effect on AES -- if anyone has such driver,
+please test it and report whether it works.
+
+  First of the patches contains only minor fixes I had to do in order to
+make the driver work properly, it doesn't have any dependency on new
+firmware. The other two patches implement support for WEP and WPA,
+respectively.
+
+   I also have one AP with which this adapter didn't work
+(wpa_supplicant was not able to authenticate), but it's quite possible
+it's fault of the AP. Other two APs I used to test it worked correctly.
+
+  If there are any objections, please tell me, I will luckily change the
+patches. And also -- is it enough to post them here, or I should also
+send them to wireless-testing mailing list?
+
+	Milan
+
+
+
+From milan.plzik at gmail.com  Tue May  6 01:28:25 2008
+From: milan.plzik at gmail.com (Milan Plzik)
+Date: Tue, 06 May 2008 01:28:25 +0200
+Subject: [at76c503a-develop] [PATCH 1/3] Minor final fixes.
+Message-ID: <20080505232825.10104.27541.stgit@localhost>
+
+- report rate at which was frame received
+- fix the issue with growing latencies (call ieee80211_wake_queues from tx
+  complete handler)
+- tx handler doesn't report ack'ed frame anymore -- the adapter doesn't
+  report ACK status
+- association after loading driver now works at first attempt
+
+Signed-off-by: Milan Plzik <milan.plzik at gmail.com>
+---
+
+ drivers/net/wireless/at76_usb.c |   16 ++++++++++------
+ 1 files changed, 10 insertions(+), 6 deletions(-)
+
+diff --git a/drivers/net/wireless/at76_usb.c b/drivers/net/wireless/at76_usb.c
+index 9333f05..f00a670 100644
+--- a/drivers/net/wireless/at76_usb.c
++++ b/drivers/net/wireless/at76_usb.c
+@@ -1607,6 +1607,7 @@ static void at76_rx_tasklet(unsigned long param)
+ 		      priv->rx_skb->len, "RX: len=%d", (int)(priv->rx_skb->len - AT76_RX_HDRLEN));
+ 
+ 	rx_status.ssi = buf->rssi;
++	rx_status.rate_idx = buf->rx_rate;
+ 	rx_status.flag |= RX_FLAG_DECRYPTED;
+ 	rx_status.flag |= RX_FLAG_IV_STRIPPED;
+ 
+@@ -1706,7 +1707,7 @@ static void at76_mac80211_tx_callback(struct urb *urb)
+ 	switch (urb->status) {
+ 	case 0:
+ 		/* success */
+-		priv->tx_status.flags |= IEEE80211_TX_STATUS_ACK;
++		priv->tx_status.flags |= 0;
+ 		break;
+ 	case -ENOENT:
+ 	case -ECONNRESET:
+@@ -1728,7 +1729,7 @@ static void at76_mac80211_tx_callback(struct urb *urb)
+ 	memset(&priv->tx_status, 0, sizeof(priv->tx_status));
+ 	priv->tx_skb = NULL;
+ 
+-	ieee80211_start_queues(priv->hw);
++	ieee80211_wake_queues(priv->hw);
+ }
+ 
+ static int at76_mac80211_tx(struct ieee80211_hw *hw, struct sk_buff *skb,
+@@ -1922,12 +1923,12 @@ static void at76_dwork_hw_scan(struct work_struct *work)
+ 	ieee80211_scan_completed(priv->hw);
+ 
+ 	if (is_valid_ether_addr(priv->bssid)) {
+-		ieee80211_start_queues(priv->hw);
++		ieee80211_wake_queues(priv->hw);
+ 		at76_join(priv);
+ 	} else
+ 		ieee80211_stop_queues(priv->hw);
+ 
+-	ieee80211_start_queues(priv->hw);
++	ieee80211_wake_queues(priv->hw);
+ 
+ exit:
+ 	return;
+@@ -1990,7 +1991,7 @@ static int at76_config(struct ieee80211_hw *hw, struct ieee80211_conf *conf)
+ 
+ 	if (is_valid_ether_addr(priv->bssid)) {
+ 		at76_join(priv);
+-		ieee80211_start_queues(priv->hw);
++		ieee80211_wake_queues(priv->hw);
+ 	} else {
+ 		ieee80211_stop_queues(priv->hw);
+ 		at76_start_monitor(priv);
+@@ -2017,9 +2018,12 @@ static int at76_config_interface(struct ieee80211_hw *hw,
+ 	memcpy(priv->essid, conf->ssid, conf->ssid_len);
+ 	priv->essid_size = conf->ssid_len;
+ 
+-	if (is_valid_ether_addr(priv->bssid))
++	if (is_valid_ether_addr(priv->bssid)) {
+ 		/* mac80211 is joining a bss */
++		ieee80211_wake_queues(priv->hw);
+ 		at76_join(priv);
++	} else
++		ieee80211_stop_queues(priv->hw);
+ 
+ 	mutex_unlock(&priv->mtx);
+ 
+
+
+
+From milan.plzik at gmail.com  Tue May  6 01:28:33 2008
+From: milan.plzik at gmail.com (Milan Plzik)
+Date: Tue, 06 May 2008 01:28:33 +0200
+Subject: [at76c503a-develop] [PATCH 2/3] Adds support for WEP operation with
+	1.103.x firmware.
+In-Reply-To: <20080505232825.10104.27541.stgit@localhost>
+References: <20080505232825.10104.27541.stgit@localhost>
+Message-ID: <20080505232833.10104.42296.stgit@localhost>
+
+
+
+Signed-off-by: Milan Plzik <milan.plzik at gmail.com>
+---
+
+ drivers/net/wireless/at76_usb.c |  214 ++++++++++++++++++++++++++++++++++++++-
+ drivers/net/wireless/at76_usb.h |   47 ++++++++-
+ 2 files changed, 256 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/net/wireless/at76_usb.c b/drivers/net/wireless/at76_usb.c
+index f00a670..6cfd370 100644
+--- a/drivers/net/wireless/at76_usb.c
++++ b/drivers/net/wireless/at76_usb.c
+@@ -1069,6 +1069,45 @@ exit:
+ 	kfree(m);
+ }
+ 
++static void at76_dump_mib_mac_encryption(struct at76_priv *priv)
++{
++	int i;
++	int ret;
++	/*int key_len;*/
++	struct mib_mac_encryption *m = kmalloc(sizeof(struct mib_mac_encryption), GFP_KERNEL);
++
++	if (!m)
++		return;
++
++	ret = at76_get_mib(priv->udev, MIB_MAC_ENCRYPTION, m,
++			   sizeof(struct mib_mac_encryption));
++	if (ret < 0) {
++		printk(KERN_ERR "%s: at76_get_mib (MAC_ENCRYPTION) failed: %d\n",
++		       wiphy_name(priv->hw->wiphy), ret);
++		goto exit;
++	}
++
++	at76_dbg(DBG_MIB, "%s: MIB MAC_ENCRYPTION: tkip_bssid %s priv_invoked %u " 
++		 "ciph_key_id %u grp_key_id %u excl_unencr %u "
++		 "ckip_key_perm %u wep_icv_err %u wep_excluded %u", 
++		 wiphy_name(priv->hw->wiphy), mac2str(m->tkip_bssid),
++		 m->privacy_invoked, m->cipher_default_key_id,
++		 m->cipher_default_group_key_id, m->exclude_unencrypted,
++		 m->ckip_key_permutation,
++		 le32_to_cpu(m->wep_icv_error_count),
++		 le32_to_cpu(m->wep_excluded_count));
++
++	/*key_len = (m->encryption_level == 1) ?
++	    WEP_SMALL_KEY_LEN : WEP_LARGE_KEY_LEN;*/
++
++	for (i = 0; i < CIPHER_KEYS; i++)
++		at76_dbg(DBG_MIB, "%s: MIB MAC_ENCRYPTION: key %d: %s",
++			 wiphy_name(priv->hw->wiphy), i,
++			 hex2str(m->cipher_default_keyvalue[i], CIPHER_KEY_LEN));
++exit:
++	kfree(m);
++}
++
+ static void at76_dump_mib_mac_mgmt(struct at76_priv *priv)
+ {
+ 	int ret;
+@@ -1601,7 +1640,6 @@ static void at76_rx_tasklet(unsigned long param)
+ 		 wiphy_name(priv->hw->wiphy), buf->rx_rate, buf->rssi,
+ 		 buf->noise_level, buf->link_quality);
+ 
+-
+ 	skb_trim(priv->rx_skb, le16_to_cpu(buf->wlength) + AT76_RX_HDRLEN);
+ 	at76_dbg_dump(DBG_RX_DATA, &priv->rx_skb->data[AT76_RX_HDRLEN],
+ 		      priv->rx_skb->len, "RX: len=%d", (int)(priv->rx_skb->len - AT76_RX_HDRLEN));
+@@ -1763,7 +1801,18 @@ static int at76_mac80211_tx(struct ieee80211_hw *hw, struct sk_buff *skb,
+ 	tx_buffer->padding = padding;
+ 	tx_buffer->wlength = cpu_to_le16(skb->len);
+ 	tx_buffer->tx_rate = control->tx_rate->hw_value;
+-	memset(tx_buffer->reserved, 0, sizeof(tx_buffer->reserved));
++	if (FIRMWARE_IS_WPA(priv->fw_version) && !(control->flags & IEEE80211_TXCTL_DO_NOT_ENCRYPT)) {
++		tx_buffer->key_id = (control->key_idx);
++		tx_buffer->cipher_type = priv->keys[control->key_idx].cipher;
++		tx_buffer->cipher_length = priv->keys[control->key_idx].keylen;
++		tx_buffer->reserved = 0;
++	} else {
++		tx_buffer->key_id = 0;
++		tx_buffer->cipher_type = 0;
++		tx_buffer->cipher_length = 0;
++		tx_buffer->reserved = 0;
++	};
++	/* memset(tx_buffer->reserved, 0, sizeof(tx_buffer->reserved)); */
+ 	memcpy(tx_buffer->packet, skb->data, skb->len);
+ 
+ 	at76_dbg(DBG_TX_DATA, "%s tx: wlen 0x%x pad 0x%x rate %d hdr",
+@@ -1826,7 +1875,8 @@ static void at76_mac80211_stop(struct ieee80211_hw *hw)
+ 	if (!priv->device_unplugged) {
+ 		/* We are called by "ifconfig ethX down", not because the
+ 		 * device is not available anymore. */
+-		at76_set_radio(priv, 0);
++		if (at76_set_radio(priv, 0) == 1)
++			at76_wait_completion(priv, CMD_RADIO_ON);
+ 
+ 		/* We unlink rx_urb because at76_open() re-submits it.
+ 		 * If unplugged, at76_delete_device() takes care of it. */
+@@ -2062,7 +2112,7 @@ static void at76_configure_filter(struct ieee80211_hw *hw,
+ 	queue_work(hw->workqueue, &priv->work_set_promisc);
+ }
+ 
+-static int at76_set_key(struct ieee80211_hw *hw, enum set_key_cmd cmd,
++static int at76_set_key_oldfw(struct ieee80211_hw *hw, enum set_key_cmd cmd,
+ 			const u8 *local_address, const u8 *address,
+ 			struct ieee80211_key_conf *key)
+ {
+@@ -2110,6 +2160,151 @@ static int at76_set_key(struct ieee80211_hw *hw, enum set_key_cmd cmd,
+ 	return 0;
+ }
+ 
++static int at76_set_key_newfw(struct ieee80211_hw *hw, enum set_key_cmd cmd,
++			const u8 *local_address, const u8 *address,
++			struct ieee80211_key_conf *key) 
++{
++	struct at76_priv *priv = hw->priv;
++	int ret = -EOPNOTSUPP;
++
++	at76_dbg(DBG_MAC80211, "%s(): cmd %d key->alg %d key->keyidx %d "
++		 "key->keylen %d",
++		 __func__, cmd, key->alg, key->keyidx, key->keylen);
++
++	mutex_lock(&priv->mtx);
++
++	priv->mib_buf.type = MIB_MAC_ENCRYPTION;
++
++	if (cmd == DISABLE_KEY) {
++		priv->mib_buf.size = CIPHER_KEY_LEN;
++		priv->mib_buf.index = offsetof(struct mib_mac_encryption, 
++				cipher_default_keyvalue[key->keyidx]);
++		memset(priv->mib_buf.data.data, 0, CIPHER_KEY_LEN);
++		if (at76_set_mib(priv, &priv->mib_buf) != CMD_STATUS_COMPLETE)
++			ret = -EOPNOTSUPP; /* -EIO would be probably better */
++		else {
++			ret = 0;
++			priv->keys[key->keyidx].cipher = CIPHER_NONE;
++			priv->keys[key->keyidx].keylen = 0;
++		};
++		if (priv->default_group_key == key->keyidx)
++			priv->default_group_key = 0xff;
++
++		if (priv->default_pairwise_key == key->keyidx)
++			priv->default_pairwise_key = 0xff;
++		/* If default pairwise key is removed, fall back to 
++		 * group key? */
++		goto exit;
++	};
++	
++	if (cmd == SET_KEY) {
++		/* store key into MIB */
++		priv->mib_buf.size = CIPHER_KEY_LEN;
++		priv->mib_buf.index = offsetof(struct mib_mac_encryption, 
++				cipher_default_keyvalue[key->keyidx]);
++		memset(priv->mib_buf.data.data, 0, CIPHER_KEY_LEN);
++		memcpy(priv->mib_buf.data.data, key->key, key->keylen);
++		
++		switch (key->alg) {
++			case ALG_WEP:
++				if (key->keylen == 5) {
++					priv->keys[key->keyidx].cipher = 
++						CIPHER_WEP64;
++					priv->keys[key->keyidx].keylen = 8;
++				} else if (key->keylen == 13) {
++					priv->keys[key->keyidx].cipher = 
++						CIPHER_WEP128;
++					/* Firmware needs this */
++					priv->keys[key->keyidx].keylen = 8;
++				} else {
++					ret = -EOPNOTSUPP;
++					goto exit;
++				};
++				break;
++			default:
++				ret = -EOPNOTSUPP;
++				goto exit;
++
++		};
++
++		priv->mib_buf.data.data[38] = priv->keys[key->keyidx].cipher;
++		priv->mib_buf.data.data[39] = 1; /* Taken from atmelwlandriver, 
++						    not documented */
++		
++		if (is_valid_ether_addr(address))
++			/* Pairwise key */
++			priv->mib_buf.data.data[39] |= (KEY_PAIRWISE | KEY_TX);
++		else if (is_broadcast_ether_addr(address)) 
++			/* Group key */
++			priv->mib_buf.data.data[39] |= (KEY_TX);
++		else	/* Key used only for transmission ??? */
++			priv->mib_buf.data.data[39] |= (KEY_TX);
++
++		if (at76_set_mib(priv, &priv->mib_buf) != 
++				CMD_STATUS_COMPLETE) {
++			ret = -EOPNOTSUPP; /* -EIO would be probably better */
++			goto exit;
++		};
++		key->hw_key_idx = key->keyidx;
++
++		/* Set up default keys */
++		if (is_broadcast_ether_addr(address))
++			priv->default_group_key = key->keyidx;
++		if (is_valid_ether_addr(address))
++			priv->default_pairwise_key = key->keyidx;
++
++		/* Set up encryption MIBs */
++
++		/* first block of settings */
++		priv->mib_buf.size = 3;
++		priv->mib_buf.index = offsetof(struct mib_mac_encryption, 
++				privacy_invoked); 
++		priv->mib_buf.data.data[0] = 1;	/* privacy_invoked */
++		priv->mib_buf.data.data[1] = priv->default_pairwise_key;
++		priv->mib_buf.data.data[2] = priv->default_group_key;
++
++		if ((ret = at76_set_mib(priv, &priv->mib_buf)) != 
++				CMD_STATUS_COMPLETE)
++			goto exit;
++
++		/* second block of settings */
++		priv->mib_buf.size = 3;
++		priv->mib_buf.index = offsetof(struct mib_mac_encryption, 
++				exclude_unencrypted); 
++		priv->mib_buf.data.data[0] = 1;	/* exclude_unencrypted */
++		priv->mib_buf.data.data[1] = 0;	/* wep_encryption_type */
++		priv->mib_buf.data.data[2] = 0;	/* ckip_key_permutation */
++
++		if ((ret = at76_set_mib(priv, &priv->mib_buf)) != 
++				CMD_STATUS_COMPLETE)
++			goto exit;
++		ret = 0;
++	};
++exit:
++	at76_dump_mib_mac_encryption(priv);
++	mutex_unlock(&priv->mtx);
++	return ret;
++}
++
++static int at76_set_key(struct ieee80211_hw *hw, enum set_key_cmd cmd,
++			const u8 *local_address, const u8 *address,
++			struct ieee80211_key_conf *key)
++{
++	struct at76_priv *priv = hw->priv;
++
++	// int i;
++
++	at76_dbg(DBG_MAC80211, "%s(): cmd %d key->alg %d key->keyidx %d "
++		 "key->keylen %d",
++		 __func__, cmd, key->alg, key->keyidx, key->keylen);
++	
++	if (FIRMWARE_IS_WPA(priv->fw_version))
++		return at76_set_key_newfw(hw, cmd, local_address, address, key);
++	else
++		return at76_set_key_oldfw(hw, cmd, local_address, address, key);
++
++}
++
+ static const struct ieee80211_ops at76_ops = {
+ 	.tx = at76_mac80211_tx,
+ 	.add_interface = at76_add_interface,
+@@ -2286,6 +2481,8 @@ static int at76_init_new_device(struct at76_priv *priv,
+ 	priv->scan_min_time = DEF_SCAN_MIN_TIME;
+ 	priv->scan_max_time = DEF_SCAN_MAX_TIME;
+ 	priv->scan_mode = SCAN_TYPE_ACTIVE;
++	priv->default_pairwise_key = 0xff;
++	priv->default_group_key = 0xff;
+ 
+ 	/* mac80211 initialisation */
+ 	priv->hw->wiphy->bands[IEEE80211_BAND_2GHZ] = &at76_supported_band;
+@@ -2317,6 +2514,15 @@ static int at76_init_new_device(struct at76_priv *priv,
+ 	printk(KERN_INFO "%s: regulatory domain 0x%02x: %s\n",
+ 	       wiphy_name(priv->hw->wiphy),
+ 	       priv->regulatory_domain, priv->domain->name);
++	printk(KERN_INFO "%s: WPA support: ", wiphy_name(priv->hw->wiphy));
++	if (!FIRMWARE_IS_WPA(priv->fw_version))
++		printk("none\n");
++	else {
++		if (!at76_is_505a(priv->board_type))
++			printk("TKIP\n");
++		else
++			printk("TKIP, AES/CCMP\n");
++	};
+ 
+ exit:
+ 	return ret;
+diff --git a/drivers/net/wireless/at76_usb.h b/drivers/net/wireless/at76_usb.h
+index 3cdade1..9342589 100644
+--- a/drivers/net/wireless/at76_usb.h
++++ b/drivers/net/wireless/at76_usb.h
+@@ -65,6 +65,7 @@ enum board_type {
+ #define MIB_MAC			0x03
+ #define MIB_MAC_MGMT		0x05
+ #define MIB_MAC_WEP		0x06
++#define MIB_MAC_ENCRYPTION	0x06
+ #define MIB_PHY			0x07
+ #define MIB_FW_VERSION		0x08
+ #define MIB_MDOMAIN		0x09
+@@ -89,6 +90,26 @@ enum board_type {
+ #define AT76_PM_ON		2
+ #define AT76_PM_SMART		3
+ 
++/* cipher values for encryption keys */
++#define CIPHER_NONE		0	/* this value is only guessed */
++#define CIPHER_WEP64		1
++#define CIPHER_TKIP		2
++#define CIPHER_CCMP		3
++#define CIPHER_CCX		4	/* for consistency sake only */
++#define CIPHER_WEP128		5
++
++/* bit flags key types for encryption keys */
++#define KEY_PAIRWISE		2
++#define KEY_TX			4
++
++#define CIPHER_KEYS		(4)
++#define CIPHER_KEY_LEN		(40)
++
++struct key_config {
++	u8 cipher;
++	u8 keylen;
++};
++
+ struct hwcfg_r505 {
+ 	u8 cr39_values[14];
+ 	u8 reserved1[14];
+@@ -132,6 +153,8 @@ union at76_hwcfg {
+ #define WEP_LARGE_KEY_LEN	(104 / 8)
+ #define WEP_KEYS		(4)
+ 
++
++
+ struct at76_card_config {
+ 	u8 exclude_unencrypted;
+ 	u8 promiscuous_mode;
+@@ -180,7 +203,10 @@ struct at76_tx_buffer {
+ 	__le16 wlength;
+ 	u8 tx_rate;
+ 	u8 padding;
+-	u8 reserved[4];
++	u8 key_id;
++	u8 cipher_type;
++	u8 cipher_length;
++	u8 reserved;
+ 	u8 packet[IEEE80211_MAX_FRAG_THRESHOLD];
+ } __attribute__((packed));
+ 
+@@ -228,6 +254,7 @@ struct set_mib_buffer {
+ 		u8 byte;
+ 		__le16 word;
+ 		u8 addr[ETH_ALEN];
++		u8 data[256];	/* we need more space for mib_mac_encryption */
+ 	} data;
+ } __attribute__((packed));
+ 
+@@ -305,6 +332,20 @@ struct mib_mac_wep {
+ 	u8 encryption_level;	/* 1 for 40bit, 2 for 104bit encryption */
+ } __attribute__((packed));
+ 
++struct mib_mac_encryption {
++	u8 cipher_default_keyvalue[CIPHER_KEYS][CIPHER_KEY_LEN];
++	u8 tkip_bssid[6];
++	u8 privacy_invoked;
++	u8 cipher_default_key_id;
++	u8 cipher_default_group_key_id;
++	u8 exclude_unencrypted;
++	u8 wep_encryption_type;
++	u8 ckip_key_permutation;	/* bool */
++	__le32 wep_icv_error_count;
++	__le32 wep_excluded_count;
++	u8 key_rsc[CIPHER_KEYS][8];
++} __attribute__((packed));
++
+ struct mib_phy {
+ 	__le32 ed_threshold;
+ 
+@@ -443,6 +484,10 @@ struct at76_priv {
+ 	struct ieee80211_hw *hw;
+ 	struct ieee80211_tx_status tx_status;
+ 	int mac80211_registered;
++
++	struct key_config keys[4];	/* installed key types */
++	u8 default_pairwise_key;
++	u8 default_group_key;
+ };
+ 
+ #define AT76_SUPPORTED_FILTERS FIF_PROMISC_IN_BSS
+
+
+
+From milan.plzik at gmail.com  Tue May  6 01:28:41 2008
+From: milan.plzik at gmail.com (Milan Plzik)
+Date: Tue, 06 May 2008 01:28:41 +0200
+Subject: [at76c503a-develop] [PATCH 3/3] Add WPA support for 1.103 firmware
+In-Reply-To: <20080505232825.10104.27541.stgit@localhost>
+References: <20080505232825.10104.27541.stgit@localhost>
+Message-ID: <20080505232841.10104.47347.stgit@localhost>
+
+Based on atmelwlandriver analysis, this patch implements support for WPA.
+TKIP was tested and working, AES/CCMP needs testing on 505A or 505AMX
+device.
+
+Signed-off-by: Milan Plzik <milan.plzik at gmail.com>
+---
+
+ drivers/net/wireless/at76_usb.c |   67 ++++++++++++++++++++++++++++++++++++---
+ 1 files changed, 62 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/net/wireless/at76_usb.c b/drivers/net/wireless/at76_usb.c
+index 6cfd370..eae3036 100644
+--- a/drivers/net/wireless/at76_usb.c
++++ b/drivers/net/wireless/at76_usb.c
+@@ -1002,6 +1002,40 @@ static int at76_add_mac_address(struct at76_priv *priv, void *addr)
+ 	return ret;
+ }
+ 
++static int at76_set_tkip_bssid(struct at76_priv *priv, const void *addr)
++{
++	int ret = 0;
++
++	priv->mib_buf.type = MIB_MAC_ENCRYPTION;
++	priv->mib_buf.size = ETH_ALEN;
++	priv->mib_buf.index = offsetof(struct mib_mac_encryption, tkip_bssid);
++	memcpy(priv->mib_buf.data.addr, addr, ETH_ALEN);
++
++	ret = at76_set_mib(priv, &priv->mib_buf);
++	if (ret < 0)
++		printk(KERN_ERR "%s: set_mib (MAC_ENCRYPTION, tkip_bssid) failed: %d\n",
++		       wiphy_name(priv->hw->wiphy), ret);
++
++	return ret;
++}
++
++static int at76_reset_rsc(struct at76_priv *priv)
++{
++	int ret = 0;
++
++	priv->mib_buf.type = MIB_MAC_ENCRYPTION;
++	priv->mib_buf.size = 4 * 8;
++	priv->mib_buf.index = offsetof(struct mib_mac_encryption, key_rsc);
++	memset(priv->mib_buf.data.data, 0 , priv->mib_buf.size);
++
++	ret = at76_set_mib(priv, &priv->mib_buf);
++	if (ret < 0)
++		printk(KERN_ERR "%s: set_mib (MAC_ENCRYPTION, key_rsc) failed: %d\n",
++		       wiphy_name(priv->hw->wiphy), ret);
++
++	return ret;
++}
++
+ static void at76_dump_mib_mac_addr(struct at76_priv *priv)
+ {
+ 	int i;
+@@ -1802,9 +1836,9 @@ static int at76_mac80211_tx(struct ieee80211_hw *hw, struct sk_buff *skb,
+ 	tx_buffer->wlength = cpu_to_le16(skb->len);
+ 	tx_buffer->tx_rate = control->tx_rate->hw_value;
+ 	if (FIRMWARE_IS_WPA(priv->fw_version) && !(control->flags & IEEE80211_TXCTL_DO_NOT_ENCRYPT)) {
+-		tx_buffer->key_id = (control->key_idx);
+-		tx_buffer->cipher_type = priv->keys[control->key_idx].cipher;
+-		tx_buffer->cipher_length = priv->keys[control->key_idx].keylen;
++		tx_buffer->key_id = (control->hw_key->keyidx);
++		tx_buffer->cipher_type = priv->keys[control->hw_key->keyidx].cipher;
++		tx_buffer->cipher_length = priv->keys[control->hw_key->keyidx].keylen;
+ 		tx_buffer->reserved = 0;
+ 	} else {
+ 		tx_buffer->key_id = 0;
+@@ -1947,7 +1981,8 @@ static int at76_join(struct at76_priv *priv)
+ 		       wiphy_name(priv->hw->wiphy), ret);
+ 		return 0;
+ 	}
+-
++	
++	at76_set_tkip_bssid(priv, priv->bssid);
+ 	at76_set_pm_mode(priv);
+ 
+ 	return 0;
+@@ -2183,7 +2218,7 @@ static int at76_set_key_newfw(struct ieee80211_hw *hw, enum set_key_cmd cmd,
+ 		if (at76_set_mib(priv, &priv->mib_buf) != CMD_STATUS_COMPLETE)
+ 			ret = -EOPNOTSUPP; /* -EIO would be probably better */
+ 		else {
+-			ret = 0;
++
+ 			priv->keys[key->keyidx].cipher = CIPHER_NONE;
+ 			priv->keys[key->keyidx].keylen = 0;
+ 		};
+@@ -2194,6 +2229,7 @@ static int at76_set_key_newfw(struct ieee80211_hw *hw, enum set_key_cmd cmd,
+ 			priv->default_pairwise_key = 0xff;
+ 		/* If default pairwise key is removed, fall back to 
+ 		 * group key? */
++		ret = 0;
+ 		goto exit;
+ 	};
+ 	
+@@ -2221,6 +2257,22 @@ static int at76_set_key_newfw(struct ieee80211_hw *hw, enum set_key_cmd cmd,
+ 					goto exit;
+ 				};
+ 				break;
++			case ALG_TKIP:
++				key->flags |= IEEE80211_KEY_FLAG_GENERATE_MMIC;
++				priv->keys[key->keyidx].cipher = CIPHER_TKIP;
++				priv->keys[key->keyidx].keylen = 12;
++				break;
++
++			case ALG_CCMP:
++				if (!at76_is_505a(priv->board_type)) {
++					ret = -EOPNOTSUPP;
++					goto exit;
++				};
++				key->flags |= IEEE80211_KEY_FLAG_GENERATE_MMIC;
++				priv->keys[key->keyidx].cipher = CIPHER_CCMP;
++				priv->keys[key->keyidx].keylen = 16;
++				break;
++				
+ 			default:
+ 				ret = -EOPNOTSUPP;
+ 				goto exit;
+@@ -2245,6 +2297,10 @@ static int at76_set_key_newfw(struct ieee80211_hw *hw, enum set_key_cmd cmd,
+ 			ret = -EOPNOTSUPP; /* -EIO would be probably better */
+ 			goto exit;
+ 		};
++
++		if ((key->alg == ALG_TKIP) || (key->alg == ALG_CCMP))
++			at76_reset_rsc(priv);
++
+ 		key->hw_key_idx = key->keyidx;
+ 
+ 		/* Set up default keys */
+@@ -2742,5 +2798,6 @@ MODULE_AUTHOR("Balint Seeber <n0_5p4m_p13453 at hotmail.com>");
+ MODULE_AUTHOR("Pavel Roskin <proski at gnu.org>");
+ MODULE_AUTHOR("Guido Guenther <agx at sigxcpu.org>");
+ MODULE_AUTHOR("Kalle Valo <kalle.valo at iki.fi>");
++MODULE_AUTHOR("Milan Plzik <milan.plzik at gmail.com>");
+ MODULE_DESCRIPTION(DRIVER_DESC);
+ MODULE_LICENSE("GPL");
+
+
+
+From milan.plzik at gmail.com  Mon May 26 19:27:14 2008
+From: milan.plzik at gmail.com (Milan Plzik)
+Date: Mon, 26 May 2008 19:27:14 +0200
+Subject: [at76c503a-develop] at76usb patches and where to go with them :)
+Message-ID: <1211822834.31921.8.camel@localhost>
+
+  Hello,
+
+  it's been a while since I submitted the at76 patches, but there was
+silence since then... . Is there anything I should do before I'll submit
+them to wireless-testing mailing list (well, except for updating, if
+something has changed:). Also, if there are any objections about what
+should I change/add/remove, please e-mail me.
+
+	Milan
+
+
+

@@ -1,0 +1,90 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [at76c503a-develop] [PATCH] Update of at76_usb to be	in	sync	with mac80211 API.
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/at76c503a-develop/2008-May/index.html" >
+   <LINK REL="made" HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%5D%20Update%20of%20at76_usb%20to%20be%0A%09in%09sync%09with%20mac80211%20API.&In-Reply-To=%3C1209668641.3843.31.camel%40dv%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000232.html">
+   <LINK REL="Next"  HREF="000234.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[at76c503a-develop] [PATCH] Update of at76_usb to be	in	sync	with mac80211 API.</H1>
+    <B>Pavel Roskin</B> 
+    <A HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%5D%20Update%20of%20at76_usb%20to%20be%0A%09in%09sync%09with%20mac80211%20API.&In-Reply-To=%3C1209668641.3843.31.camel%40dv%3E"
+       TITLE="[at76c503a-develop] [PATCH] Update of at76_usb to be	in	sync	with mac80211 API.">proski at gnu.org
+       </A><BR>
+    <I>Thu May  1 21:04:01 CEST 2008</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000232.html">[at76c503a-develop] [PATCH] Update of at76_usb to be in	sync	with mac80211 API.
+</A></li>
+        <LI>Next message: <A HREF="000234.html">[at76c503a-develop] [PATCH 1/4] Fix possible mutex double-locking
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#233">[ date ]</a>
+              <a href="thread.html#233">[ thread ]</a>
+              <a href="subject.html#233">[ subject ]</a>
+              <a href="author.html#233">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>On Thu, 2008-05-01 at 20:45 +0200, Milan Plzik wrote:
+&gt;<i> On &#352;t, 2008-05-01 at 14:30 -0400, Pavel Roskin wrote:
+</I>&gt;<i> &gt; I think you are trying to use the WPA enabled firmware (1.103), which
+</I>&gt;<i> &gt; doesn't provide the FCS and also has a different format for WEP keys.
+</I>&gt;<i> &gt; 
+</I>&gt;<i> 
+</I>&gt;<i>   Yes, I was using this firmware. So I probably should check all
+</I>&gt;<i> abovementioned conditions + presence of the WPA firmware before deciding
+</I>&gt;<i> whether to report FCS or not (prepared patch actually does that). I have
+</I>&gt;<i> just one issue to solve before I will submit at least something (it
+</I>&gt;<i> looks like with current driver, first association attempt after loading
+</I>&gt;<i> the driver doesn't work properly).
+</I>
+I think we don't need to support more than one firmware at once.  I'm
+absolutely fine with dropping Intersil radio support and going to 1.103
+firmware across the board.  Cards with Intersil radio are simply
+impossible to get anymore.  I've never heard of anyone with such card.
+We should not use them as an excuse for not going forward.  That means
+that we don't need to put any conditional.  We should simply reject the
+firmware with the wrong version.
+
+That said, I would prefer that we don't mix fixes and changes needed to
+switch to the newer firmware.  But if the older firmware doesn't work
+for you, then it's fine to do both.  I think I'll be able to split it
+nicely.
+
+-- 
+Regards,
+Pavel Roskin
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000232.html">[at76c503a-develop] [PATCH] Update of at76_usb to be in	sync	with mac80211 API.
+</A></li>
+	<LI>Next message: <A HREF="000234.html">[at76c503a-develop] [PATCH 1/4] Fix possible mutex double-locking
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#233">[ date ]</a>
+              <a href="thread.html#233">[ thread ]</a>
+              <a href="subject.html#233">[ subject ]</a>
+              <a href="author.html#233">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">More information about the at76c503a-develop
+mailing list</a><br>
+</body></html>

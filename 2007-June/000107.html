@@ -1,0 +1,135 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [at76c503a-develop] [PATCH 2/2] Remove module parameters for the	settings controlled by	iwpriv
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/at76c503a-develop/2007-June/index.html" >
+   <LINK REL="made" HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%202/2%5D%20Remove%20module%20parameters%20for%20the%0A%09settings%20controlled%20by%09iwpriv&In-Reply-To=%3C20070613073713.28252.3161.stgit%40dv.roinet.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000106.html">
+   <LINK REL="Next"  HREF="000108.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[at76c503a-develop] [PATCH 2/2] Remove module parameters for the	settings controlled by	iwpriv</H1>
+    <B>Pavel Roskin</B> 
+    <A HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%202/2%5D%20Remove%20module%20parameters%20for%20the%0A%09settings%20controlled%20by%09iwpriv&In-Reply-To=%3C20070613073713.28252.3161.stgit%40dv.roinet.com%3E"
+       TITLE="[at76c503a-develop] [PATCH 2/2] Remove module parameters for the	settings controlled by	iwpriv">proski at gnu.org
+       </A><BR>
+    <I>Wed Jun 13 09:37:13 CEST 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000106.html">[at76c503a-develop] [PATCH 1/2] Don't use workqueue to reschedule	IBSS creation
+</A></li>
+        <LI>Next message: <A HREF="000108.html">[at76c503a-develop] [PATCH] Provide compatibility for older kernels	in a separate file
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#107">[ date ]</a>
+              <a href="thread.html#107">[ thread ]</a>
+              <a href="subject.html#107">[ subject ]</a>
+              <a href="author.html#107">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Module parameters are not well suited for device-specific settings.
+
+Signed-off-by: Pavel Roskin &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">proski at gnu.org</A>&gt;
+---
+
+ at76_usb.c |   29 +++++------------------------
+ 1 files changed, 5 insertions(+), 24 deletions(-)
+
+diff --git a/at76_usb.c b/at76_usb.c
+index b8709ad..d6a1e68 100644
+--- a/at76_usb.c
++++ b/at76_usb.c
+@@ -174,11 +174,6 @@ MODULE_DEVICE_TABLE(usb, dev_table);
+ static int rx_copybreak = 200;
+ static int scan_min_time = 10;
+ static int scan_max_time = 120;
+-static int scan_mode = SCAN_TYPE_ACTIVE;
+-static int preamble_type = PREAMBLE_TYPE_LONG;
+-static int auth_mode;
+-static int international_roaming; /* = IR_OFF */
+-static int default_iw_mode = IW_MODE_INFRA;
+ 
+ /* the supported rates of this hardware, bit7 marks a basic rate */
+ static const u8 hw_rates[] = { 0x82, 0x84, 0x0b, 0x16 };
+@@ -4136,21 +4131,21 @@ static int at76_init_new_device(struct at76_priv *priv,
+ 	     mac2str(priv-&gt;mac_addr), priv-&gt;domain-&gt;name, priv-&gt;regulatory_domain);
+ 
+ 	/* initializing */
+-	priv-&gt;international_roaming = international_roaming;
++	priv-&gt;international_roaming = IR_OFF;
+ 	priv-&gt;channel = DEF_CHANNEL;
+-	priv-&gt;iw_mode = default_iw_mode;
++	priv-&gt;iw_mode = IW_MODE_INFRA;
+ 	memset(priv-&gt;essid, 0, IW_ESSID_MAX_SIZE);
+ 	priv-&gt;rts_threshold = DEF_RTS_THRESHOLD;
+ 	priv-&gt;frag_threshold = DEF_FRAG_THRESHOLD;
+ 	priv-&gt;short_retry_limit = DEF_SHORT_RETRY_LIMIT;
+ 	priv-&gt;txrate = TX_RATE_AUTO;
+-	priv-&gt;preamble_type = preamble_type;
++	priv-&gt;preamble_type = PREAMBLE_TYPE_LONG;
+ 	priv-&gt;beacon_period = 100;
+ 	priv-&gt;beacons_last_qual = jiffies_to_msecs(jiffies);
+-	priv-&gt;auth_mode = auth_mode ? WLAN_AUTH_SHARED_KEY : WLAN_AUTH_OPEN;
++	priv-&gt;auth_mode = WLAN_AUTH_OPEN;
+ 	priv-&gt;scan_min_time = scan_min_time;
+ 	priv-&gt;scan_max_time = scan_max_time;
+-	priv-&gt;scan_mode = scan_mode;
++	priv-&gt;scan_mode = SCAN_TYPE_ACTIVE;
+ 
+ 	netdev-&gt;flags &amp;= ~IFF_MULTICAST; /* not yet or never */
+ 	netdev-&gt;open = at76_open;
+@@ -6257,20 +6252,6 @@ module_param_named(debug, at76_debug, int, 0600);
+ MODULE_PARM_DESC(debug, &quot;Debugging level&quot;);
+ module_param(rx_copybreak, int, 0400);
+ MODULE_PARM_DESC(rx_copybreak, &quot;rx packet copy threshold&quot;);
+-module_param(scan_min_time, int, 0400);
+-MODULE_PARM_DESC(scan_min_time, &quot;scan min channel time (default: 10)&quot;);
+-module_param(scan_max_time, int, 0400);
+-MODULE_PARM_DESC(scan_max_time, &quot;scan max channel time (default: 120)&quot;);
+-module_param(scan_mode, int, 0400);
+-MODULE_PARM_DESC(scan_mode, &quot;scan mode: 0 active (with ProbeReq, default), 1 passive&quot;);
+-module_param(preamble_type, int, 0400);
+-MODULE_PARM_DESC(preamble_type, &quot;preamble type: 0 long (default), 1 short&quot;);
+-module_param(auth_mode, int, 0400);
+-MODULE_PARM_DESC(auth_mode, &quot;authentication mode: 0 open system (default), 1 shared secret&quot;);
+-module_param(international_roaming, int, 0400);
+-MODULE_PARM_DESC(international_roaming, &quot;enable international roaming: 0 (no, default), 1 (yes)&quot;);
+-module_param(default_iw_mode, int, 0400);
+-MODULE_PARM_DESC(default_iw_mode, &quot;default IW mode for a new device: 1 (ad-hoc), 2 (infrastructure, def.), 6 (monitor mode)&quot;);
+ 
+ module_init(at76_mod_init);
+ module_exit(at76_mod_exit);
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000106.html">[at76c503a-develop] [PATCH 1/2] Don't use workqueue to reschedule	IBSS creation
+</A></li>
+	<LI>Next message: <A HREF="000108.html">[at76c503a-develop] [PATCH] Provide compatibility for older kernels	in a separate file
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#107">[ date ]</a>
+              <a href="thread.html#107">[ thread ]</a>
+              <a href="subject.html#107">[ subject ]</a>
+              <a href="author.html#107">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">More information about the at76c503a-develop
+mailing list</a><br>
+</body></html>

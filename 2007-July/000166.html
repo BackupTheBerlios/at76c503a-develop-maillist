@@ -1,0 +1,120 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [at76c503a-develop] Need release, kernel submission
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/at76c503a-develop/2007-July/index.html" >
+   <LINK REL="made" HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20Need%20release%2C%20kernel%20submission&In-Reply-To=%3C1184051595.29540.39.camel%40dv%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000156.html">
+   <LINK REL="Next"  HREF="000167.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[at76c503a-develop] Need release, kernel submission</H1>
+    <B>Pavel Roskin</B> 
+    <A HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20Need%20release%2C%20kernel%20submission&In-Reply-To=%3C1184051595.29540.39.camel%40dv%3E"
+       TITLE="[at76c503a-develop] Need release, kernel submission">proski at gnu.org
+       </A><BR>
+    <I>Tue Jul 10 09:13:15 CEST 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000156.html">[at76c503a-develop] [PATCH 19/19] Update documentation
+</A></li>
+        <LI>Next message: <A HREF="000167.html">[at76c503a-develop] Need release, kernel submission
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#166">[ date ]</a>
+              <a href="thread.html#166">[ thread ]</a>
+              <a href="subject.html#166">[ subject ]</a>
+              <a href="author.html#166">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hello!
+
+I have done everything that was in my TODO list for the kernel
+submission.  Provided that my latest patches are OK, we should try to
+submit the driver to the kernel.
+
+The driver is not ideal, far from it.  But we need more eyeballs looking
+at it to find what else should be fixed.  I fixed things that were easy
+for me to find and to fix.  There are also things that are easy for
+others to fix.
+
+I think the biggest problem with the driver is that it essentially
+implements it's own wireless MAC layer.  I'm sure it will be suggested
+that we switch to mac80211.  The problem it, it's a lot of work, and
+it's not guaranteed to succeed.  Essentially, at76_usb would cease being
+a network driver, since its interaction with the network will happen
+only through mac80211.
+
+I tried several times to convert the driver, but I would find some other
+issue every time and postpone the mac80211 conversion until that issue
+is resolved.
+
+One mystery is the code in at76_ieee80211_to_eth() that checks for an
+&quot;ethernet frame is encapsulated within the data portion&quot; whereas the
+ethernet header immediately follows the 802.11 header.  That condition
+is never true for me.  The checks for source and destination addresses
+matching the 802.11 header suggest that it's not some non-standard
+header for bridging.  Rather, it's possible that some cards do
+decapsulation in hardware.  My MA101 doesn't do it, and I'm not
+enthusiastic about buying all possible supported cards to find out.  But
+I don't want to keep support for a hypothetical feature during the
+mac80211 conversion.
+
+My estimate is that approximately half of the code will have to be
+removed or rewritten during the mac80211 conversion.  So if there are
+any issues with the current MAC code, I don't want to spend much of my
+time on things that are on the way out.  On the other hand, the mac80211
+conversion may turn out to be impossible, and then we'll need to fix our
+implementation.
+
+I think we should go ahead and submit the driver as is.  Then somebody
+will tell us if mac80211 conversion is possible.
+
+Maybe I should be the one doing the submission this time.  I spent quite
+a lot of time looking at the code after all.  Guido, what do you think?
+
+Also, Linux 2.6.22 has been released, and no released version of the
+driver supports it.  I think I'll do a standalone release within days if
+nobody objects.
+
+I've updated the CVS repository with the files from git plus the patches
+I've just sent.  If any of my patches are rejected, I'll revert them in
+CVS.  The goal is to make it possible for others to test the changes now
+without having to apply the patches.  Testers are welcome.
+
+-- 
+Regards,
+Pavel Roskin
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000156.html">[at76c503a-develop] [PATCH 19/19] Update documentation
+</A></li>
+	<LI>Next message: <A HREF="000167.html">[at76c503a-develop] Need release, kernel submission
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#166">[ date ]</a>
+              <a href="thread.html#166">[ thread ]</a>
+              <a href="subject.html#166">[ subject ]</a>
+              <a href="author.html#166">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">More information about the at76c503a-develop
+mailing list</a><br>
+</body></html>

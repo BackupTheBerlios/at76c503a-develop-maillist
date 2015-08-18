@@ -1,0 +1,97 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [at76c503a-develop] Status of the driver
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/at76c503a-develop/2007-June/index.html" >
+   <LINK REL="made" HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20Status%20of%20the%20driver&In-Reply-To=%3C1181785229.26025.21.camel%40dv%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000122.html">
+   <LINK REL="Next"  HREF="000124.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[at76c503a-develop] Status of the driver</H1>
+    <B>Pavel Roskin</B> 
+    <A HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20Status%20of%20the%20driver&In-Reply-To=%3C1181785229.26025.21.camel%40dv%3E"
+       TITLE="[at76c503a-develop] Status of the driver">proski at gnu.org
+       </A><BR>
+    <I>Thu Jun 14 03:40:29 CEST 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000122.html">[at76c503a-develop] [PATCH 01/12] Put copyright into compat.h
+</A></li>
+        <LI>Next message: <A HREF="000124.html">[at76c503a-develop] [PATCH 01/10] Implement &quot;get&quot; counterparts for	iwpriv calls
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#121">[ date ]</a>
+              <a href="thread.html#121">[ thread ]</a>
+              <a href="subject.html#121">[ subject ]</a>
+              <a href="author.html#121">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hello!
+
+I could finally get the driver reindented.  This is important not just
+because the code looks better, but also because all further changes can
+be run through Lindent without having to format them manually.  Some
+debug statements look bad, but they looked bad before, and they should
+eventually be removed, as the code gets more stable and documented.
+
+I removed all module parameters that can be set with iwpriv.  I can
+imagine that wireless developers will try to get us remove even more,
+but it's an important step.
+
+I wanted to integrate workqueues and times, but I'm not sure it's really
+worth the trouble.  There is no such thing as &quot;wait and reschedule&quot;.
+But there is such thing as taking control over scheduling.  This is more
+work that I thought.  The workqueues are used for 802.11 MAC
+implementation, so they will be discarded if the driver is ported to
+mac80211.  I may still try it, but it depends.
+
+All that means that the the driver should be ready for another
+submission attempt once my patches are applied.
+
+I have enabled the compat.h mechanism I used in other drivers, which
+allows pristine driver sources to be compiled for older kernels.  I
+could backport the driver as far back as Linux 2.6.18.  Going further
+back is trickier.
+
+Considering that backward compatibility turned out to be an easier goal,
+we may want to make another public release.  I suggest calling it 0.20,
+since it's a major upgrade, at least in terms of stability.  This would
+allow us to have the code tested.
+
+-- 
+Regards,
+Pavel Roskin
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000122.html">[at76c503a-develop] [PATCH 01/12] Put copyright into compat.h
+</A></li>
+	<LI>Next message: <A HREF="000124.html">[at76c503a-develop] [PATCH 01/10] Implement &quot;get&quot; counterparts for	iwpriv calls
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#121">[ date ]</a>
+              <a href="thread.html#121">[ thread ]</a>
+              <a href="subject.html#121">[ subject ]</a>
+              <a href="author.html#121">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">More information about the at76c503a-develop
+mailing list</a><br>
+</body></html>

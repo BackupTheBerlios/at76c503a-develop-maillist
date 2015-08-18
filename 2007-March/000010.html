@@ -1,0 +1,257 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [at76c503a-develop] [PATCH 1/8] Replace references to at75c503a	with at76_usb where	appropriate
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/at76c503a-develop/2007-March/index.html" >
+   <LINK REL="made" HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%201/8%5D%20Replace%20references%20to%20at75c503a%0A%09with%20at76_usb%20where%09appropriate&In-Reply-To=%3C20070304083512.4169.29126.stgit%40np.roinet.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   
+   <LINK REL="Next"  HREF="000011.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[at76c503a-develop] [PATCH 1/8] Replace references to at75c503a	with at76_usb where	appropriate</H1>
+    <B>Pavel Roskin</B> 
+    <A HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%201/8%5D%20Replace%20references%20to%20at75c503a%0A%09with%20at76_usb%20where%09appropriate&In-Reply-To=%3C20070304083512.4169.29126.stgit%40np.roinet.com%3E"
+       TITLE="[at76c503a-develop] [PATCH 1/8] Replace references to at75c503a	with at76_usb where	appropriate">proski at gnu.org
+       </A><BR>
+    <I>Sun Mar  4 09:35:13 CET 2007</I>
+    <P><UL>
+        
+        <LI>Next message: <A HREF="000011.html">[at76c503a-develop] [PATCH 2/8] Rename .cvsignore to .gitignore
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#10">[ date ]</a>
+              <a href="thread.html#10">[ thread ]</a>
+              <a href="subject.html#10">[ subject ]</a>
+              <a href="author.html#10">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Signed-off-by: Pavel Roskin &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">proski at gnu.org</A>&gt;
+---
+
+ Makefile       |    8 ++++---
+ README         |    2 +-
+ at76_usb.c     |    2 +-
+ at76_usb.spec  |   62 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ at76c503a.spec |   62 --------------------------------------------------------
+ 5 files changed, 68 insertions(+), 68 deletions(-)
+
+diff --git a/Makefile b/Makefile
+index 2e90fe3..665906c 100644
+--- a/Makefile
++++ b/Makefile
+@@ -33,15 +33,15 @@ KERNELRELEASE = $(shell sed -ne 's/&quot;//g;s/^\#define UTS_RELEASE //p' \
+ 
+ obj-m = at76_usb.o
+ 
+-SRCS = at76c503.c at76c503.h
++SRCS = at76_usb.c at76_usb.h at76_usb_ids.h
+ 
+-SPECFILE = at76c503a.spec
++SPECFILE = at76_usb.spec
+ 
+ DISTFILES = $(SRCS) Makefile README COPYING CHANGELOG kernel_patch.diff
+ 
+-# get the version from at76c503.h
++# get the version from at76_usb.h
+ ifndef M
+-VERSION = $(shell sed -n 's/^\#define.*DRIVER_VERSION.*&quot;\(.*\)&quot;.*$$/\1/p' at76c503.h)
++VERSION = $(shell sed -n 's/^\#define.*DRIVER_VERSION.*&quot;\(.*\)&quot;.*$$/\1/p' at76_usb.h)
+ DISTNAME = at76_usb-$(VERSION)
+ DISTDIR = $(DISTNAME)
+ endif
+diff --git a/README b/README
+index 1b34105..24a3152 100644
+--- a/README
++++ b/README
+@@ -152,7 +152,7 @@ Following are some of the supported parameters:
+ - long preamble: iwpriv wlanX short_preamble 0
+ - short preamble: iwpriv wlanX short_preamble 1
+ - amount of debug messages: iwpriv wlanX set_debug N
+-  with N a combination of bits, see DBG_* in at76c503.h
++  with N a combination of bits, see DBG_* in at76_usb.h
+ - power save mode: iwpriv wlanX powersave_mode N (numbers 1, 2, 3 for
+   for none, save and smart save respectively)
+ - scan channel time: iwpriv wlanX scan_times &lt;min_ch_time&gt; &lt;max_ch_time&gt;
+diff --git a/at76_usb.c b/at76_usb.c
+index 5ba2460..c372f53 100644
+--- a/at76_usb.c
++++ b/at76_usb.c
+@@ -3844,7 +3844,7 @@ static void rx_data(struct at76c503 *dev)
+ 	if ((skb=check_for_rx_frags(dev)) == NULL)
+ 		return;
+ 
+-	/* if an skb is returned, the at76c503a_rx_header and the FCS is already removed */
++	/* if an skb is returned, the at76c503_rx_buffer and the FCS is already removed */
+ 	i802_11_hdr = (struct ieee80211_hdr_3addr *)skb-&gt;data;
+ 
+ 	skb-&gt;dev = netdev;
+diff --git a/at76_usb.spec b/at76_usb.spec
+new file mode 100644
+index 0000000..81ddf8f
+--- /dev/null
++++ b/at76_usb.spec
+@@ -0,0 +1,62 @@
++%define KERNELVER %(rpm -q --qf &quot;%%{version}-%%{release}&quot; kernel-devel)
++%define PACKVER 0.14dev
++# RPM Release number of this version
++%define TNREL 1
++
++# Real stuff
++Summary:   Linux driver for Atmel AT76C503/505/505A based USB WLAN adapters
++Name:      at76_usb
++Version:   %{PACKVER}
++Release:   tn%{TNREL}
++License:   GPL
++Group:     System Environment/Kernel 
++Packager:  Tim Niemueller &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">tim at niemueller.de</A>&gt;
++Source:    %{name}-%{version}.tar.gz
++URL:       <A HREF="http://at76c503a.berlios.de/">http://at76c503a.berlios.de/</A>
++Prefix:	   %{_prefix}
++BuildRequires: kernel = %{KERNELVER}, kernel-devel = %{KERNELVER}
++BuildRoot: %{_tmppath}/%{name}-%{version}
++
++%description
++This is a Linux driver for the Atmel based USB WLAN adapters.  Unlike
++the driver developed by Atmel (atmelwlandriver), this driver is intended
++to be accepted into the kernel, so it aims to be bloat-free, streamlined
++and modern.
++
++%prep
++%setup -n %{name}-%{version}
++
++#if [ ! -e /usr/src/linux-2.4/.config ]; then
++#  echo &quot;You need to run 'make menuconfig' once in /usr/src/linux-2.4&quot;
++#  echo &quot;Then exit immediately and save the configuration. The &quot;
++#  echo &quot;config file is needed to compile hostap. Thanks.&quot;
++#  exit 1
++#fi
++
++%build
++make KERNEL_PATH=/lib/modules/%{KERNELVER}/build
++
++%install
++rm -rf $RPM_BUILD_ROOT
++
++make install INSTALL_MOD_PATH=$RPM_BUILD_ROOT DEPMOD=true \
++	KERNEL_PATH=/lib/modules/%{KERNELVER}/build
++
++%clean 
++rm -rf $RPM_BUILD_ROOT
++
++%post
++/sbin/depmod -a
++
++%postun
++/sbin/depmod -a
++
++%files
++%defattr(-,root,root)
++/lib/modules/%{KERNELVER}/kernel/drivers/net/wireless/at76_usb.ko
++
++%changelog
++* Mon Jul 28 2003 Tim Niemueller &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">tim at niemueller.de</A>&gt;
++- Initial rpm release
++- Wrote spec file and compiled for current Red Hat 9 kernel
++
+diff --git a/at76c503a.spec b/at76c503a.spec
+deleted file mode 100644
+index 81ddf8f..0000000
+--- a/at76c503a.spec
++++ /dev/null
+@@ -1,62 +0,0 @@
+-%define KERNELVER %(rpm -q --qf &quot;%%{version}-%%{release}&quot; kernel-devel)
+-%define PACKVER 0.14dev
+-# RPM Release number of this version
+-%define TNREL 1
+-
+-# Real stuff
+-Summary:   Linux driver for Atmel AT76C503/505/505A based USB WLAN adapters
+-Name:      at76_usb
+-Version:   %{PACKVER}
+-Release:   tn%{TNREL}
+-License:   GPL
+-Group:     System Environment/Kernel 
+-Packager:  Tim Niemueller &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">tim at niemueller.de</A>&gt;
+-Source:    %{name}-%{version}.tar.gz
+-URL:       <A HREF="http://at76c503a.berlios.de/">http://at76c503a.berlios.de/</A>
+-Prefix:	   %{_prefix}
+-BuildRequires: kernel = %{KERNELVER}, kernel-devel = %{KERNELVER}
+-BuildRoot: %{_tmppath}/%{name}-%{version}
+-
+-%description
+-This is a Linux driver for the Atmel based USB WLAN adapters.  Unlike
+-the driver developed by Atmel (atmelwlandriver), this driver is intended
+-to be accepted into the kernel, so it aims to be bloat-free, streamlined
+-and modern.
+-
+-%prep
+-%setup -n %{name}-%{version}
+-
+-#if [ ! -e /usr/src/linux-2.4/.config ]; then
+-#  echo &quot;You need to run 'make menuconfig' once in /usr/src/linux-2.4&quot;
+-#  echo &quot;Then exit immediately and save the configuration. The &quot;
+-#  echo &quot;config file is needed to compile hostap. Thanks.&quot;
+-#  exit 1
+-#fi
+-
+-%build
+-make KERNEL_PATH=/lib/modules/%{KERNELVER}/build
+-
+-%install
+-rm -rf $RPM_BUILD_ROOT
+-
+-make install INSTALL_MOD_PATH=$RPM_BUILD_ROOT DEPMOD=true \
+-	KERNEL_PATH=/lib/modules/%{KERNELVER}/build
+-
+-%clean 
+-rm -rf $RPM_BUILD_ROOT
+-
+-%post
+-/sbin/depmod -a
+-
+-%postun
+-/sbin/depmod -a
+-
+-%files
+-%defattr(-,root,root)
+-/lib/modules/%{KERNELVER}/kernel/drivers/net/wireless/at76_usb.ko
+-
+-%changelog
+-* Mon Jul 28 2003 Tim Niemueller &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">tim at niemueller.de</A>&gt;
+-- Initial rpm release
+-- Wrote spec file and compiled for current Red Hat 9 kernel
+-
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	
+	<LI>Next message: <A HREF="000011.html">[at76c503a-develop] [PATCH 2/8] Rename .cvsignore to .gitignore
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#10">[ date ]</a>
+              <a href="thread.html#10">[ thread ]</a>
+              <a href="subject.html#10">[ subject ]</a>
+              <a href="author.html#10">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">More information about the at76c503a-develop
+mailing list</a><br>
+</body></html>

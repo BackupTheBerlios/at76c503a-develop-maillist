@@ -1,0 +1,85 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [at76c503a-develop] [PATCH] Update of at76_usb to be	in	sync	with mac80211 API.
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/at76c503a-develop/2008-May/index.html" >
+   <LINK REL="made" HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%5D%20Update%20of%20at76_usb%20to%20be%0A%09in%09sync%09with%20mac80211%20API.&In-Reply-To=%3C1209656643.6740.27.camel%40localhost%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   
+   <LINK REL="Next"  HREF="000231.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[at76c503a-develop] [PATCH] Update of at76_usb to be	in	sync	with mac80211 API.</H1>
+    <B>Milan Plzik</B> 
+    <A HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%5D%20Update%20of%20at76_usb%20to%20be%0A%09in%09sync%09with%20mac80211%20API.&In-Reply-To=%3C1209656643.6740.27.camel%40localhost%3E"
+       TITLE="[at76c503a-develop] [PATCH] Update of at76_usb to be	in	sync	with mac80211 API.">milan.plzik at gmail.com
+       </A><BR>
+    <I>Thu May  1 17:44:03 CEST 2008</I>
+    <P><UL>
+        
+        <LI>Next message: <A HREF="000231.html">[at76c503a-develop] [PATCH] Update of at76_usb to	be	in	sync	with mac80211 API.
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#230">[ date ]</a>
+              <a href="thread.html#230">[ thread ]</a>
+              <a href="subject.html#230">[ subject ]</a>
+              <a href="author.html#230">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>
+On Po, 2008-04-28 at 22:09 -0400, Pavel Roskin wrote:
+&gt;<i> Quoting Kalle Valo &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">Kalle.Valo at iki.fi</A>&gt;:
+</I>&gt;<i> 
+</I>&gt;<i> &gt; John Linville applied the at76_usb mac80211 port to his
+</I>&gt;<i> &gt; wireless-testing tree[1]. In my opinion it's best to base your patches
+</I>&gt;<i> &gt; on that tree.
+</I>&gt;<i> 
+</I>&gt;<i> I agree.  The master branch is always maintained.  It there are any  
+</I>&gt;<i> merge conflicts, they should be easy to resolve.  It's not like there  
+</I>&gt;<i> is any active development of the driver going on now.
+</I>&gt;<i> 
+</I>
+  Ok, my patches will apply to wireless-testing master. :)
+
+  Btw, was the driver tested after converting it to mac80211 ? The
+driver started working properly only after few modifications I had to (I
+will send the patches soon, just after I'll make sure they are properly
+cleaned up) -- e.g. driver was reporting the device returns FCS in
+frames, but the device I have from Joerg Albert (at76c503a one) doesn't
+do anything like that -- at wLength contains only length of valid frame.
+But maybe some other at76 variants send also FCS -- atmelwlandrivers
+suggests something like that in src/usb/rx.c
+
+	Milan
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	
+	<LI>Next message: <A HREF="000231.html">[at76c503a-develop] [PATCH] Update of at76_usb to	be	in	sync	with mac80211 API.
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#230">[ date ]</a>
+              <a href="thread.html#230">[ thread ]</a>
+              <a href="subject.html#230">[ subject ]</a>
+              <a href="author.html#230">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">More information about the at76c503a-develop
+mailing list</a><br>
+</body></html>

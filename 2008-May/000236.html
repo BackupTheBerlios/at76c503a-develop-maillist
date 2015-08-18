@@ -1,0 +1,96 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [at76c503a-develop] [PATCH 3/4] Remove usage of data which were	already skb_pull-ed.
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/at76c503a-develop/2008-May/index.html" >
+   <LINK REL="made" HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%203/4%5D%20Remove%20usage%20of%20data%20which%20were%0A%09already%20skb_pull-ed.&In-Reply-To=%3C20080501202802.7338.84826.stgit%40localhost%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000235.html">
+   <LINK REL="Next"  HREF="000237.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[at76c503a-develop] [PATCH 3/4] Remove usage of data which were	already skb_pull-ed.</H1>
+    <B>Milan Plzik</B> 
+    <A HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%203/4%5D%20Remove%20usage%20of%20data%20which%20were%0A%09already%20skb_pull-ed.&In-Reply-To=%3C20080501202802.7338.84826.stgit%40localhost%3E"
+       TITLE="[at76c503a-develop] [PATCH 3/4] Remove usage of data which were	already skb_pull-ed.">milan.plzik at gmail.com
+       </A><BR>
+    <I>Thu May  1 22:28:02 CEST 2008</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000235.html">[at76c503a-develop] [PATCH 2/4] Don't leave queues stopped when not	neccessary.
+</A></li>
+        <LI>Next message: <A HREF="000237.html">[at76c503a-develop] [PATCH] Some at76-based devices don't include	FCS in received frames.
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#236">[ date ]</a>
+              <a href="thread.html#236">[ thread ]</a>
+              <a href="subject.html#236">[ subject ]</a>
+              <a href="author.html#236">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>at76_rx_tasklet makes use of data referenced by 'buf' despite of the fact
+they were already marked as free by skb_pull. This patch delays skb_pull, so
+data will remain valid.
+
+Signed-off-by: Milan Plzik &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">milan.plzik at gmail.com</A>&gt;
+---
+
+ 0 files changed, 0 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/net/wireless/at76_usb.c b/drivers/net/wireless/at76_usb.c
+index ca6207f..b514763 100644
+--- a/drivers/net/wireless/at76_usb.c
++++ b/drivers/net/wireless/at76_usb.c
+@@ -1594,15 +1594,16 @@ static void at76_rx_tasklet(unsigned long param)
+ 		 wiphy_name(priv-&gt;hw-&gt;wiphy), buf-&gt;rx_rate, buf-&gt;rssi,
+ 		 buf-&gt;noise_level, buf-&gt;link_quality);
+ 
+-	skb_pull(priv-&gt;rx_skb, AT76_RX_HDRLEN);
+-	skb_trim(priv-&gt;rx_skb, le16_to_cpu(buf-&gt;wlength));
+-	at76_dbg_dump(DBG_RX_DATA, priv-&gt;rx_skb-&gt;data,
+-		      priv-&gt;rx_skb-&gt;len, &quot;RX: len=%d&quot;, priv-&gt;rx_skb-&gt;len);
++
++	skb_trim(priv-&gt;rx_skb, le16_to_cpu(buf-&gt;wlength) + AT76_RX_HDRLEN);
++	at76_dbg_dump(DBG_RX_DATA, &amp;priv-&gt;rx_skb-&gt;data[AT76_RX_HDRLEN],
++		      priv-&gt;rx_skb-&gt;len, &quot;RX: len=%d&quot;, priv-&gt;rx_skb-&gt;len - AT76_RX_HDRLEN);
+ 
+ 	rx_status.ssi = buf-&gt;rssi;
+ 	rx_status.flag |= RX_FLAG_DECRYPTED;
+ 	rx_status.flag |= RX_FLAG_IV_STRIPPED;
+ 
++	skb_pull(priv-&gt;rx_skb, AT76_RX_HDRLEN);
+ 	at76_dbg(DBG_MAC80211, &quot;calling ieee80211_rx_irqsafe(): %d/%d&quot;,
+ 		 priv-&gt;rx_skb-&gt;len, priv-&gt;rx_skb-&gt;data_len);
+ 	ieee80211_rx_irqsafe(priv-&gt;hw, priv-&gt;rx_skb, &amp;rx_status);
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000235.html">[at76c503a-develop] [PATCH 2/4] Don't leave queues stopped when not	neccessary.
+</A></li>
+	<LI>Next message: <A HREF="000237.html">[at76c503a-develop] [PATCH] Some at76-based devices don't include	FCS in received frames.
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#236">[ date ]</a>
+              <a href="thread.html#236">[ thread ]</a>
+              <a href="subject.html#236">[ subject ]</a>
+              <a href="author.html#236">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">More information about the at76c503a-develop
+mailing list</a><br>
+</body></html>

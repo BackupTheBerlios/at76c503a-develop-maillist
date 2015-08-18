@@ -1,0 +1,82 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [at76c503a-develop] [PATCH 02/12] Add compat.h to the source file	list in Makefile
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/at76c503a-develop/2007-June/index.html" >
+   <LINK REL="made" HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%2002/12%5D%20Add%20compat.h%20to%20the%20source%20file%0A%09list%20in%20Makefile&In-Reply-To=%3C20070614011101.25709.92807.stgit%40dv.roinet.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000109.html">
+   <LINK REL="Next"  HREF="000111.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[at76c503a-develop] [PATCH 02/12] Add compat.h to the source file	list in Makefile</H1>
+    <B>Pavel Roskin</B> 
+    <A HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%2002/12%5D%20Add%20compat.h%20to%20the%20source%20file%0A%09list%20in%20Makefile&In-Reply-To=%3C20070614011101.25709.92807.stgit%40dv.roinet.com%3E"
+       TITLE="[at76c503a-develop] [PATCH 02/12] Add compat.h to the source file	list in Makefile">proski at gnu.org
+       </A><BR>
+    <I>Thu Jun 14 03:11:01 CEST 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000109.html">[at76c503a-develop] [PATCH 01/12] Put copyright into compat.h
+</A></li>
+        <LI>Next message: <A HREF="000111.html">[at76c503a-develop] [PATCH 03/12] Simplify dumping hex data
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#110">[ date ]</a>
+              <a href="thread.html#110">[ thread ]</a>
+              <a href="subject.html#110">[ subject ]</a>
+              <a href="author.html#110">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Signed-off-by: Pavel Roskin &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">proski at gnu.org</A>&gt;
+---
+
+ Makefile |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/Makefile b/Makefile
+index 7cb3b48..4ea2c55 100644
+--- a/Makefile
++++ b/Makefile
+@@ -33,7 +33,7 @@ KERNELRELEASE = $(shell sed -ne 's/&quot;//g;s/^\#define UTS_RELEASE //p' \
+ 
+ obj-m = at76_usb.o
+ 
+-SRCS = at76_usb.c at76_usb.h at76_usb_ids.h
++SRCS = at76_usb.c at76_usb.h at76_usb_ids.h compat.h
+ 
+ SPECFILE = at76_usb.spec
+ 
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000109.html">[at76c503a-develop] [PATCH 01/12] Put copyright into compat.h
+</A></li>
+	<LI>Next message: <A HREF="000111.html">[at76c503a-develop] [PATCH 03/12] Simplify dumping hex data
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#110">[ date ]</a>
+              <a href="thread.html#110">[ thread ]</a>
+              <a href="subject.html#110">[ subject ]</a>
+              <a href="author.html#110">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">More information about the at76c503a-develop
+mailing list</a><br>
+</body></html>

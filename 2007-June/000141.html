@@ -1,0 +1,235 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [at76c503a-develop] [PATCH 08/12] Don't print hex numbers starting	with &quot;x&quot;, use more common &quot;0x&quot;
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/at76c503a-develop/2007-June/index.html" >
+   <LINK REL="made" HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%2008/12%5D%20Don%27t%20print%20hex%20numbers%20starting%0A%09with%20%22x%22%2C%20use%20more%20common%20%220x%22&In-Reply-To=%3C20070621035635.18384.97288.stgit%40dv.roinet.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000140.html">
+   <LINK REL="Next"  HREF="000142.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[at76c503a-develop] [PATCH 08/12] Don't print hex numbers starting	with &quot;x&quot;, use more common &quot;0x&quot;</H1>
+    <B>Pavel Roskin</B> 
+    <A HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%2008/12%5D%20Don%27t%20print%20hex%20numbers%20starting%0A%09with%20%22x%22%2C%20use%20more%20common%20%220x%22&In-Reply-To=%3C20070621035635.18384.97288.stgit%40dv.roinet.com%3E"
+       TITLE="[at76c503a-develop] [PATCH 08/12] Don't print hex numbers starting	with &quot;x&quot;, use more common &quot;0x&quot;">proski at gnu.org
+       </A><BR>
+    <I>Thu Jun 21 05:56:35 CEST 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000140.html">[at76c503a-develop] [PATCH 07/12] Re-examine and simplify code	where &quot;return&quot; is followed	by &quot;else&quot;
+</A></li>
+        <LI>Next message: <A HREF="000142.html">[at76c503a-develop] [PATCH 09/12] Rename functions ending with	&quot;matched&quot; to start with	&quot;at76_match&quot;
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#141">[ date ]</a>
+              <a href="thread.html#141">[ thread ]</a>
+              <a href="subject.html#141">[ subject ]</a>
+              <a href="author.html#141">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Signed-off-by: Pavel Roskin &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">proski at gnu.org</A>&gt;
+---
+
+ at76_usb.c |   43 ++++++++++++++++++++++---------------------
+ 1 files changed, 22 insertions(+), 21 deletions(-)
+
+diff --git a/at76_usb.c b/at76_usb.c
+index d6572f7..ffc517e 100644
+--- a/at76_usb.c
++++ b/at76_usb.c
+@@ -1804,7 +1804,7 @@ static int at76_assoc_req(struct at76_priv *priv, struct bss_info *bss)
+ 	essid[len] = '\0';
+ 	next_ie(&amp;tlv);		/* points to IE of rates now */
+ 	at76_dbg(DBG_TX_MGMT,
+-		 &quot;%s: AssocReq bssid %s capa x%04x ssid %s rates %s&quot;,
++		 &quot;%s: AssocReq bssid %s capa 0x%04x ssid %s rates %s&quot;,
+ 		 priv-&gt;netdev-&gt;name, mac2str(mgmt-&gt;addr3),
+ 		 le16_to_cpu(req-&gt;capability), essid,
+ 		 hex2str(tlv-&gt;data, tlv-&gt;len));
+@@ -1885,7 +1885,7 @@ static int at76_reassoc_req(struct at76_priv *priv, struct bss_info *curr_bss,
+ 	essid[len] = '\0';
+ 	next_ie(&amp;tlv);		/* points to IE of rates now */
+ 	at76_dbg(DBG_TX_MGMT,
+-		 &quot;%s: ReAssocReq curr %s new %s capa x%04x ssid %s rates %s&quot;,
++		 &quot;%s: ReAssocReq curr %s new %s capa 0x%04x ssid %s rates %s&quot;,
+ 		 priv-&gt;netdev-&gt;name, mac2str(req-&gt;current_ap),
+ 		 mac2str(mgmt-&gt;addr3), le16_to_cpu(req-&gt;capability), essid,
+ 		 hex2str(tlv-&gt;data, tlv-&gt;len));
+@@ -1977,7 +1977,7 @@ static void at76_dump_bss_table(struct at76_priv *priv)
+ 	list_for_each(lptr, &amp;priv-&gt;bss_list) {
+ 		ptr = list_entry(lptr, struct bss_info, list);
+ 		pr_debug(&quot;0x%p: bssid %s channel %d ssid %s (%s)&quot;
+-			 &quot; capa x%04x rates %s rssi %d link %d noise %d&quot;,
++			 &quot; capa 0x%04x rates %s rssi %d link %d noise %d&quot;,
+ 			 ptr, mac2str(ptr-&gt;bssid),
+ 			 ptr-&gt;channel,
+ 			 ptr-&gt;ssid,
+@@ -2110,7 +2110,7 @@ static void at76_work_assoc_done(struct work_struct *work)
+ 			pm_period_beacon = min(pm_period_beacon, 0xffffu);
+ 
+ 			at76_dbg(DBG_PM,
+-				 &quot;%s: pm_mode %d assoc id x%x listen int %d&quot;,
++				 &quot;%s: pm_mode %d assoc id 0x%x listen int %d&quot;,
+ 				 priv-&gt;netdev-&gt;name, priv-&gt;pm_mode,
+ 				 priv-&gt;curr_bss-&gt;assoc_id, pm_period_beacon);
+ 
+@@ -2215,7 +2215,7 @@ static int at76_alloc_urbs(struct at76_priv *priv,
+ 	for (i = 0; i &lt; iface_desc-&gt;desc.bNumEndpoints; i++) {
+ 		endpoint = &amp;iface_desc-&gt;endpoint[i].desc;
+ 
+-		at76_dbg(DBG_URB, &quot;%s: %d. endpoint: addr x%x attr x%x&quot;,
++		at76_dbg(DBG_URB, &quot;%s: %d. endpoint: addr 0x%x attr 0x%x&quot;,
+ 			 __FUNCTION__,
+ 			 i, endpoint-&gt;bEndpointAddress, endpoint-&gt;bmAttributes);
+ 
+@@ -3082,7 +3082,7 @@ static int at76_iw_handler_set_retry(struct net_device *netdev,
+ 	struct at76_priv *priv = netdev_priv(netdev);
+ 	int ret = -EIWCOMMIT;
+ 
+-	at76_dbg(DBG_IOCTL, &quot;%s: SIOCSIWRETRY disabled %d  flags x%x val %d&quot;,
++	at76_dbg(DBG_IOCTL, &quot;%s: SIOCSIWRETRY disabled %d  flags 0x%x val %d&quot;,
+ 		 netdev-&gt;name, retry-&gt;disabled, retry-&gt;flags, retry-&gt;value);
+ 
+ 	if (!retry-&gt;disabled &amp;&amp; (retry-&gt;flags &amp; IW_RETRY_LIMIT)) {
+@@ -3213,7 +3213,7 @@ static int at76_iw_handler_set_power(struct net_device *netdev,
+ 	struct at76_priv *priv = netdev_priv(netdev);
+ 
+ 	at76_dbg(DBG_IOCTL,
+-		 &quot;%s: SIOCSIWPOWER - disabled %s flags x%x value x%x&quot;,
++		 &quot;%s: SIOCSIWPOWER - disabled %s flags 0x%x value 0x%x&quot;,
+ 		 netdev-&gt;name, (prq-&gt;disabled) ? &quot;true&quot; : &quot;false&quot;, prq-&gt;flags,
+ 		 prq-&gt;value);
+ 
+@@ -3253,7 +3253,7 @@ static int at76_iw_handler_get_power(struct net_device *netdev,
+ 		power-&gt;value = priv-&gt;pm_period;
+ 	}
+ 
+-	at76_dbg(DBG_IOCTL, &quot;%s: SIOCGIWPOWER - %s flags x%x value x%x&quot;,
++	at76_dbg(DBG_IOCTL, &quot;%s: SIOCGIWPOWER - %s flags 0x%x value 0x%x&quot;,
+ 		 netdev-&gt;name, power-&gt;disabled ? &quot;disabled&quot; : &quot;enabled&quot;,
+ 		 power-&gt;flags, power-&gt;value);
+ 
+@@ -3308,7 +3308,7 @@ static int at76_iw_set_debug(struct net_device *netdev,
+ 			val = DBG_DEFAULTS;
+ 		}
+ 
+-		dbg(&quot;%s: AT76_SET_DEBUG input %d: %s -&gt; x%x&quot;,
++		dbg(&quot;%s: AT76_SET_DEBUG input %d: %s -&gt; 0x%x&quot;,
+ 		    netdev-&gt;name, data-&gt;length, extra, val);
+ 	} else {
+ 		val = DBG_DEFAULTS;
+@@ -3697,7 +3697,7 @@ static int at76_tx(struct sk_buff *skb, struct net_device *netdev)
+ 			    2 * ETH_ALEN - 2;
+ 		} else {
+ 			err(&quot;%s: %s: no support for non-SNAP 802.2 packets &quot;
+-			    &quot;(DSAP x%02x SSAP x%02x cntrl x%02x)&quot;,
++			    &quot;(DSAP 0x%02x SSAP 0x%02x cntrl 0x%02x)&quot;,
+ 			    priv-&gt;netdev-&gt;name, __FUNCTION__,
+ 			    skb-&gt;data[2 * ETH_ALEN + 2],
+ 			    skb-&gt;data[2 * ETH_ALEN + 2 + 1],
+@@ -3748,7 +3748,7 @@ static int at76_tx(struct sk_buff *skb, struct net_device *netdev)
+ 
+ 	at76_dbg(DBG_TX_DATA_CONTENT, &quot;%s skb-&gt;data %s&quot;, priv-&gt;netdev-&gt;name,
+ 		 hex2str(skb-&gt;data, 32));
+-	at76_dbg(DBG_TX_DATA, &quot;%s tx  wlen x%x pad x%x rate %d hdr %s&quot;,
++	at76_dbg(DBG_TX_DATA, &quot;%s tx  wlen 0x%x pad 0x%x rate %d hdr %s&quot;,
+ 		 priv-&gt;netdev-&gt;name,
+ 		 le16_to_cpu(tx_buffer-&gt;wlength),
+ 		 tx_buffer-&gt;padding, tx_buffer-&gt;tx_rate,
+@@ -4733,8 +4733,8 @@ static void at76_rx_mgmt_assoc(struct at76_priv *priv,
+ 	u16 status = le16_to_cpu(resp-&gt;status);
+ 	u16 capa = le16_to_cpu(resp-&gt;capability);
+ 	at76_dbg(DBG_RX_MGMT,
+-		 &quot;%s: rx AssocResp bssid %s capa x%04x status x%04x &quot;
+-		 &quot;assoc_id x%04x rates %s&quot;, priv-&gt;netdev-&gt;name,
++		 &quot;%s: rx AssocResp bssid %s capa 0x%04x status 0x%04x &quot;
++		 &quot;assoc_id 0x%04x rates %s&quot;, priv-&gt;netdev-&gt;name,
+ 		 mac2str(mgmt-&gt;addr3), capa, status, assoc_id,
+ 		 hex2str(resp-&gt;info_element-&gt;data, resp-&gt;info_element-&gt;len));
+ 	if (priv-&gt;istate == ASSOCIATING) {
+@@ -4774,8 +4774,8 @@ static void at76_rx_mgmt_reassoc(struct at76_priv *priv,
+ 	u16 assoc_id = le16_to_cpu(resp-&gt;aid);
+ 
+ 	at76_dbg(DBG_RX_MGMT,
+-		 &quot;%s: rx ReAssocResp bssid %s capa x%04x status x%04x &quot;
+-		 &quot;assoc_id x%04x rates %s&quot;, priv-&gt;netdev-&gt;name,
++		 &quot;%s: rx ReAssocResp bssid %s capa 0x%04x status 0x%04x &quot;
++		 &quot;assoc_id 0x%04x rates %s&quot;, priv-&gt;netdev-&gt;name,
+ 		 mac2str(mgmt-&gt;addr3), capa, status, assoc_id,
+ 		 hex2str(resp-&gt;info_element-&gt;data, resp-&gt;info_element-&gt;len));
+ 	if (priv-&gt;istate == REASSOCIATING) {
+@@ -4822,7 +4822,7 @@ static void at76_rx_mgmt_disassoc(struct at76_priv *priv,
+ 	struct ieee80211_hdr_3addr *mgmt = &amp;resp-&gt;header;
+ 
+ 	at76_dbg(DBG_RX_MGMT,
+-		 &quot;%s: rx DisAssoc bssid %s reason x%04x destination %s&quot;,
++		 &quot;%s: rx DisAssoc bssid %s reason 0x%04x destination %s&quot;,
+ 		 priv-&gt;netdev-&gt;name, mac2str(mgmt-&gt;addr3),
+ 		 le16_to_cpu(resp-&gt;reason), mac2str(mgmt-&gt;addr1));
+ 	if (priv-&gt;istate == SCANNING || priv-&gt;istate == INIT)
+@@ -4938,7 +4938,7 @@ static void at76_rx_mgmt_deauth(struct at76_priv *priv,
+ 	struct ieee80211_hdr_3addr *mgmt = &amp;resp-&gt;header;
+ 
+ 	at76_dbg(DBG_RX_MGMT | DBG_PROGRESS,
+-		 &quot;%s: rx DeAuth bssid %s reason x%04x destination %s&quot;,
++		 &quot;%s: rx DeAuth bssid %s reason 0x%04x destination %s&quot;,
+ 		 priv-&gt;netdev-&gt;name, mac2str(mgmt-&gt;addr3),
+ 		 le16_to_cpu(resp-&gt;reason), mac2str(mgmt-&gt;addr1));
+ 	if (priv-&gt;istate == DISASSOCIATING ||
+@@ -5235,7 +5235,7 @@ static void at76_rx_mgmt(struct at76_priv *priv, struct at76_rx_buffer *buf)
+ 		}
+ 	}
+ 
+-	at76_dbg(DBG_RX_MGMT_CONTENT, &quot;%s rx mgmt subtype x%x %s&quot;,
++	at76_dbg(DBG_RX_MGMT_CONTENT, &quot;%s rx mgmt subtype 0x%x %s&quot;,
+ 		 priv-&gt;netdev-&gt;name, subtype,
+ 		 hex2str(mgmt, le16_to_cpu(buf-&gt;wlength)));
+ 
+@@ -5373,9 +5373,10 @@ static void at76_ieee80211_to_eth(struct sk_buff *skb, int iw_mode)
+ 		skb-&gt;protocol = htons(ETH_P_802_2);
+ 	}
+ 
+-	dbg(&quot;%s: EXIT skb da %s sa %s proto x%04x len %d data %s&quot;, __FUNCTION__,
+-	    mac2str(eth_hdr(skb)-&gt;h_dest), mac2str(eth_hdr(skb)-&gt;h_source),
+-	    ntohs(skb-&gt;protocol), skb-&gt;len, hex2str(skb-&gt;data, 64));
++	dbg(&quot;%s: EXIT skb da %s sa %s proto 0x%04x len %d data %s&quot;,
++	    __FUNCTION__, mac2str(eth_hdr(skb)-&gt;h_dest),
++	    mac2str(eth_hdr(skb)-&gt;h_source), ntohs(skb-&gt;protocol), skb-&gt;len,
++	    hex2str(skb-&gt;data, 64));
+ }
+ 
+ /* Check for fragmented data in priv-&gt;rx_skb. If the packet was no fragment
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000140.html">[at76c503a-develop] [PATCH 07/12] Re-examine and simplify code	where &quot;return&quot; is followed	by &quot;else&quot;
+</A></li>
+	<LI>Next message: <A HREF="000142.html">[at76c503a-develop] [PATCH 09/12] Rename functions ending with	&quot;matched&quot; to start with	&quot;at76_match&quot;
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#141">[ date ]</a>
+              <a href="thread.html#141">[ thread ]</a>
+              <a href="subject.html#141">[ subject ]</a>
+              <a href="author.html#141">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">More information about the at76c503a-develop
+mailing list</a><br>
+</body></html>

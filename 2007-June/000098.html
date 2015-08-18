@@ -1,0 +1,161 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [at76c503a-develop] New TODO list.
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/at76c503a-develop/2007-June/index.html" >
+   <LINK REL="made" HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20New%20TODO%20list.&In-Reply-To=%3C1181008855.31696.29.camel%40dv%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000099.html">
+   <LINK REL="Next"  HREF="000101.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[at76c503a-develop] New TODO list.</H1>
+    <B>Pavel Roskin</B> 
+    <A HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20New%20TODO%20list.&In-Reply-To=%3C1181008855.31696.29.camel%40dv%3E"
+       TITLE="[at76c503a-develop] New TODO list.">proski at gnu.org
+       </A><BR>
+    <I>Tue Jun  5 04:00:55 CEST 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000099.html">[at76c503a-develop] [PATCH 01/10] Merge	at76_handle_mgmt_timeout() and at76_work_mgmt_timeout()
+</A></li>
+        <LI>Next message: <A HREF="000101.html">[at76c503a-develop] [PATCH 1/2] Decouple networking from firmware	download
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#98">[ date ]</a>
+              <a href="thread.html#98">[ thread ]</a>
+              <a href="subject.html#98">[ subject ]</a>
+              <a href="author.html#98">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hello!
+
+This is the current TODO list for the driver.  It's not my personal TODO
+list.  Others are welcome to comment and to implement some of the items.
+The last thing I want is to discourage others from coding.
+
+I feel that the driver is approaching the point when it's on the par
+with the existing drivers, such as hostap.  I'm not taking about
+features, only about code quality and stability.  However, the
+requirements for the new drivers are much higher.
+
+The weird monitor mode implementation on top of scanning was giving me
+nightmares, but I could sort it out.  The twisted initialization process
+has been streamlined.  The remaining issues seem trivial in comparison.
+
+Merging timers and workqueues turns out to be more tricky than I
+expected, although it could lead to significant simplification of the
+code.
+
+The USB specific diagnostic macros raised some eyebrows during the
+initial submission.  I think the best approach would be to use standard
+printk, even if it means longer code.
+
+The header file has survived Lindent just fine, but the C file is not
+ready.  It still has excessive indentation in places, which will wrap
+badly.  Also, Lindent insists that we use one newline between functions.
+I changed one newline to two, perhaps I should change it back.
+
+Lindent produces much better results if we give it all typedefs used in
+the code.  This is my current Lindent:
+
+indent -npro -kr -i8 -ts8 -sob -l80 -ss -ncs \
+ -T s8 -T s16 -T s32 -T s64 \
+ -T __s8 -T __s16 -T __s32 -T __s64 \
+ -T u8 -T u16 -T u32 -T u64 \
+ -T __u8 -T __u16 -T __u32 -T __u64 \
+ -T __be16 -T __be32 -T __be64 \
+ -T __le16 -T __le32 -T __le64 \
+ -T size_t \
+ &quot;$@&quot;
+
+Wireless developers really don't like non-standard parameters (both
+module and iwpriv parameters).  I think we'll need to bring their number
+to the minimum.
+
+I think the driver is quickly approaching to the point when it can be
+re-submitted.  But we may get another list of requirements.
+
+The current TODO list:
+
+
+Patch available
+---------------
+
+Monitor mode should stay on one channel.
+
+Separate monitor mode from the scanning code.
+
+
+Required for kernel submission
+------------------------------
+
+Try to integrate timers and workqueues (if result is ugly, we'll be able
+to argue that we have tried).
+
+Fix last indentation issues (especially missing spaces around
+operators).
+
+Remove module parameters that can be set by iwpriv.
+
+
+Nice to do
+----------
+
+Create corresponding &quot;get&quot; iwpriv calls.
+
+Check rescheduled calls to see if they can be called directly.
+
+Change diagnostics to avoid printing full path to the kernel log.
+
+Integrate more functions.  In many cases, one function is called only in
+one place, and the separation of the code is artificial.
+
+Retest and reevaluate all locking.  Try to relax locks if safe.  In
+particular, avoid locking hard irqs.
+
+Share firmware with the PCI driver.
+
+
+Wishlist
+--------
+
+Support WPA.
+
+Port to mac80211.
+
+-- 
+Regards,
+Pavel Roskin
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000099.html">[at76c503a-develop] [PATCH 01/10] Merge	at76_handle_mgmt_timeout() and at76_work_mgmt_timeout()
+</A></li>
+	<LI>Next message: <A HREF="000101.html">[at76c503a-develop] [PATCH 1/2] Decouple networking from firmware	download
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#98">[ date ]</a>
+              <a href="thread.html#98">[ thread ]</a>
+              <a href="subject.html#98">[ subject ]</a>
+              <a href="author.html#98">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">More information about the at76c503a-develop
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,353 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [at76c503a-develop] [PATCH 10/12] Improve info messages,	avoid printing full path
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/at76c503a-develop/2007-June/index.html" >
+   <LINK REL="made" HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%2010/12%5D%20Improve%20info%20messages%2C%0A%09avoid%20printing%20full%20path&In-Reply-To=%3C20070614011142.25709.39171.stgit%40dv.roinet.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000117.html">
+   <LINK REL="Next"  HREF="000119.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[at76c503a-develop] [PATCH 10/12] Improve info messages,	avoid printing full path</H1>
+    <B>Pavel Roskin</B> 
+    <A HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%2010/12%5D%20Improve%20info%20messages%2C%0A%09avoid%20printing%20full%20path&In-Reply-To=%3C20070614011142.25709.39171.stgit%40dv.roinet.com%3E"
+       TITLE="[at76c503a-develop] [PATCH 10/12] Improve info messages,	avoid printing full path">proski at gnu.org
+       </A><BR>
+    <I>Thu Jun 14 03:11:42 CEST 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000117.html">[at76c503a-develop] [PATCH 09/12] Save results of usb_sndbulkpipe()	and usb_rcvbulkpipe()
+</A></li>
+        <LI>Next message: <A HREF="000119.html">[at76c503a-develop] [PATCH 11/12] Change SET_NET_DEVICE to use	interface-&gt;dev
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#118">[ date ]</a>
+              <a href="thread.html#118">[ thread ]</a>
+              <a href="subject.html#118">[ subject ]</a>
+              <a href="author.html#118">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Never use __FILE__, as it prints full path to the driver, which is
+rarely needed.  Use DRIVER_NAME instead.
+
+Replace all occurrences of info() with printk() calls.  Ensure that the
+messages are properly formatted and use the netdevice name if possible.
+
+Print MAC address, firmware version and regulatory domain after the
+device is registered, so we can provide the device name.
+
+Signed-off-by: Pavel Roskin &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">proski at gnu.org</A>&gt;
+---
+
+ at76_usb.c |   97 ++++++++++++++++++++++++++++++++----------------------------
+ at76_usb.h |    2 +
+ 2 files changed, 53 insertions(+), 46 deletions(-)
+
+diff --git a/at76_usb.c b/at76_usb.c
+index c763457..d363ff9 100644
+--- a/at76_usb.c
++++ b/at76_usb.c
+@@ -871,8 +871,9 @@ static int at76_set_mib(struct at76_priv *priv, struct set_mib_buffer *buf)
+ 		if (ret &gt;= 0) {
+ 			ret = at76_wait_completion(priv, CMD_SET_MIB);
+ 			if (ret != CMD_STATUS_COMPLETE) {
+-				info(&quot;%s: set_mib: at76_wait_completion failed &quot;
+-				     &quot;with %d&quot;, priv-&gt;netdev-&gt;name, ret);
++				printk(KERN_INFO
++				       &quot;%s: set_mib: at76_wait_completion failed &quot;
++				       &quot;with %d\n&quot;, priv-&gt;netdev-&gt;name, ret);
+ 				ret = -EIO;
+ 			}
+ 		}
+@@ -1400,7 +1401,8 @@ static int at76_get_current_bssid(struct at76_priv *priv)
+ 		goto err;
+ 	}
+ 	memcpy(priv-&gt;bssid, mac_mgmt-&gt;current_bssid, ETH_ALEN);
+-	info(&quot;using BSSID %s&quot;, mac2str(priv-&gt;bssid));
++	printk(KERN_INFO &quot;%s: using BSSID %s\n&quot;, priv-&gt;netdev-&gt;name,
++	       mac2str(priv-&gt;bssid));
+       err:
+ 	kfree(mac_mgmt);
+       exit:
+@@ -2451,9 +2453,10 @@ static int at76_iw_handler_set_freq(struct net_device *netdev,
+ 		ret = -EINVAL;
+ 	} else if (!priv-&gt;international_roaming) {
+ 		if (!(priv-&gt;domain-&gt;channel_map &amp; (1 &lt;&lt; (chan - 1)))) {
+-			info(&quot;%s: channel %d not allowed for domain %s &quot;
+-			     &quot;(and international_roaming is OFF)&quot;,
+-			     priv-&gt;netdev-&gt;name, chan, priv-&gt;domain-&gt;name);
++			printk(KERN_INFO
++			       &quot;%s: channel %d not allowed for domain %s &quot;
++			       &quot;(and international_roaming is OFF)\n&quot;,
++			       priv-&gt;netdev-&gt;name, chan, priv-&gt;domain-&gt;name);
+ 			ret = -EINVAL;
+ 		}
+ 	}
+@@ -3999,10 +4002,6 @@ static int at76_init_new_device(struct at76_priv *priv,
+ 	else
+ 		priv-&gt;rx_data_fcs_len = 4;
+ 
+-	info(&quot;firmware version %d.%d.%d #%d (fcs_len %d)&quot;,
+-	     req_fw_version.major, req_fw_version.minor,
+-	     req_fw_version.patch, req_fw_version.build, priv-&gt;rx_data_fcs_len);
+-
+ 	/* MAC address */
+ 	ret = at76_get_hw_config(priv);
+ 	if (ret &lt; 0) {
+@@ -4013,9 +4012,6 @@ static int at76_init_new_device(struct at76_priv *priv,
+ 	priv-&gt;domain = at76_get_reg_domain(priv-&gt;regulatory_domain);
+ 	/* init. netdev-&gt;dev_addr */
+ 	memcpy(netdev-&gt;dev_addr, priv-&gt;mac_addr, ETH_ALEN);
+-	info(&quot;device's MAC %s, regulatory domain %s (id %d)&quot;,
+-	     mac2str(priv-&gt;mac_addr), priv-&gt;domain-&gt;name,
+-	     priv-&gt;regulatory_domain);
+ 
+ 	/* initializing */
+ 	priv-&gt;international_roaming = IR_OFF;
+@@ -4057,9 +4053,17 @@ static int at76_init_new_device(struct at76_priv *priv,
+ 		    priv-&gt;netdev-&gt;name, ret);
+ 		goto error;
+ 	}
+-	info(&quot;registered %s&quot;, priv-&gt;netdev-&gt;name);
+ 	priv-&gt;netdev_registered = 1;
+ 
++	printk(KERN_INFO &quot;%s: MAC address %s\n&quot;, netdev-&gt;name,
++	       mac2str(priv-&gt;mac_addr));
++	printk(KERN_INFO &quot;%s: firmware version %d.%d.%d #%d (fcs_len %d)\n&quot;,
++	       netdev-&gt;name, req_fw_version.major, req_fw_version.minor,
++	       req_fw_version.patch, req_fw_version.build,
++	       priv-&gt;rx_data_fcs_len);
++	printk(KERN_INFO &quot;%s: regulatory domain %s (id %d)\n&quot;, netdev-&gt;name,
++	       priv-&gt;domain-&gt;name, priv-&gt;regulatory_domain);
++
+ 	/* we let this timer run the whole time this driver instance lives */
+ 	mod_timer(&amp;priv-&gt;bss_list_timer, jiffies + BSS_LIST_TIMEOUT);
+ 
+@@ -4091,7 +4095,7 @@ static int at76_load_external_fw(struct usb_device *udev, struct fwentry *fwe)
+ 	}
+ 
+ 	if (fwe-&gt;board_type == BOARDTYPE_505A_RFMD_2958) {
+-		info(&quot;200 ms delay for board type 7&quot;);
++		at76_dbg(DBG_DEVSTART, &quot;200 ms delay for board type 7&quot;);
+ 		schedule_timeout_interruptible(HZ / 5 + 1);
+ 	}
+ 	return 0;
+@@ -4290,9 +4294,10 @@ static void at76_work_join(struct work_struct *work)
+ 				err(&quot;%s join_bss completed with %d&quot;,
+ 				    priv-&gt;netdev-&gt;name, ret);
+ 			else
+-				info(&quot;%s join_bss ssid %s timed out&quot;,
+-				     priv-&gt;netdev-&gt;name,
+-				     mac2str(priv-&gt;curr_bss-&gt;bssid));
++				printk(KERN_INFO
++				       &quot;%s: join_bss ssid %s timed out\n&quot;,
++				       priv-&gt;netdev-&gt;name,
++				       mac2str(priv-&gt;curr_bss-&gt;bssid));
+ 
+ 			/* retry next BSS immediately */
+ 			schedule_work(&amp;priv-&gt;work_join);
+@@ -4365,8 +4370,8 @@ static void at76_work_mgmt_timeout(struct work_struct *work)
+ 
+ 	case CONNECTED:	/* we haven't received the beacon of this BSS for
+ 				   BEACON_TIMEOUT seconds */
+-		info(&quot;%s: lost beacon bssid %s&quot;,
+-		     priv-&gt;netdev-&gt;name, mac2str(priv-&gt;curr_bss-&gt;bssid));
++		printk(KERN_INFO &quot;%s: lost beacon bssid %s\n&quot;,
++		       priv-&gt;netdev-&gt;name, mac2str(priv-&gt;curr_bss-&gt;bssid));
+ 		/* jal: starting mgmt_timer in ad-hoc mode is questionable,
+ 		   but I'll leave it here to track down another lockup problem */
+ 		if (priv-&gt;iw_mode != IW_MODE_ADHOC) {
+@@ -4730,8 +4735,8 @@ static void at76_rx_mgmt_assoc(struct at76_priv *priv,
+ 		}
+ 		del_timer_sync(&amp;priv-&gt;mgmt_timer);
+ 	} else {
+-		info(&quot;%s: AssocResp in state %d ignored&quot;,
+-		     priv-&gt;netdev-&gt;name, priv-&gt;istate);
++		printk(KERN_INFO &quot;%s: AssocResp in state %d ignored\n&quot;,
++		       priv-&gt;netdev-&gt;name, priv-&gt;istate);
+ 	}
+ }
+ 
+@@ -4782,8 +4787,8 @@ static void at76_rx_mgmt_reassoc(struct at76_priv *priv,
+ 			schedule_work(&amp;priv-&gt;work_join);
+ 		}
+ 	} else {
+-		info(&quot;%s: ReAssocResp in state %d ignored&quot;,
+-		     priv-&gt;netdev-&gt;name, priv-&gt;istate);
++		printk(KERN_INFO &quot;%s: ReAssocResp in state %d ignored\n&quot;,
++		       priv-&gt;netdev-&gt;name, priv-&gt;istate);
+ 	}
+ }
+ 
+@@ -4830,8 +4835,8 @@ static void at76_rx_mgmt_disassoc(struct at76_priv *priv,
+ 			schedule_work(&amp;priv-&gt;work_join);
+ 		} else {
+ 			/* ignore DisAssoc in states AUTH, ASSOC */
+-			info(&quot;%s: DisAssoc in state %d ignored&quot;,
+-			     priv-&gt;netdev-&gt;name, priv-&gt;istate);
++			printk(KERN_INFO &quot;%s: DisAssoc in state %d ignored\n&quot;,
++			       priv-&gt;netdev-&gt;name, priv-&gt;istate);
+ 		}
+ 	}
+ 	/* ignore DisAssoc to other STA or from other BSSID */
+@@ -4856,13 +4861,13 @@ static void at76_rx_mgmt_auth(struct at76_priv *priv,
+ 			 priv-&gt;netdev-&gt;name, hex2str(resp-&gt;info_element, 18));
+ 	}
+ 	if (priv-&gt;istate != AUTHENTICATING) {
+-		info(&quot;%s: ignored AuthFrame in state %d&quot;,
+-		     priv-&gt;netdev-&gt;name, priv-&gt;istate);
++		printk(KERN_INFO &quot;%s: ignored AuthFrame in state %d\n&quot;,
++		       priv-&gt;netdev-&gt;name, priv-&gt;istate);
+ 		return;
+ 	}
+ 	if (priv-&gt;auth_mode != alg) {
+-		info(&quot;%s: ignored AuthFrame for alg %d&quot;,
+-		     priv-&gt;netdev-&gt;name, alg);
++		printk(KERN_INFO &quot;%s: ignored AuthFrame for alg %d\n&quot;,
++		       priv-&gt;netdev-&gt;name, alg);
+ 		return;
+ 	}
+ 
+@@ -4937,8 +4942,8 @@ static void at76_rx_mgmt_deauth(struct at76_priv *priv,
+ 		/* ignore DeAuth to other STA or from other BSSID */
+ 	} else {
+ 		/* ignore DeAuth in states SCANNING */
+-		info(&quot;%s: DeAuth in state %d ignored&quot;,
+-		     priv-&gt;netdev-&gt;name, priv-&gt;istate);
++		printk(KERN_INFO &quot;%s: DeAuth in state %d ignored\n&quot;,
++		       priv-&gt;netdev-&gt;name, priv-&gt;istate);
+ 	}
+ }
+ 
+@@ -5239,8 +5244,8 @@ static void at76_rx_mgmt(struct at76_priv *priv, struct at76_rx_buffer *buf)
+ 		break;
+ 
+ 	default:
+-		info(&quot;%s: mgmt, but not beacon, subtype = %x&quot;,
+-		     priv-&gt;netdev-&gt;name, subtype);
++		printk(KERN_INFO &quot;%s: mgmt, but not beacon, subtype = %x\n&quot;,
++		       priv-&gt;netdev-&gt;name, subtype);
+ 	}
+ 
+ 	return;
+@@ -5257,7 +5262,7 @@ static void at76_dbg_dumpbuf(const char *tag, const u8 *buf, int size)
+ 		if ((i % 8) == 0) {
+ 			if (i)
+ 				pr_debug(&quot;\n&quot;);
+-			pr_debug(__FILE__ &quot;: %s: &quot;, tag);
++			pr_debug(DRIVER_NAME &quot;: %s: &quot;, tag);
+ 		}
+ 		pr_debug(&quot;%02x &quot;, buf[i]);
+ 	}
+@@ -5397,7 +5402,8 @@ static struct sk_buff *at76_check_for_rx_frags(struct at76_priv *priv)
+ 
+ 	if (data_len &lt; 0) {
+ 		/* make sure data starts in the buffer */
+-		info(&quot;%s: data frame too short&quot;, priv-&gt;netdev-&gt;name);
++		printk(KERN_INFO &quot;%s: data frame too short\n&quot;,
++		       priv-&gt;netdev-&gt;name);
+ 		return NULL;
+ 	}
+ 
+@@ -5479,9 +5485,10 @@ static struct sk_buff *at76_check_for_rx_frags(struct at76_priv *priv)
+ 				/* for test only ??? */
+ 				left = skb_tailroom(bptr-&gt;skb);
+ 				if (left &lt; data_len) {
+-					info(&quot;%s: only %d byte free (need %d)&quot;,
+-					     priv-&gt;netdev-&gt;name, left,
+-					     data_len);
++					printk(KERN_INFO
++					       &quot;%s: only %d byte free (need %d)\n&quot;,
++					       priv-&gt;netdev-&gt;name, left,
++					       data_len);
+ 				} else
+ 					memcpy(skb_put(bptr-&gt;skb, data_len),
+ 					       data, data_len);
+@@ -5789,8 +5796,8 @@ static void at76_rx_tasklet(unsigned long param)
+ 		break;
+ 
+ 	default:
+-		info(&quot;%s: it's a frame from mars: %2x&quot;, priv-&gt;netdev-&gt;name,
+-		     frame_ctl);
++		printk(KERN_INFO &quot;%s: it's a frame from mars: %2x\n&quot;,
++		       priv-&gt;netdev-&gt;name, frame_ctl);
+ 	}
+       finish:
+ 	at76_submit_rx_urb(priv);
+@@ -6037,9 +6044,9 @@ static void at76_disconnect(struct usb_interface *interface)
+ 	if (!priv)
+ 		return;
+ 
+-	info(&quot;%s disconnecting&quot;, priv-&gt;netdev-&gt;name);
++	printk(KERN_INFO &quot;%s: disconnecting\n&quot;, priv-&gt;netdev-&gt;name);
+ 	at76_delete_device(priv);
+-	info(DRIVER_NAME &quot; disconnected&quot;);
++	printk(KERN_INFO DRIVER_NAME &quot;: disconnected\n&quot;);
+ }
+ 
+ /* structure for registering this driver with the USB subsystem */
+@@ -6054,7 +6061,7 @@ static int __init at76_mod_init(void)
+ {
+ 	int result;
+ 
+-	info(DRIVER_DESC &quot; &quot; DRIVER_VERSION &quot; loading&quot;);
++	printk(KERN_INFO DRIVER_DESC &quot; &quot; DRIVER_VERSION &quot; loading\n&quot;);
+ 
+ 	/* register this driver with the USB subsystem */
+ 	result = usb_register(&amp;at76_driver);
+@@ -6070,7 +6077,7 @@ static void __exit at76_mod_exit(void)
+ {
+ 	int i;
+ 
+-	info(DRIVER_DESC &quot; &quot; DRIVER_VERSION &quot; unloading&quot;);
++	printk(KERN_INFO DRIVER_DESC &quot; &quot; DRIVER_VERSION &quot; unloading\n&quot;);
+ 	usb_deregister(&amp;at76_driver);
+ 	for (i = 0; i &lt; ARRAY_SIZE(firmwares); i++) {
+ 		if (firmwares[i].fw)
+diff --git a/at76_usb.h b/at76_usb.h
+index aeabc4a..9a8c327 100644
+--- a/at76_usb.h
++++ b/at76_usb.h
+@@ -682,7 +682,7 @@ struct at76_rx_radiotap {
+ #define at76_dbg(bits, format, arg...) \
+ 	do { \
+ 		if (at76_debug &amp; (bits)) \
+-		printk(KERN_DEBUG __FILE__ &quot;: &quot; format &quot;\n&quot; , ## arg);\
++		printk(KERN_DEBUG DRIVER_NAME &quot;: &quot; format &quot;\n&quot; , ## arg);\
+ 	} while (0)
+ 
+ #define at76_assert(x) \
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000117.html">[at76c503a-develop] [PATCH 09/12] Save results of usb_sndbulkpipe()	and usb_rcvbulkpipe()
+</A></li>
+	<LI>Next message: <A HREF="000119.html">[at76c503a-develop] [PATCH 11/12] Change SET_NET_DEVICE to use	interface-&gt;dev
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#118">[ date ]</a>
+              <a href="thread.html#118">[ thread ]</a>
+              <a href="subject.html#118">[ subject ]</a>
+              <a href="author.html#118">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">More information about the at76c503a-develop
+mailing list</a><br>
+</body></html>

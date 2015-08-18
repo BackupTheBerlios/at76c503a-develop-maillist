@@ -1,0 +1,113 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [at76c503a-develop] [patch] remove handheld macros and code
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/at76c503a-develop/2007-March/index.html" >
+   <LINK REL="made" HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5Bpatch%5D%20remove%20handheld%20macros%20and%20code&In-Reply-To=%3C20070312183829.GD10780%40hovland.org%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000025.html">
+   <LINK REL="Next"  HREF="000027.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[at76c503a-develop] [patch] remove handheld macros and code</H1>
+    <B>Erik Hovland</B> 
+    <A HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5Bpatch%5D%20remove%20handheld%20macros%20and%20code&In-Reply-To=%3C20070312183829.GD10780%40hovland.org%3E"
+       TITLE="[at76c503a-develop] [patch] remove handheld macros and code">erik at hovland.org
+       </A><BR>
+    <I>Mon Mar 12 19:38:29 CET 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000025.html">[at76c503a-develop] [PATCH] Reuse more structures from Linux	ieee80211 headers
+</A></li>
+        <LI>Next message: <A HREF="000027.html">[at76c503a-develop] [patch] remove handheld macros and code
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#26">[ date ]</a>
+              <a href="thread.html#26">[ thread ]</a>
+              <a href="subject.html#26">[ subject ]</a>
+              <a href="author.html#26">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>We have advanced our linux 2.6 port of our handhelds to the point where
+we are removing the macros and GPIO fiddling that is in the current
+driver. So to make it easier on you, we are asking that they be removed.
+I want to thank you for carrying our highly specific modification for so
+long and it is helpful that the code involve stay in the 2.4 branch
+(which I still currently maintain).
+
+Please apply the attached patch to the driver's git tree.
+
+Thanks
+
+E
+
+-- 
+Erik Hovland
+mail: <A HREF="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">erik at hovland.org</A>
+web: <A HREF="http://hovland.org/">http://hovland.org/</A>
+PGP/GPG public key available on request
+-------------- next part --------------
+Index: at76_usb/at76_usb.c
+===================================================================
+--- at76_usb.orig/at76_usb.c
++++ at76_usb/at76_usb.c
+@@ -6455,14 +6455,6 @@ static int __init mod_init(void)
+ 
+ 	info(DRIVER_DESC &quot; &quot; DRIVER_VERSION &quot; loading&quot;);
+ 
+-#ifdef CONFIG_IPAQ_HANDHELD
+-	if (machine_is_h5400()) {
+-		/* turn WLAN power on,both needed? */
+-		SET_H5400_ASIC_GPIO(GPB, RF_POWER_ON, 1);
+-		SET_H5400_ASIC_GPIO(GPB, WLAN_POWER_ON, 1);
+-	}
+-#endif
+-
+ 	/* register this driver with the USB subsystem */
+ 	result = usb_register(&amp;module_usb);
+ 	if (result &lt; 0) {
+@@ -6485,14 +6477,6 @@ static void __exit mod_exit(void)
+ 			release_firmware(firmwares[i].fw);
+ 	}
+ 	led_trigger_unregister_simple(ledtrig_tx);
+-
+-#ifdef CONFIG_IPAQ_HANDHELD
+-	if (machine_is_h5400()) {
+-		/* turn WLAN power off */
+-		SET_H5400_ASIC_GPIO(GPB, RF_POWER_ON, 0);
+-		SET_H5400_ASIC_GPIO(GPB, WLAN_POWER_ON, 0);
+-	}
+-#endif
+ }
+ 
+ module_param_named(debug, at76_debug, int, 0600);
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000025.html">[at76c503a-develop] [PATCH] Reuse more structures from Linux	ieee80211 headers
+</A></li>
+	<LI>Next message: <A HREF="000027.html">[at76c503a-develop] [patch] remove handheld macros and code
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#26">[ date ]</a>
+              <a href="thread.html#26">[ thread ]</a>
+              <a href="subject.html#26">[ subject ]</a>
+              <a href="author.html#26">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">More information about the at76c503a-develop
+mailing list</a><br>
+</body></html>

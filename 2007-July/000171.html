@@ -1,0 +1,91 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [at76c503a-develop] [PATCH 4/6] Avoid __LINE__ in debug messages
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/at76c503a-develop/2007-July/index.html" >
+   <LINK REL="made" HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%204/6%5D%20Avoid%20__LINE__%20in%20debug%20messages&In-Reply-To=%3C20070711075556.8445.4836.stgit%40dv.roinet.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000172.html">
+   <LINK REL="Next"  HREF="000173.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[at76c503a-develop] [PATCH 4/6] Avoid __LINE__ in debug messages</H1>
+    <B>Pavel Roskin</B> 
+    <A HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%204/6%5D%20Avoid%20__LINE__%20in%20debug%20messages&In-Reply-To=%3C20070711075556.8445.4836.stgit%40dv.roinet.com%3E"
+       TITLE="[at76c503a-develop] [PATCH 4/6] Avoid __LINE__ in debug messages">proski at gnu.org
+       </A><BR>
+    <I>Wed Jul 11 09:55:57 CEST 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000172.html">[at76c503a-develop] [PATCH 3/6] Avoid large &quot;if&quot; blocks to make	code more readable
+</A></li>
+        <LI>Next message: <A HREF="000173.html">[at76c503a-develop] [PATCH 5/6] Protect firmware loading with a	mutex
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#171">[ date ]</a>
+              <a href="thread.html#171">[ thread ]</a>
+              <a href="subject.html#171">[ subject ]</a>
+              <a href="author.html#171">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Printing line number can be misleading.  Limit it to the messages that
+are not unique throughout the code.
+
+Signed-off-by: Pavel Roskin &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">proski at gnu.org</A>&gt;
+---
+
+ at76_usb.c |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/at76_usb.c b/at76_usb.c
+index bb8b714..2a3a784 100644
+--- a/at76_usb.c
++++ b/at76_usb.c
+@@ -2013,10 +2013,10 @@ static void at76_handle_mgmt_timeout_scan(struct at76_priv *priv)
+ 		/* INFO: Hope it was a one off error - if not, scanning
+ 		   further down the line and stop this cycle */
+ 	}
+-	at76_dbg(DBG_PROGRESS, &quot;%s %s:%d got cmd_status %d (istate %d, &quot;
+-		 &quot;scan_runs %d)&quot;,
+-		 priv-&gt;netdev-&gt;name, __func__, __LINE__, status,
+-		 priv-&gt;istate, priv-&gt;scan_runs);
++	at76_dbg(DBG_PROGRESS,
++		 &quot;%s %s: got cmd_status %d (istate %d, scan_runs %d)&quot;,
++		 priv-&gt;netdev-&gt;name, __func__, status, priv-&gt;istate,
++		 priv-&gt;scan_runs);
+ 
+ 	if (status != CMD_STATUS_COMPLETE) {
+ 		if ((status != CMD_STATUS_IN_PROGRESS) &amp;&amp;
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000172.html">[at76c503a-develop] [PATCH 3/6] Avoid large &quot;if&quot; blocks to make	code more readable
+</A></li>
+	<LI>Next message: <A HREF="000173.html">[at76c503a-develop] [PATCH 5/6] Protect firmware loading with a	mutex
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#171">[ date ]</a>
+              <a href="thread.html#171">[ thread ]</a>
+              <a href="subject.html#171">[ subject ]</a>
+              <a href="author.html#171">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">More information about the at76c503a-develop
+mailing list</a><br>
+</body></html>

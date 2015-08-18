@@ -1,0 +1,173 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [at76c503a-develop] [PATCH 12/19] Remove rx_copybreak,	act as if it's 0
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/at76c503a-develop/2007-July/index.html" >
+   <LINK REL="made" HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%2012/19%5D%20Remove%20rx_copybreak%2C%0A%09act%20as%20if%20it%27s%200&In-Reply-To=%3C20070710062125.29117.10629.stgit%40dv.roinet.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000164.html">
+   <LINK REL="Next"  HREF="000155.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[at76c503a-develop] [PATCH 12/19] Remove rx_copybreak,	act as if it's 0</H1>
+    <B>Pavel Roskin</B> 
+    <A HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%2012/19%5D%20Remove%20rx_copybreak%2C%0A%09act%20as%20if%20it%27s%200&In-Reply-To=%3C20070710062125.29117.10629.stgit%40dv.roinet.com%3E"
+       TITLE="[at76c503a-develop] [PATCH 12/19] Remove rx_copybreak,	act as if it's 0">proski at gnu.org
+       </A><BR>
+    <I>Tue Jul 10 08:21:25 CEST 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000164.html">[at76c503a-develop] [PATCH 11/19] Use more definitions from	net/ieee80211.h and	linux/if_ether.h
+</A></li>
+        <LI>Next message: <A HREF="000155.html">[at76c503a-develop] [PATCH 13/19] Remove unused priv-&gt;ctrl_urb and	priv-&gt;ctrl_buffer
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#150">[ date ]</a>
+              <a href="thread.html#150">[ thread ]</a>
+              <a href="subject.html#150">[ subject ]</a>
+              <a href="author.html#150">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Remove a dubious optimization in the rx path.  For short (shorter than
+rx_copybreak, 200 bytes by default) unfragmented packets, a new, shorter
+skb would be allocated, and the data would be copied into it, allowing
+the original skb to be recycled for another incoming packet.
+
+For a good memory allocator, allocating an skb of any size should not
+depend on the skb size as long at it remains shorter than a page.  At
+least, the difference would be comparable to the price of copying the
+data.
+
+It's also likely that the newly allocated full-sized skb would actually
+use the memory left by consumption of the previous skb.  Using variable
+size skbs could increase memory fragmentation and time to find another
+full-sized skb when it's finally needed.
+
+And last but not least, correctness and maintainability of the driver is
+more important than a marginal speed increase in the code, especially if
+no waiting for hardware is involved.  Having two ways to do one thing
+increases complexity of the driver and the risk of breakage.
+
+Avoiding the optimization also allows to share more code between the
+fragmented and non-fragmented cases.
+
+Signed-off-by: Pavel Roskin &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">proski at gnu.org</A>&gt;
+---
+
+ at76_usb.c |   37 ++++++++++++-------------------------
+ 1 files changed, 12 insertions(+), 25 deletions(-)
+
+diff --git a/at76_usb.c b/at76_usb.c
+index f7dd37c..b8ae492 100644
+--- a/at76_usb.c
++++ b/at76_usb.c
+@@ -171,7 +171,6 @@ static struct usb_device_id dev_table[] = {
+ MODULE_DEVICE_TABLE(usb, dev_table);
+ 
+ /* Module parameters */
+-static int rx_copybreak = 200;
+ static int scan_min_time = 10;
+ static int scan_max_time = 120;
+ 
+@@ -5374,9 +5373,8 @@ static void at76_ieee80211_to_eth(struct sk_buff *skb, int iw_mode)
+    or it was the last of a fragment set a skb containing the whole packet
+    is returned for further processing. Otherwise we get NULL and are
+    done and the packet is either stored inside the fragment buffer
+-   or thrown away. The check for rx_copybreak is moved here.
+-   Every returned skb starts with the ieee802_11 header and contains
+-   _no_ FCS at the end */
++   or thrown away.  Every returned skb starts with the ieee802_11 header
++   and contains _no_ FCS at the end */
+ static struct sk_buff *at76_check_for_rx_frags(struct at76_priv *priv)
+ {
+ 	struct sk_buff *skb = priv-&gt;rx_skb;
+@@ -5421,30 +5419,13 @@ static struct sk_buff *at76_check_for_rx_frags(struct at76_priv *priv)
+ 		return NULL;
+ 	}
+ 
+-	if (fragnr == 0 &amp;&amp; !(frame_ctl &amp; IEEE80211_FCTL_MOREFRAGS)) {
+-		/* unfragmented packet received */
+-		if (length &lt; rx_copybreak
+-		    &amp;&amp; (skb = dev_alloc_skb(length)) != NULL) {
+-			memcpy(skb_put(skb, length),
+-			       priv-&gt;rx_skb-&gt;data + AT76_RX_HDRLEN, length);
+-		} else {
+-			skb_pull(skb, AT76_RX_HDRLEN);
+-			skb_trim(skb, length);
+-			/* Use a new skb for the next receive */
+-			priv-&gt;rx_skb = NULL;
+-		}
+-
+-		at76_dbg(DBG_RX_FRAGS, &quot;%s: unfragmented&quot;, priv-&gt;netdev-&gt;name);
+-
+-		return skb;
+-	}
++	at76_assert(length &gt; AT76_RX_HDRLEN);
+ 
+ 	/* remove the at76_rx_buffer header - we don't need it anymore */
+ 	/* we need the IEEE802.11 header (for the addresses) if this packet
+ 	   is the first of a chain */
+-
+-	at76_assert(length &gt; AT76_RX_HDRLEN);
+ 	skb_pull(skb, AT76_RX_HDRLEN);
++
+ 	/* remove FCS at end */
+ 	skb_trim(skb, length);
+ 
+@@ -5453,6 +5434,14 @@ static struct sk_buff *at76_check_for_rx_frags(struct at76_priv *priv)
+ 		 skb-&gt;head, skb-&gt;data, skb_tail_pointer(skb),
+ 		 skb_end_pointer(skb), skb-&gt;len, data, data_len);
+ 
++	if (fragnr == 0 &amp;&amp; !(frame_ctl &amp; IEEE80211_FCTL_MOREFRAGS)) {
++		/* unfragmented packet received */
++		/* Use a new skb for the next receive */
++		priv-&gt;rx_skb = NULL;
++		at76_dbg(DBG_RX_FRAGS, &quot;%s: unfragmented&quot;, priv-&gt;netdev-&gt;name);
++		return skb;
++	}
++
+ 	/* look if we've got a chain for the sender address.
+ 	   afterwards optr points to first free or the oldest entry,
+ 	   or, if i &lt; NR_RX_DATA_BUF, bptr points to the entry for the
+@@ -6093,8 +6082,6 @@ static void __exit at76_mod_exit(void)
+ 
+ module_param_named(debug, at76_debug, int, 0600);
+ MODULE_PARM_DESC(debug, &quot;Debugging level&quot;);
+-module_param(rx_copybreak, int, 0400);
+-MODULE_PARM_DESC(rx_copybreak, &quot;rx packet copy threshold&quot;);
+ 
+ module_init(at76_mod_init);
+ module_exit(at76_mod_exit);
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000164.html">[at76c503a-develop] [PATCH 11/19] Use more definitions from	net/ieee80211.h and	linux/if_ether.h
+</A></li>
+	<LI>Next message: <A HREF="000155.html">[at76c503a-develop] [PATCH 13/19] Remove unused priv-&gt;ctrl_urb and	priv-&gt;ctrl_buffer
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#150">[ date ]</a>
+              <a href="thread.html#150">[ thread ]</a>
+              <a href="subject.html#150">[ subject ]</a>
+              <a href="author.html#150">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">More information about the at76c503a-develop
+mailing list</a><br>
+</body></html>

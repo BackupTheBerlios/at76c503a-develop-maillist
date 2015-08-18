@@ -1,0 +1,103 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [at76c503a-develop] [PATCH 1/4] Fix possible mutex double-locking
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/at76c503a-develop/2008-May/index.html" >
+   <LINK REL="made" HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%201/4%5D%20Fix%20possible%20mutex%20double-locking&In-Reply-To=%3C20080501202603.7338.7111.stgit%40localhost%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000233.html">
+   <LINK REL="Next"  HREF="000235.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[at76c503a-develop] [PATCH 1/4] Fix possible mutex double-locking</H1>
+    <B>Milan Plzik</B> 
+    <A HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%201/4%5D%20Fix%20possible%20mutex%20double-locking&In-Reply-To=%3C20080501202603.7338.7111.stgit%40localhost%3E"
+       TITLE="[at76c503a-develop] [PATCH 1/4] Fix possible mutex double-locking">milan.plzik at gmail.com
+       </A><BR>
+    <I>Thu May  1 22:26:03 CEST 2008</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000233.html">[at76c503a-develop] [PATCH] Update of at76_usb to be	in	sync	with mac80211 API.
+</A></li>
+        <LI>Next message: <A HREF="000235.html">[at76c503a-develop] [PATCH 2/4] Don't leave queues stopped when not	neccessary.
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#234">[ date ]</a>
+              <a href="thread.html#234">[ thread ]</a>
+              <a href="subject.html#234">[ subject ]</a>
+              <a href="author.html#234">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>After finishing scan, at76_dwork_hw_scan locks priv-&gt;mtx and calls
+ieee80211_scan_completed, which in turn can possibly call at76_config,
+which tries to lock the mutex again.
+
+Signed-off-by: Milan Plzik &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">milan.plzik at gmail.com</A>&gt;
+---
+
+ 0 files changed, 0 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/net/wireless/at76_usb.c b/drivers/net/wireless/at76_usb.c
+index 33fa026..e1769c0 100644
+--- a/drivers/net/wireless/at76_usb.c
++++ b/drivers/net/wireless/at76_usb.c
+@@ -1900,8 +1900,6 @@ static void at76_dwork_hw_scan(struct work_struct *work)
+ 					      dwork_hw_scan.work);
+ 	int ret;
+ 
+-	mutex_lock(&amp;priv-&gt;mtx);
+-
+ 	ret = at76_get_cmd_status(priv-&gt;udev, CMD_SCAN);
+ 	at76_dbg(DBG_MAC80211, &quot;%s: CMD_SCAN status 0x%02x&quot;, __func__, ret);
+ 
+@@ -1912,16 +1910,14 @@ static void at76_dwork_hw_scan(struct work_struct *work)
+ 				   SCAN_POLL_INTERVAL);
+ 		goto exit;
+ 	}
+-
++	
+ 	ieee80211_scan_completed(priv-&gt;hw);
+ 
+ 	if (is_valid_ether_addr(priv-&gt;bssid))
+ 		at76_join(priv);
+ 
+-	ieee80211_start_queues(priv-&gt;hw);
+-
+ exit:
+-	mutex_unlock(&amp;priv-&gt;mtx);
++	return;
+ }
+ 
+ static int at76_hw_scan(struct ieee80211_hw *hw, u8 *ssid, size_t len)
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000233.html">[at76c503a-develop] [PATCH] Update of at76_usb to be	in	sync	with mac80211 API.
+</A></li>
+	<LI>Next message: <A HREF="000235.html">[at76c503a-develop] [PATCH 2/4] Don't leave queues stopped when not	neccessary.
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#234">[ date ]</a>
+              <a href="thread.html#234">[ thread ]</a>
+              <a href="subject.html#234">[ subject ]</a>
+              <a href="author.html#234">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">More information about the at76c503a-develop
+mailing list</a><br>
+</body></html>

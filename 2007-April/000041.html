@@ -1,0 +1,156 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [at76c503a-develop] [PATCH 4/4] Rename &quot;site survey&quot; to &quot;scan&quot;,	because it's a scan and nothing else
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/at76c503a-develop/2007-April/index.html" >
+   <LINK REL="made" HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%204/4%5D%20Rename%20%22site%20survey%22%20to%20%22scan%22%2C%0A%09because%20it%27s%20a%20scan%20and%20nothing%20else&In-Reply-To=%3C20070427071104.11648.87840.stgit%40dv.roinet.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000040.html">
+   <LINK REL="Next"  HREF="000042.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[at76c503a-develop] [PATCH 4/4] Rename &quot;site survey&quot; to &quot;scan&quot;,	because it's a scan and nothing else</H1>
+    <B>Pavel Roskin</B> 
+    <A HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%204/4%5D%20Rename%20%22site%20survey%22%20to%20%22scan%22%2C%0A%09because%20it%27s%20a%20scan%20and%20nothing%20else&In-Reply-To=%3C20070427071104.11648.87840.stgit%40dv.roinet.com%3E"
+       TITLE="[at76c503a-develop] [PATCH 4/4] Rename &quot;site survey&quot; to &quot;scan&quot;,	because it's a scan and nothing else">proski at gnu.org
+       </A><BR>
+    <I>Fri Apr 27 09:11:04 CEST 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000040.html">[at76c503a-develop] [PATCH 3/4] Fix access beyond end of	channel_frequency for unknown	regdomains
+</A></li>
+        <LI>Next message: <A HREF="000042.html">[at76c503a-develop] [PATCH 1/4] Split workqueues into separate	handlers
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#41">[ date ]</a>
+              <a href="thread.html#41">[ thread ]</a>
+              <a href="subject.html#41">[ subject ]</a>
+              <a href="author.html#41">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Signed-off-by: Pavel Roskin &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">proski at gnu.org</A>&gt;
+---
+
+ at76_usb.c |   22 +++++++++++-----------
+ at76_usb.h |   10 +++++-----
+ 2 files changed, 16 insertions(+), 16 deletions(-)
+
+diff --git a/at76_usb.c b/at76_usb.c
+index 8364830..fc43456 100644
+--- a/at76_usb.c
++++ b/at76_usb.c
+@@ -1673,7 +1673,7 @@ static void at76_handle_mgmt_timeout_scan(struct at76_priv *dev)
+ 				break;
+ 
+ 			case 3:
+-				dev-&gt;site_survey_state = SITE_SURVEY_COMPLETED;
++				dev-&gt;scan_state = SCAN_COMPLETED;
+ 				/* report the end of scan to user space */
+ 				at76_iwevent_scan_complete(dev-&gt;netdev);
+ 				dev-&gt;istate = JOINING;
+@@ -2464,7 +2464,7 @@ static void handle_scan(struct work_struct *work)
+ 	at76_assert(dev-&gt;istate == SCANNING);
+ 	/* only clear the bss list when a scan is actively initiated,
+ 	 * otherwise simply rely on at76_bss_list_timeout */
+-	if (dev-&gt;site_survey_state == SITE_SURVEY_IN_PROGRESS)
++	if (dev-&gt;scan_state == SCAN_IN_PROGRESS)
+ 		at76_free_bss_list(dev);
+ 
+ 	dev-&gt;scan_runs = 2;
+@@ -4311,8 +4311,8 @@ static int at76_open(struct net_device *netdev)
+ 	at76_dump_mib_mac_addr(dev);
+ #endif
+ 
+-	dev-&gt;site_survey_state = SITE_SURVEY_IDLE;
+-	dev-&gt;last_survey = jiffies;
++	dev-&gt;scan_state = SCAN_IDLE;
++	dev-&gt;last_scan = jiffies;
+ 	dev-&gt;nr_submit_rx_tries = NR_SUBMIT_RX_TRIES;	/* init counter */
+ 
+ 	if ((ret = at76_submit_rx_urb(dev)) &lt; 0) {
+@@ -4838,16 +4838,16 @@ static int at76_iw_handler_set_scan(struct net_device *netdev,
+ 	if (dev-&gt;iw_mode == IW_MODE_MONITOR)
+ 		return -EBUSY;
+ 
+-	/* Timeout old surveys. */
+-	if ((jiffies - dev-&gt;last_survey) &gt; (20 * HZ))
+-		dev-&gt;site_survey_state = SITE_SURVEY_IDLE;
+-	dev-&gt;last_survey = jiffies;
++	/* Discard old scan results */
++	if ((jiffies - dev-&gt;last_scan) &gt; (20 * HZ))
++		dev-&gt;scan_state = SCAN_IDLE;
++	dev-&gt;last_scan = jiffies;
+ 
+ 	/* Initiate a scan command */
+-	if (dev-&gt;site_survey_state == SITE_SURVEY_IN_PROGRESS)
++	if (dev-&gt;scan_state == SCAN_IN_PROGRESS)
+ 		return -EBUSY;
+ 
+-	dev-&gt;site_survey_state = SITE_SURVEY_IN_PROGRESS;
++	dev-&gt;scan_state = SCAN_IN_PROGRESS;
+ 
+ 	/* stop pending management stuff */
+ 	del_timer_sync(&amp;(dev-&gt;mgmt_timer));
+@@ -4915,7 +4915,7 @@ static int at76_iw_handler_get_scan(struct net_device *netdev,
+ 	if (!iwe)
+ 		return -ENOMEM;
+ 
+-	if (dev-&gt;site_survey_state != SITE_SURVEY_COMPLETED)
++	if (dev-&gt;scan_state != SCAN_COMPLETED)
+ 		/* scan not yet finished */
+ 		return -EAGAIN;
+ 
+diff --git a/at76_usb.h b/at76_usb.h
+index 3d52a79..411c2b5 100644
+--- a/at76_usb.h
++++ b/at76_usb.h
+@@ -533,11 +533,11 @@ struct at76_priv {
+ 							   send via bulk out */
+ 	enum infra_state istate;
+ 	enum {
+-		SITE_SURVEY_IDLE,
+-		SITE_SURVEY_IN_PROGRESS,
+-		SITE_SURVEY_COMPLETED
+-	} site_survey_state;
+-	time_t last_survey;
++		SCAN_IDLE,
++		SCAN_IN_PROGRESS,
++		SCAN_COMPLETED
++	} scan_state;
++	time_t last_scan;
+ 
+ 	struct timer_list restart_timer;	/* the timer we use to delay the restart a bit */
+ 
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000040.html">[at76c503a-develop] [PATCH 3/4] Fix access beyond end of	channel_frequency for unknown	regdomains
+</A></li>
+	<LI>Next message: <A HREF="000042.html">[at76c503a-develop] [PATCH 1/4] Split workqueues into separate	handlers
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#41">[ date ]</a>
+              <a href="thread.html#41">[ thread ]</a>
+              <a href="subject.html#41">[ subject ]</a>
+              <a href="author.html#41">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">More information about the at76c503a-develop
+mailing list</a><br>
+</body></html>

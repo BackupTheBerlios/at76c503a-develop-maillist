@@ -1,0 +1,139 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [at76c503a-develop] [PATCH 06/11] Don't ignore errors during	firmware download
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/at76c503a-develop/2007-June/index.html" >
+   <LINK REL="made" HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%2006/11%5D%20Don%27t%20ignore%20errors%20during%0A%09firmware%20download&In-Reply-To=%3C20070602180029.28397.74022.stgit%40dv.roinet.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000080.html">
+   <LINK REL="Next"  HREF="000082.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[at76c503a-develop] [PATCH 06/11] Don't ignore errors during	firmware download</H1>
+    <B>Pavel Roskin</B> 
+    <A HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%2006/11%5D%20Don%27t%20ignore%20errors%20during%0A%09firmware%20download&In-Reply-To=%3C20070602180029.28397.74022.stgit%40dv.roinet.com%3E"
+       TITLE="[at76c503a-develop] [PATCH 06/11] Don't ignore errors during	firmware download">proski at gnu.org
+       </A><BR>
+    <I>Sat Jun  2 20:00:29 CEST 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000080.html">[at76c503a-develop] [PATCH 05/11] Don't reschedule firmware loading
+</A></li>
+        <LI>Next message: <A HREF="000082.html">[at76c503a-develop] [PATCH 07/11] Internal firmware download should	just sleep without	any timers
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#81">[ date ]</a>
+              <a href="thread.html#81">[ thread ]</a>
+              <a href="subject.html#81">[ subject ]</a>
+              <a href="author.html#81">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Signed-off-by: Pavel Roskin &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">proski at gnu.org</A>&gt;
+---
+
+ at76_usb.c |   17 ++++++++++++-----
+ 1 files changed, 12 insertions(+), 5 deletions(-)
+
+diff --git a/at76_usb.c b/at76_usb.c
+index c4e99be..14baefc 100644
+--- a/at76_usb.c
++++ b/at76_usb.c
+@@ -4264,7 +4264,7 @@ static int at76_init_new_device(struct at76_priv *priv)
+ 
+ 
+ /* Download external firmware */
+-static void at76_load_external_fw(struct at76_priv *priv)
++static int at76_load_external_fw(struct at76_priv *priv)
+ {
+ 	int ret;
+ 	int op_mode;
+@@ -4276,6 +4276,7 @@ static void at76_load_external_fw(struct at76_priv *priv)
+ 
+ 	if (op_mode != OPMODE_NORMAL_NIC_WITHOUT_FLASH) {
+ 		err(&quot;unexpected opmode %d&quot;, op_mode);
++		ret = -EINVAL;
+ 		goto end_external_fw;
+ 	}
+ 
+@@ -4297,15 +4298,16 @@ static void at76_load_external_fw(struct at76_priv *priv)
+ 	mutex_unlock(&amp;priv-&gt;mtx);
+ 	if ((ret = at76_init_new_device(priv)) &lt; 0)
+ 		err(&quot;Downloading external firmware failed: %d&quot;, ret);
+-	return;
++	return ret;
+ 
+   end_external_fw:
+ 	mutex_unlock(&amp;priv-&gt;mtx);
++	return ret;
+ }
+ 
+ 
+ /* Download internal firmware */
+-static void at76_load_internal_fw(struct at76_priv *priv)
++static int at76_load_internal_fw(struct at76_priv *priv)
+ {
+ 	int ret;
+ 
+@@ -4336,6 +4338,7 @@ static void at76_load_internal_fw(struct at76_priv *priv)
+ 
+   end_internal_fw:
+ 	mutex_unlock(&amp;priv-&gt;mtx);
++	return ret;
+ }
+ 
+ 
+@@ -6279,7 +6282,9 @@ static int at76_probe(struct usb_interface *interface,
+ 		/* download internal firmware part */
+ 		at76_dbg(DBG_DEVSTART, &quot;downloading internal firmware&quot;);
+ 		priv-&gt;istate = INTFW_DOWNLOAD;
+-		at76_load_internal_fw(priv);
++		ret = at76_load_internal_fw(priv);
++		if (ret)
++			goto error;
+ 	} else {
+ 		/* Internal firmware already inside the device.  Get firmware
+ 		 * version to test if external firmware is loaded.
+@@ -6314,7 +6319,9 @@ static int at76_probe(struct usb_interface *interface,
+ 					 &quot;- download external firmware&quot;, ret);
+ 
+ 			priv-&gt;istate = EXTFW_DOWNLOAD;
+-			at76_load_external_fw(priv);
++			ret = at76_load_external_fw(priv);
++			if (ret)
++				goto error;
+ 		} else {
+ 			priv-&gt;istate = INIT;
+ 			if ((ret = at76_init_new_device(priv)) &lt; 0)
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000080.html">[at76c503a-develop] [PATCH 05/11] Don't reschedule firmware loading
+</A></li>
+	<LI>Next message: <A HREF="000082.html">[at76c503a-develop] [PATCH 07/11] Internal firmware download should	just sleep without	any timers
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#81">[ date ]</a>
+              <a href="thread.html#81">[ thread ]</a>
+              <a href="subject.html#81">[ subject ]</a>
+              <a href="author.html#81">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">More information about the at76c503a-develop
+mailing list</a><br>
+</body></html>

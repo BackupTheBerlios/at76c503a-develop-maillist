@@ -1,0 +1,105 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [at76c503a-develop] [PATCH 01/11] Rename tasklet to rx_tasklet,	the former is too generic
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/at76c503a-develop/2007-June/index.html" >
+   <LINK REL="made" HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%2001/11%5D%20Rename%20tasklet%20to%20rx_tasklet%2C%0A%09the%20former%20is%20too%20generic&In-Reply-To=%3C20070602180003.28397.98594.stgit%40dv.roinet.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   
+   <LINK REL="Next"  HREF="000077.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[at76c503a-develop] [PATCH 01/11] Rename tasklet to rx_tasklet,	the former is too generic</H1>
+    <B>Pavel Roskin</B> 
+    <A HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%2001/11%5D%20Rename%20tasklet%20to%20rx_tasklet%2C%0A%09the%20former%20is%20too%20generic&In-Reply-To=%3C20070602180003.28397.98594.stgit%40dv.roinet.com%3E"
+       TITLE="[at76c503a-develop] [PATCH 01/11] Rename tasklet to rx_tasklet,	the former is too generic">proski at gnu.org
+       </A><BR>
+    <I>Sat Jun  2 20:00:03 CEST 2007</I>
+    <P><UL>
+        
+        <LI>Next message: <A HREF="000077.html">[at76c503a-develop] [PATCH 02/11] Remove another unneeded cast
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#76">[ date ]</a>
+              <a href="thread.html#76">[ thread ]</a>
+              <a href="subject.html#76">[ subject ]</a>
+              <a href="author.html#76">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Signed-off-by: Pavel Roskin &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">proski at gnu.org</A>&gt;
+---
+
+ at76_usb.c |    6 +++---
+ at76_usb.h |    2 +-
+ 2 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/at76_usb.c b/at76_usb.c
+index f59d60b..fc27f51 100644
+--- a/at76_usb.c
++++ b/at76_usb.c
+@@ -1605,7 +1605,7 @@ static void at76_read_bulk_callback(struct urb *urb)
+ 	struct at76_priv *priv = urb-&gt;context;
+ 
+ 	priv-&gt;rx_urb = urb;
+-	tasklet_schedule(&amp;priv-&gt;tasklet);
++	tasklet_schedule(&amp;priv-&gt;rx_tasklet);
+ 	return;
+ }
+ 
+@@ -6170,8 +6170,8 @@ static struct at76_priv *at76_alloc_new_device(struct usb_device *udev,
+ 	for (i = 0; i &lt; NR_RX_DATA_BUF; i++)
+ 		priv-&gt;rx_data[i].skb = NULL;
+ 
+-	priv-&gt;tasklet.func = at76_rx_tasklet;
+-	priv-&gt;tasklet.data = (unsigned long)priv;
++	priv-&gt;rx_tasklet.func = at76_rx_tasklet;
++	priv-&gt;rx_tasklet.data = (unsigned long)priv;
+ 
+ 	priv-&gt;board_type = board_type;
+ 
+diff --git a/at76_usb.h b/at76_usb.h
+index 34f1862..4ea3e32 100644
+--- a/at76_usb.h
++++ b/at76_usb.h
+@@ -483,7 +483,7 @@ struct at76_priv {
+ 	struct work_struct work_submit_rx;
+ 
+ 	int nr_submit_rx_tries;	/* number of tries to submit an rx urb left */
+-	struct tasklet_struct tasklet;
++	struct tasklet_struct rx_tasklet;
+ 	struct urb *rx_urb;	/* tmp urb pointer for rx_tasklet */
+ 
+ 	void *ctrl_buffer;
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	
+	<LI>Next message: <A HREF="000077.html">[at76c503a-develop] [PATCH 02/11] Remove another unneeded cast
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#76">[ date ]</a>
+              <a href="thread.html#76">[ thread ]</a>
+              <a href="subject.html#76">[ subject ]</a>
+              <a href="author.html#76">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">More information about the at76c503a-develop
+mailing list</a><br>
+</body></html>

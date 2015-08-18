@@ -1,0 +1,137 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [at76c503a-develop] [PATCH 2/2] Don't keep priv-&gt;interface,	use USB interface provided in at76_probe()
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/at76c503a-develop/2007-June/index.html" >
+   <LINK REL="made" HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%202/2%5D%20Don%27t%20keep%20priv-%3Einterface%2C%0A%09use%20USB%20interface%20provided%20in%20at76_probe%28%29&In-Reply-To=%3C20070608071624.9966.94203.stgit%40dv.roinet.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000105.html">
+   <LINK REL="Next"  HREF="000106.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[at76c503a-develop] [PATCH 2/2] Don't keep priv-&gt;interface,	use USB interface provided in at76_probe()</H1>
+    <B>Pavel Roskin</B> 
+    <A HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%202/2%5D%20Don%27t%20keep%20priv-%3Einterface%2C%0A%09use%20USB%20interface%20provided%20in%20at76_probe%28%29&In-Reply-To=%3C20070608071624.9966.94203.stgit%40dv.roinet.com%3E"
+       TITLE="[at76c503a-develop] [PATCH 2/2] Don't keep priv-&gt;interface,	use USB interface provided in at76_probe()">proski at gnu.org
+       </A><BR>
+    <I>Fri Jun  8 09:16:24 CEST 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000105.html">[at76c503a-develop] [PATCH 1/2] Decouple networking from	firmware download
+</A></li>
+        <LI>Next message: <A HREF="000106.html">[at76c503a-develop] [PATCH 1/2] Don't use workqueue to reschedule	IBSS creation
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#100">[ date ]</a>
+              <a href="thread.html#100">[ thread ]</a>
+              <a href="subject.html#100">[ subject ]</a>
+              <a href="author.html#100">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>This reduces driver's dependency on USB internals.
+
+Signed-off-by: Pavel Roskin &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">proski at gnu.org</A>&gt;
+---
+
+ at76_usb.c |   16 +++++++---------
+ at76_usb.h |    1 -
+ 2 files changed, 7 insertions(+), 10 deletions(-)
+
+diff --git a/at76_usb.c b/at76_usb.c
+index ddd890b..6ad97c8 100644
+--- a/at76_usb.c
++++ b/at76_usb.c
+@@ -2293,9 +2293,9 @@ static void at76_delete_device(struct at76_priv *priv)
+ }
+ 
+ 
+-static int at76_alloc_urbs(struct at76_priv *priv)
++static int at76_alloc_urbs(struct at76_priv *priv,
++			   struct usb_interface *interface)
+ {
+-	struct usb_interface *interface = priv-&gt;interface;
+ 	struct usb_endpoint_descriptor *endpoint;
+ 	struct usb_device *udev = priv-&gt;udev;
+ 	int i, buffer_size;
+@@ -4039,7 +4039,8 @@ static struct ethtool_ops at76_ethtool_ops = {
+  * because hotplug may try to configure the netdev _before_ (or parallel to)
+  * the download of firmware
+  */
+-static int at76_init_new_device(struct at76_priv *priv)
++static int at76_init_new_device(struct at76_priv *priv,
++				struct usb_interface *interface)
+ {
+ 	struct net_device *netdev = priv-&gt;netdev;
+ 	int ret;
+@@ -4048,12 +4049,10 @@ static int at76_init_new_device(struct at76_priv *priv)
+ 	/* set up the endpoint information */
+ 	/* check out the endpoints */
+ 
+-	priv-&gt;interface = priv-&gt;udev-&gt;actconfig-&gt;interface[0];
+-
+ 	at76_dbg(DBG_DEVSTART, &quot;USB interface: %d endpoints&quot;,
+-		 priv-&gt;interface-&gt;cur_altsetting-&gt;desc.bNumEndpoints);
++		 interface-&gt;cur_altsetting-&gt;desc.bNumEndpoints);
+ 
+-	if ((ret = at76_alloc_urbs(priv)) &lt; 0)
++	if ((ret = at76_alloc_urbs(priv, interface)) &lt; 0)
+ 		goto error;
+ 
+ 	/* get firmware version */
+@@ -6196,10 +6195,9 @@ static int at76_probe(struct usb_interface *interface,
+ 	}
+ 
+ 	usb_set_intfdata(interface, priv);
+-	priv-&gt;interface = interface;
+ 	priv-&gt;fwe = fwe;
+ 
+-	ret = at76_init_new_device(priv);
++	ret = at76_init_new_device(priv, interface);
+ 	if (ret &lt; 0)
+ 		at76_delete_device(priv);
+ 
+diff --git a/at76_usb.h b/at76_usb.h
+index de5f035..204fb12 100644
+--- a/at76_usb.h
++++ b/at76_usb.h
+@@ -463,7 +463,6 @@ struct at76_priv {
+ 	struct net_device *netdev;	/* net device pointer */
+ 	struct net_device_stats stats;
+ 	struct iw_statistics wstats;
+-	struct usb_interface *interface;	/* the interface for this device */
+ 
+ 	struct sk_buff *rx_skb;	/* skbuff for receiving packets */
+ 	__u8 bulk_in_endpointAddr;	/* the address of the bulk in endpoint */
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000105.html">[at76c503a-develop] [PATCH 1/2] Decouple networking from	firmware download
+</A></li>
+	<LI>Next message: <A HREF="000106.html">[at76c503a-develop] [PATCH 1/2] Don't use workqueue to reschedule	IBSS creation
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#100">[ date ]</a>
+              <a href="thread.html#100">[ thread ]</a>
+              <a href="subject.html#100">[ subject ]</a>
+              <a href="author.html#100">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">More information about the at76c503a-develop
+mailing list</a><br>
+</body></html>

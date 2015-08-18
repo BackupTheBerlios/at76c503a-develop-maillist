@@ -1,0 +1,150 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [at76c503a-develop] [PATCH 5/6] Protect firmware loading with a	mutex
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/at76c503a-develop/2007-July/index.html" >
+   <LINK REL="made" HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%205/6%5D%20Protect%20firmware%20loading%20with%20a%0A%09mutex&In-Reply-To=%3C20070711075602.8445.1955.stgit%40dv.roinet.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000171.html">
+   <LINK REL="Next"  HREF="000174.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[at76c503a-develop] [PATCH 5/6] Protect firmware loading with a	mutex</H1>
+    <B>Pavel Roskin</B> 
+    <A HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%205/6%5D%20Protect%20firmware%20loading%20with%20a%0A%09mutex&In-Reply-To=%3C20070711075602.8445.1955.stgit%40dv.roinet.com%3E"
+       TITLE="[at76c503a-develop] [PATCH 5/6] Protect firmware loading with a	mutex">proski at gnu.org
+       </A><BR>
+    <I>Wed Jul 11 09:56:02 CEST 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000171.html">[at76c503a-develop] [PATCH 4/6] Avoid __LINE__ in debug messages
+</A></li>
+        <LI>Next message: <A HREF="000174.html">[at76c503a-develop] [PATCH 6/6] Use is_broadcast_ether_addr() where	appropriate
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#173">[ date ]</a>
+              <a href="thread.html#173">[ thread ]</a>
+              <a href="subject.html#173">[ subject ]</a>
+              <a href="author.html#173">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Otherwise, two devices could try to load and parse the same firmware at
+the same time.
+
+Signed-off-by: Pavel Roskin &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">proski at gnu.org</A>&gt;
+---
+
+ at76_usb.c |   23 ++++++++++++++++++-----
+ 1 files changed, 18 insertions(+), 5 deletions(-)
+
+diff --git a/at76_usb.c b/at76_usb.c
+index 2a3a784..0ec97e1 100644
+--- a/at76_usb.c
++++ b/at76_usb.c
+@@ -46,6 +46,9 @@
+ 
+ static int at76_debug = DBG_DEFAULTS;
+ 
++/* Protect against concurrent firmware loading and parsing */
++static struct mutex fw_mutex;
++
+ static struct fwentry firmwares[] = {
+ 	[0] = {&quot;&quot;},
+ 	[BOARDTYPE_503_INTERSIL_3861] = {&quot;atmel_at76c503-i3861.bin&quot;},
+@@ -5853,9 +5856,11 @@ static struct fwentry *at76_load_firmware(struct usb_device *udev,
+ 	struct at76_fw_header *fwh;
+ 	struct fwentry *fwe = &amp;firmwares[board_type];
+ 
++	mutex_lock(&amp;fw_mutex);
++
+ 	if (fwe-&gt;loaded) {
+ 		at76_dbg(DBG_FW, &quot;re-using previously loaded fw&quot;);
+-		return fwe;
++		goto fw_out;
+ 	}
+ 
+ 	at76_dbg(DBG_FW, &quot;downloading firmware %s&quot;, fwe-&gt;fwname);
+@@ -5864,7 +5869,7 @@ static struct fwentry *at76_load_firmware(struct usb_device *udev,
+ 		err(&quot;firmware %s not found.&quot;, fwe-&gt;fwname);
+ 		err(&quot;You may need to download the firmware from &quot;
+ 		    &quot;<A HREF="http://developer.berlios.de/projects/at76c503a/">http://developer.berlios.de/projects/at76c503a/</A>&quot;);
+-		return NULL;
++		goto fw_out;
+ 	}
+ 
+ 	at76_dbg(DBG_FW, &quot;got it.&quot;);
+@@ -5872,7 +5877,7 @@ static struct fwentry *at76_load_firmware(struct usb_device *udev,
+ 
+ 	if (fwe-&gt;fw-&gt;size &lt;= sizeof(*fwh)) {
+ 		err(&quot;firmware is too short (0x%zx)&quot;, fwe-&gt;fw-&gt;size);
+-		return NULL;
++		goto fw_out;
+ 	}
+ 
+ 	/* CRC currently not checked */
+@@ -5880,7 +5885,7 @@ static struct fwentry *at76_load_firmware(struct usb_device *udev,
+ 	if (fwe-&gt;board_type != board_type) {
+ 		err(&quot;board type mismatch, requested %u, got %u&quot;, board_type,
+ 		    fwe-&gt;board_type);
+-		return NULL;
++		goto fw_out;
+ 	}
+ 
+ 	fwe-&gt;fw_version.major = fwh-&gt;major;
+@@ -5903,7 +5908,13 @@ static struct fwentry *at76_load_firmware(struct usb_device *udev,
+ 		 le32_to_cpu(fwh-&gt;ext_fw_offset), le32_to_cpu(fwh-&gt;ext_fw_len));
+ 	at76_dbg(DBG_DEVSTART, &quot;firmware id %s&quot;, str);
+ 
+-	return fwe;
++      fw_out:
++	mutex_unlock(&amp;fw_mutex);
++
++	if (fwe-&gt;loaded)
++		return fwe;
++	else
++		return NULL;
+ }
+ 
+ static int at76_probe(struct usb_interface *interface,
+@@ -6035,6 +6046,8 @@ static int __init at76_mod_init(void)
+ 
+ 	printk(KERN_INFO DRIVER_DESC &quot; &quot; DRIVER_VERSION &quot; loading\n&quot;);
+ 
++	mutex_init(&amp;fw_mutex);
++
+ 	/* register this driver with the USB subsystem */
+ 	result = usb_register(&amp;at76_driver);
+ 	if (result &lt; 0) {
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000171.html">[at76c503a-develop] [PATCH 4/6] Avoid __LINE__ in debug messages
+</A></li>
+	<LI>Next message: <A HREF="000174.html">[at76c503a-develop] [PATCH 6/6] Use is_broadcast_ether_addr() where	appropriate
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#173">[ date ]</a>
+              <a href="thread.html#173">[ thread ]</a>
+              <a href="subject.html#173">[ subject ]</a>
+              <a href="author.html#173">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">More information about the at76c503a-develop
+mailing list</a><br>
+</body></html>

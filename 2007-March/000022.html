@@ -1,0 +1,94 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [at76c503a-develop] [PATCH] Fix divizion by zero in ad-hoc mode
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/at76c503a-develop/2007-March/index.html" >
+   <LINK REL="made" HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%5D%20Fix%20divizion%20by%20zero%20in%20ad-hoc%20mode&In-Reply-To=%3C20070305071906.5243.55134.stgit%40dl.roinet.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000024.html">
+   <LINK REL="Next"  HREF="000023.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[at76c503a-develop] [PATCH] Fix divizion by zero in ad-hoc mode</H1>
+    <B>Pavel Roskin</B> 
+    <A HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%5D%20Fix%20divizion%20by%20zero%20in%20ad-hoc%20mode&In-Reply-To=%3C20070305071906.5243.55134.stgit%40dl.roinet.com%3E"
+       TITLE="[at76c503a-develop] [PATCH] Fix divizion by zero in ad-hoc mode">proski at gnu.org
+       </A><BR>
+    <I>Mon Mar  5 08:19:06 CET 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000024.html">[at76c503a-develop] [PATCH 3/3] Remove all locking for istate
+</A></li>
+        <LI>Next message: <A HREF="000023.html">[at76c503a-develop] [PATCH] Fix divizion by zero in ad-hoc mode
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#22">[ date ]</a>
+              <a href="thread.html#22">[ thread ]</a>
+              <a href="subject.html#22">[ subject ]</a>
+              <a href="author.html#22">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>This would happen if the card gets more than one management packet in a
+jiffy.  Fix it by updating qual-&gt;qual at most once a second. 
+Measuremensts over a shorter period are meaningless anyway.
+Signed-off-by: Pavel Roskin &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">proski at gnu.org</A>&gt;
+---
+
+ at76_usb.c |   10 ++++++++--
+ 1 files changed, 8 insertions(+), 2 deletions(-)
+
+diff --git a/at76_usb.c b/at76_usb.c
+index 59a5ed5..b3ed6fb 100644
+--- a/at76_usb.c
++++ b/at76_usb.c
+@@ -3202,9 +3202,15 @@ static void calc_qual(struct at76c503 *dev, struct at76c503_rx_buffer *buf, stru
+ 	   (dev-&gt;board_type == BOARDTYPE_503_INTERSIL_3863)) {
+ 	    qual-&gt;qual=buf-&gt;link_quality;
+ 	} else {
++	    unsigned long msec;
++
++	    /* Update qual at most once a second */
++	    msec = jiffies_to_msecs(jiffies) - dev-&gt;beacons_last_qual;
++	    if (msec &lt; 1000)
++		return;
++
+ 	    qual-&gt;qual = qual-&gt;level * dev-&gt;beacons_received *
+-	    		        dev-&gt;beacon_period /
+-	                        (jiffies_to_msecs(jiffies) - dev-&gt;beacons_last_qual);
++			 dev-&gt;beacon_period / msec;
+ 		
+ 	    dev-&gt;beacons_last_qual = jiffies_to_msecs(jiffies);
+ 	    dev-&gt;beacons_received = 0;
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000024.html">[at76c503a-develop] [PATCH 3/3] Remove all locking for istate
+</A></li>
+	<LI>Next message: <A HREF="000023.html">[at76c503a-develop] [PATCH] Fix divizion by zero in ad-hoc mode
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#22">[ date ]</a>
+              <a href="thread.html#22">[ thread ]</a>
+              <a href="subject.html#22">[ subject ]</a>
+              <a href="author.html#22">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">More information about the at76c503a-develop
+mailing list</a><br>
+</body></html>

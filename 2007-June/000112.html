@@ -1,0 +1,260 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [at76c503a-develop] [PATCH 04/12] Fix more instances of bad	formatting
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/at76c503a-develop/2007-June/index.html" >
+   <LINK REL="made" HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%2004/12%5D%20Fix%20more%20instances%20of%20bad%0A%09formatting&In-Reply-To=%3C20070614011111.25709.81220.stgit%40dv.roinet.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000111.html">
+   <LINK REL="Next"  HREF="000113.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[at76c503a-develop] [PATCH 04/12] Fix more instances of bad	formatting</H1>
+    <B>Pavel Roskin</B> 
+    <A HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%2004/12%5D%20Fix%20more%20instances%20of%20bad%0A%09formatting&In-Reply-To=%3C20070614011111.25709.81220.stgit%40dv.roinet.com%3E"
+       TITLE="[at76c503a-develop] [PATCH 04/12] Fix more instances of bad	formatting">proski at gnu.org
+       </A><BR>
+    <I>Thu Jun 14 03:11:11 CEST 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000111.html">[at76c503a-develop] [PATCH 03/12] Simplify dumping hex data
+</A></li>
+        <LI>Next message: <A HREF="000113.html">[at76c503a-develop] [PATCH 05/12] Don't use double newline to	separate functions
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#112">[ date ]</a>
+              <a href="thread.html#112">[ thread ]</a>
+              <a href="subject.html#112">[ subject ]</a>
+              <a href="author.html#112">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Signed-off-by: Pavel Roskin &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">proski at gnu.org</A>&gt;
+---
+
+ at76_usb.c |   60 ++++++++++++++++++++++++++++++++++++------------------------
+ 1 files changed, 36 insertions(+), 24 deletions(-)
+
+diff --git a/at76_usb.c b/at76_usb.c
+index edc002b..af8369b 100644
+--- a/at76_usb.c
++++ b/at76_usb.c
+@@ -241,7 +241,7 @@ static int at76_dfu_download_block(struct dfu_ctx *ctx, u8 *buffer, int bytes,
+ 
+ 	memcpy(tmpbuf, buffer, bytes);
+ 
+-	result = usb_control_msg(udev, usb_sndctrlpipe(udev,0),
++	result = usb_control_msg(udev, usb_sndctrlpipe(udev, 0),
+ 				 DFU_DNLOAD,
+ 				 USB_TYPE_CLASS | USB_DIR_OUT | USB_RECIP_INTERFACE,
+ 				 block,	/* Value */
+@@ -299,7 +299,8 @@ static struct dfu_ctx *at76_dfu_alloc_ctx(struct usb_device *udev)
+ {
+ 	struct dfu_ctx *ctx;
+ 
+-	ctx = kmalloc(sizeof(struct dfu_ctx) + DFU_PACKETSIZE, GFP_KERNEL|GFP_DMA);
++	ctx = kmalloc(sizeof(struct dfu_ctx) + DFU_PACKETSIZE,
++		      GFP_KERNEL | GFP_DMA);
+ 	if (ctx) {
+ 		ctx-&gt;udev = udev;
+ 		ctx-&gt;buf = &amp;(ctx[1]);
+@@ -642,7 +643,7 @@ static inline int at76_get_hw_cfg_rfmd(struct usb_device *udev,
+ static inline int get_hw_cfg_intersil(struct usb_device *udev,
+ 				      union at76_hwcfg *buf, int buf_size)
+ {
+-	return usb_control_msg(udev, usb_rcvctrlpipe(udev,0),
++	return usb_control_msg(udev, usb_rcvctrlpipe(udev, 0),
+ 			       0x33, INTERFACE_VENDOR_REQUEST_IN,
+ 			       ((0x09 &lt;&lt; 8) | 0x02), 0,
+ 			       buf, buf_size, USB_CTRL_GET_TIMEOUT);
+@@ -709,10 +710,10 @@ static int at76_get_hw_config(struct at76_priv *priv)
+ static struct reg_domain const *at76_get_reg_domain(u16 code)
+ {
+ 	static struct reg_domain const fd_tab[] = {
+-		{0x10, &quot;FCC (U.S)&quot;, 0x7ff},	/* ch 1-11 */
++		{0x10, &quot;FCC (USA)&quot;, 0x7ff},	/* ch 1-11 */
+ 		{0x20, &quot;IC (Canada)&quot;, 0x7ff},	/* ch 1-11 */
+-		{0x30, &quot;ETSI (Europe - (Spain+France)&quot;, 0x1fff},	/* ch 1-13 */
+-		{0x31, &quot;Spain&quot;, 0x600},	/* ch 10,11 */
++		{0x30, &quot;ETSI (Europe except Spain and France)&quot;, 0x1fff},	/* ch 1-13 */
++		{0x31, &quot;Spain&quot;, 0x600},		/* ch 10-11 */
+ 		{0x32, &quot;France&quot;, 0x1e00},	/* ch 10-13 */
+ 		{0x40, &quot;MKK (Japan)&quot;, 0x2000},	/* ch 14 */
+ 		{0x41, &quot;MKK1 (Japan)&quot;, 0x3fff},	/* ch 1-14 */
+@@ -1573,7 +1574,7 @@ static int at76_start_ibss(struct at76_priv *priv)
+ 
+ 	ret = at76_wait_completion(priv, CMD_START_IBSS);
+ 	if (ret != CMD_STATUS_COMPLETE) {
+-		err(&quot;%s start_ibss failed to complete,%d&quot;,
++		err(&quot;%s start_ibss failed to complete, %d&quot;,
+ 		    priv-&gt;netdev-&gt;name, ret);
+ 		return ret;
+ 	}
+@@ -1867,7 +1868,8 @@ static int at76_assoc_req(struct at76_priv *priv, struct bss_info *bss)
+ 	tlv = req-&gt;info_element;
+ 
+ 	/* make wireless header */
+-	mgmt-&gt;frame_ctl = cpu_to_le16(IEEE80211_FTYPE_MGMT|IEEE80211_STYPE_ASSOC_REQ);
++	mgmt-&gt;frame_ctl = cpu_to_le16(IEEE80211_FTYPE_MGMT |
++				      IEEE80211_STYPE_ASSOC_REQ);
+ 
+ 	mgmt-&gt;duration_id = cpu_to_le16(0x8000);
+ 	memcpy(mgmt-&gt;addr1, bss-&gt;bssid, ETH_ALEN);
+@@ -1945,7 +1947,8 @@ static int at76_reassoc_req(struct at76_priv *priv, struct bss_info *curr_bss,
+ 
+ 	/* make wireless header */
+ 	/* jal: encrypt this packet if wep_enabled is TRUE ??? */
+-	mgmt-&gt;frame_ctl = cpu_to_le16(IEEE80211_FTYPE_MGMT|IEEE80211_STYPE_REASSOC_REQ);
++	mgmt-&gt;frame_ctl = cpu_to_le16(IEEE80211_FTYPE_MGMT |
++				      IEEE80211_STYPE_REASSOC_REQ);
+ 	mgmt-&gt;duration_id = cpu_to_le16(0x8000);
+ 	memcpy(mgmt-&gt;addr1, new_bss-&gt;bssid, ETH_ALEN);
+ 	memcpy(mgmt-&gt;addr2, priv-&gt;netdev-&gt;dev_addr, ETH_ALEN);
+@@ -1978,7 +1981,7 @@ static int at76_reassoc_req(struct at76_priv *priv, struct bss_info *curr_bss,
+ 	next_ie(&amp;tlv);
+ 
+ 	/* init. at76_priv tx header */
+-	tx_buffer-&gt;wlength = cpu_to_le16((u8 *)tlv-(u8 *)mgmt);
++	tx_buffer-&gt;wlength = cpu_to_le16((u8 *)tlv - (u8 *)mgmt);
+ 
+ 	tlv = req-&gt;info_element;
+ 	len = min_t(int, IW_ESSID_MAX_SIZE, tlv-&gt;len);
+@@ -2015,7 +2018,8 @@ static int at76_disassoc_req(struct at76_priv *priv, struct bss_info *bss)
+ 	mgmt = &amp;req-&gt;header;
+ 
+ 	/* make wireless header */
+-	mgmt-&gt;frame_ctl = cpu_to_le16(IEEE80211_FTYPE_MGMT|IEEE80211_STYPE_AUTH);
++	mgmt-&gt;frame_ctl = cpu_to_le16(IEEE80211_FTYPE_MGMT |
++				      IEEE80211_STYPE_AUTH);
+ 	mgmt-&gt;duration_id = cpu_to_le16(0x8000);
+ 	memcpy(mgmt-&gt;addr1, bss-&gt;bssid, ETH_ALEN);
+ 	memcpy(mgmt-&gt;addr2, priv-&gt;netdev-&gt;dev_addr, ETH_ALEN);
+@@ -2252,7 +2256,7 @@ static void at76_delete_device(struct at76_priv *priv)
+ 	/* signal to _stop() that the device is gone */
+ 	priv-&gt;device_unplugged = 1;
+ 
+-	at76_dbg(DBG_PROC_ENTRY, &quot;%s: ENTER&quot;,__FUNCTION__);
++	at76_dbg(DBG_PROC_ENTRY, &quot;%s: ENTER&quot;, __FUNCTION__);
+ 
+ 	if (priv-&gt;netdev_registered) {
+ 		unregister_netdev(priv-&gt;netdev);
+@@ -3719,7 +3723,7 @@ static int at76_tx(struct sk_buff *skb, struct net_device *netdev)
+ 	int submit_len;
+ 	struct at76_tx_buffer *tx_buffer = priv-&gt;bulk_out_buffer;
+ 	struct ieee80211_hdr_3addr *i802_11_hdr =
+-	    (struct ieee80211_hdr_3addr *)&amp;(tx_buffer-&gt;packet);
++	    (struct ieee80211_hdr_3addr *)(&amp;tx_buffer-&gt;packet);
+ 	u8 *payload = tx_buffer-&gt;packet + sizeof(struct ieee80211_hdr_3addr);
+ 
+ 	if (netif_queue_stopped(netdev)) {
+@@ -3757,8 +3761,10 @@ static int at76_tx(struct sk_buff *skb, struct net_device *netdev)
+ 		if (skb-&gt;data[2 * ETH_ALEN + 2] == rfc1042sig[0] &amp;&amp;
+ 		    skb-&gt;data[2 * ETH_ALEN + 2 + 1] == rfc1042sig[1]) {
+ 			/* higher layer delivered SNAP header - keep it */
+-			memcpy(payload, skb-&gt;data + 2*ETH_ALEN+2, skb-&gt;len - 2*ETH_ALEN -2);
+-			wlen = sizeof(struct ieee80211_hdr_3addr) + skb-&gt;len - 2*ETH_ALEN -2;
++			memcpy(payload, skb-&gt;data + 2 * ETH_ALEN + 2,
++			       skb-&gt;len - 2 * ETH_ALEN - 2);
++			wlen = sizeof(struct ieee80211_hdr_3addr) + skb-&gt;len -
++				   2 * ETH_ALEN - 2;
+ 		} else {
+ 			err(&quot;%s: %s: no support for non-SNAP 802.2 packets &quot;
+ 			    &quot;(DSAP x%02x SSAP x%02x cntrl x%02x)&quot;,
+@@ -3773,9 +3779,9 @@ static int at76_tx(struct sk_buff *skb, struct net_device *netdev)
+ 		/* add RFC 1042 header in front */
+ 		memcpy(payload, rfc1042sig, sizeof(rfc1042sig));
+ 		memcpy(payload + sizeof(rfc1042sig),
+-		       skb-&gt;data + 2*ETH_ALEN, skb-&gt;len - 2*ETH_ALEN);
++		       skb-&gt;data + 2 * ETH_ALEN, skb-&gt;len - 2 * ETH_ALEN);
+ 		wlen = sizeof(struct ieee80211_hdr_3addr) + sizeof(rfc1042sig) +
+-			skb-&gt;len - 2*ETH_ALEN;
++		    skb-&gt;len - 2 * ETH_ALEN;
+ 	}
+ 
+ 	/* make wireless header */
+@@ -5066,7 +5072,8 @@ static void at76_rx_mgmt_beacon(struct at76_priv *priv,
+ 		if (priv-&gt;curr_bss == NULL)
+ 			goto rx_mgmt_beacon_end;
+ 		if (!compare_ether_addr(priv-&gt;curr_bss-&gt;bssid, mgmt-&gt;addr3)) {
+-			mod_timer(&amp;priv-&gt;mgmt_timer, jiffies+BEACON_TIMEOUT*HZ);
++			mod_timer(&amp;priv-&gt;mgmt_timer,
++				  jiffies + BEACON_TIMEOUT * HZ);
+ 			priv-&gt;curr_bss-&gt;rssi = buf-&gt;rssi;
+ 			priv-&gt;beacons_received++;
+ 			goto rx_mgmt_beacon_end;
+@@ -5089,9 +5096,11 @@ static void at76_rx_mgmt_beacon(struct at76_priv *priv,
+ 
+ 	if (match == NULL) {
+ 		/* haven't found the bss in the list */
+-		if ((match=kmalloc(sizeof(struct bss_info), GFP_ATOMIC)) == NULL) {
+-			at76_dbg(DBG_BSS_TABLE, &quot;%s: cannot kmalloc new bss info (%zd byte)&quot;,
+-				    priv-&gt;netdev-&gt;name, sizeof(struct bss_info));
++		match = kmalloc(sizeof(struct bss_info), GFP_ATOMIC);
++		if (!match) {
++			at76_dbg(DBG_BSS_TABLE,
++				 &quot;%s: cannot kmalloc new bss info (%zd byte)&quot;,
++				 priv-&gt;netdev-&gt;name, sizeof(struct bss_info));
+ 			goto rx_mgmt_beacon_end;
+ 		}
+ 		memset(match, 0, sizeof(*match));
+@@ -5533,7 +5542,9 @@ static struct sk_buff *at76_check_for_rx_frags(struct at76_priv *priv)
+ 	/* determining the oldest entry doesn't cope with jiffies wrapping
+ 	   but I don't care to delete a young entry at these rare moments ... */
+ 
+-	for(i=0,bptr=priv-&gt;rx_data,optr=NULL; i &lt; NR_RX_DATA_BUF; i++,bptr++) {
++	bptr = priv-&gt;rx_data;
++	optr = NULL;
++	for (i = 0; i &lt; NR_RX_DATA_BUF; i++, bptr++) {
+ 		if (bptr-&gt;skb != NULL) {
+ 			if (!compare_ether_addr(i802_11_hdr-&gt;addr2, bptr-&gt;sender))
+ 				break;
+@@ -5561,14 +5572,15 @@ static struct sk_buff *at76_check_for_rx_frags(struct at76_priv *priv)
+ 		if (bptr-&gt;seqnr == seqnr) {
+ 			int left;
+ 			/* the fragment has the current sequence number */
+-			if (((bptr-&gt;fragnr+1)&amp;0xf) == fragnr) {
++			if (((bptr-&gt;fragnr + 1) &amp; 0xf) == fragnr) {
+ 				bptr-&gt;last_rx = jiffies;
+ 				/* the next following fragment number -&gt;
+ 				    add the data at the end */
+ 				/* is &amp; 0xf necessary above ??? */
+ 
+ 				/* for test only ??? */
+-				if ((left=skb_tailroom(bptr-&gt;skb)) &lt; data_len) {
++				left = skb_tailroom(bptr-&gt;skb);
++				if (left &lt; data_len) {
+ 					info(&quot;%s: only %d byte free (need %d)&quot;,
+ 					    priv-&gt;netdev-&gt;name, left, data_len);
+ 				} else
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000111.html">[at76c503a-develop] [PATCH 03/12] Simplify dumping hex data
+</A></li>
+	<LI>Next message: <A HREF="000113.html">[at76c503a-develop] [PATCH 05/12] Don't use double newline to	separate functions
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#112">[ date ]</a>
+              <a href="thread.html#112">[ thread ]</a>
+              <a href="subject.html#112">[ subject ]</a>
+              <a href="author.html#112">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">More information about the at76c503a-develop
+mailing list</a><br>
+</body></html>

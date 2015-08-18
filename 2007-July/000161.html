@@ -1,0 +1,163 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [at76c503a-develop] [PATCH 06/19] Make firmware download utilities	more uniform
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/at76c503a-develop/2007-July/index.html" >
+   <LINK REL="made" HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%2006/19%5D%20Make%20firmware%20download%20utilities%0A%09more%20uniform&In-Reply-To=%3C20070710062054.29117.43048.stgit%40dv.roinet.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000158.html">
+   <LINK REL="Next"  HREF="000149.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[at76c503a-develop] [PATCH 06/19] Make firmware download utilities	more uniform</H1>
+    <B>Pavel Roskin</B> 
+    <A HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%2006/19%5D%20Make%20firmware%20download%20utilities%0A%09more%20uniform&In-Reply-To=%3C20070710062054.29117.43048.stgit%40dv.roinet.com%3E"
+       TITLE="[at76c503a-develop] [PATCH 06/19] Make firmware download utilities	more uniform">proski at gnu.org
+       </A><BR>
+    <I>Tue Jul 10 08:20:54 CEST 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000158.html">[at76c503a-develop] [PATCH 05/19] Don't use GFP_DMA,	it's for ISA devices
+</A></li>
+        <LI>Next message: <A HREF="000149.html">[at76c503a-develop] [PATCH 07/19] Expand request type macros in	usb_control_msg() calls
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#161">[ date ]</a>
+              <a href="thread.html#161">[ thread ]</a>
+              <a href="subject.html#161">[ subject ]</a>
+              <a href="author.html#161">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Rename some functions and variables so that the internal and the
+external download don't look so different.
+
+Signed-off-by: Pavel Roskin &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">proski at gnu.org</A>&gt;
+---
+
+ at76_usb.c |   35 ++++++++++++++++++-----------------
+ 1 files changed, 18 insertions(+), 17 deletions(-)
+
+diff --git a/at76_usb.c b/at76_usb.c
+index d541413..ae1bc26 100644
+--- a/at76_usb.c
++++ b/at76_usb.c
+@@ -220,17 +220,18 @@ struct dfu_status {
+ 	unsigned char string;
+ } __attribute__ ((packed));
+ 
+-static int at76_dfu_download_block(struct usb_device *udev, u8 *buffer,
+-				   int bytes, int block)
++/* Load a block of the first (internal) part of the firmware */
++static int at76_load_int_fw_block(struct usb_device *udev, int blockno,
++				  void *block, int size)
+ {
+ 	int ret;
+ 
+-	at76_dbg(DBG_DFU, &quot;dfu_download_block(): buffer=%p, bytes=%d, block=%d&quot;,
+-		 buffer, bytes, block);
++	at76_dbg(DBG_DFU, &quot;dfu_download_block(): block=%p, size=%d, blockno=%d&quot;,
++		 block, size, blockno);
+ 
+ 	ret = usb_control_msg(udev, usb_sndctrlpipe(udev, 0), DFU_DNLOAD,
+ 			      USB_TYPE_CLASS | USB_DIR_OUT |
+-			      USB_RECIP_INTERFACE, block, 0, buffer, bytes,
++			      USB_RECIP_INTERFACE, blockno, 0, block, size,
+ 			      USB_CTRL_GET_TIMEOUT);
+ 	return ret;
+ }
+@@ -270,7 +271,7 @@ static inline u32 at76_get_timeout(struct dfu_status *s)
+ static int at76_usbdfu_download(struct usb_device *udev, u8 *dfu_buffer,
+ 				u32 dfu_len, int manifest_sync_timeout)
+ {
+-	u8 *dmabuf;
++	u8 *block;
+ 	struct dfu_status dfu_stat_buf;
+ 	int ret = 0;
+ 	int need_dfu_state = 1;
+@@ -290,8 +291,8 @@ static int at76_usbdfu_download(struct usb_device *udev, u8 *dfu_buffer,
+ 		return -EINVAL;
+ 	}
+ 
+-	dmabuf = kmalloc(DFU_PACKETSIZE, GFP_KERNEL);
+-	if (dmabuf == NULL)
++	block = kmalloc(DFU_PACKETSIZE, GFP_KERNEL);
++	if (block == NULL)
+ 		return -ENOMEM;
+ 
+ 	do {
+@@ -333,11 +334,10 @@ static int at76_usbdfu_download(struct usb_device *udev, u8 *dfu_buffer,
+ 
+ 			dfu_block_bytes = min(dfu_bytes_left, DFU_PACKETSIZE);
+ 			dfu_bytes_left -= dfu_block_bytes;
+-			memcpy(dmabuf, dfu_buffer + dfu_buffer_offset,
++			memcpy(block, dfu_buffer + dfu_buffer_offset,
+ 			       dfu_block_bytes);
+-			ret = at76_dfu_download_block(udev, dmabuf,
+-						      dfu_block_bytes,
+-						      dfu_block_cnt);
++			ret = at76_load_int_fw_block(udev, dfu_block_cnt, block,
++						     dfu_block_bytes);
+ 			dfu_buffer_offset += dfu_block_bytes;
+ 			dfu_block_cnt++;
+ 
+@@ -395,7 +395,7 @@ static int at76_usbdfu_download(struct usb_device *udev, u8 *dfu_buffer,
+ 	} while (!is_done &amp;&amp; (ret &gt;= 0));
+ 
+       exit:
+-	kfree(dmabuf);
++	kfree(block);
+ 	if (ret &gt;= 0)
+ 		ret = 0;
+ 
+@@ -560,13 +560,14 @@ static int at76_get_op_mode(struct usb_device *udev)
+ 	return op_mode;
+ }
+ 
+-/* Load a block of the second part of the firmware */
+-static inline int at76_load_ext_fw_block(struct usb_device *udev, int i,
+-					 void *buf, int bsize)
++/* Load a block of the second (&quot;external&quot;) part of the firmware */
++static inline int at76_load_ext_fw_block(struct usb_device *udev, int blockno,
++					 void *block, int size)
+ {
+ 	return usb_control_msg(udev, usb_sndctrlpipe(udev, 0),
+ 			       0x0e, DEVICE_VENDOR_REQUEST_OUT,
+-			       0x0802, i, buf, bsize, USB_CTRL_GET_TIMEOUT);
++			       0x0802, blockno, block, size,
++			       USB_CTRL_GET_TIMEOUT);
+ }
+ 
+ static inline int at76_get_hw_cfg_rfmd(struct usb_device *udev,
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000158.html">[at76c503a-develop] [PATCH 05/19] Don't use GFP_DMA,	it's for ISA devices
+</A></li>
+	<LI>Next message: <A HREF="000149.html">[at76c503a-develop] [PATCH 07/19] Expand request type macros in	usb_control_msg() calls
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#161">[ date ]</a>
+              <a href="thread.html#161">[ thread ]</a>
+              <a href="subject.html#161">[ subject ]</a>
+              <a href="author.html#161">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">More information about the at76c503a-develop
+mailing list</a><br>
+</body></html>

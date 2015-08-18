@@ -1,0 +1,307 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [at76c503a-develop] [PATCH 08/10] Align all labels at position 6,	as Lindent would do
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/at76c503a-develop/2007-June/index.html" >
+   <LINK REL="made" HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%2008/10%5D%20Align%20all%20labels%20at%20position%206%2C%0A%09as%20Lindent%20would%20do&In-Reply-To=%3C20070605010423.32602.85772.stgit%40dv.roinet.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000094.html">
+   <LINK REL="Next"  HREF="000096.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[at76c503a-develop] [PATCH 08/10] Align all labels at position 6,	as Lindent would do</H1>
+    <B>Pavel Roskin</B> 
+    <A HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%2008/10%5D%20Align%20all%20labels%20at%20position%206%2C%0A%09as%20Lindent%20would%20do&In-Reply-To=%3C20070605010423.32602.85772.stgit%40dv.roinet.com%3E"
+       TITLE="[at76c503a-develop] [PATCH 08/10] Align all labels at position 6,	as Lindent would do">proski at gnu.org
+       </A><BR>
+    <I>Tue Jun  5 03:04:23 CEST 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000094.html">[at76c503a-develop] [PATCH 07/10] Run unexpand on at76_usb.c to	convert spaces to tabs	when possible
+</A></li>
+        <LI>Next message: <A HREF="000096.html">[at76c503a-develop] [PATCH 09/10] Remove at76_ieee80211_fixup(),	it's not used
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#95">[ date ]</a>
+              <a href="thread.html#95">[ thread ]</a>
+              <a href="subject.html#95">[ subject ]</a>
+              <a href="author.html#95">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Signed-off-by: Pavel Roskin &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">proski at gnu.org</A>&gt;
+---
+
+ at76_usb.c |   64 ++++++++++++++++++++++++++++++------------------------------
+ 1 files changed, 32 insertions(+), 32 deletions(-)
+
+diff --git a/at76_usb.c b/at76_usb.c
+index fc9b774..ce6904a 100644
+--- a/at76_usb.c
++++ b/at76_usb.c
+@@ -448,7 +448,7 @@ static int at76_usbdfu_download(struct usb_device *udev, u8 *dfu_buffer,
+ 		}
+ 	} while (!is_done &amp;&amp; DFU_USB_SUCCESS(status));
+ 
+- exit:
++      exit:
+ 	kfree(ctx);
+ 	if (status &lt; 0)
+ 		return status;
+@@ -794,7 +794,7 @@ static int at76_download_external_fw(struct usb_device *udev, u8 *buf, int size)
+ 		goto exit;
+ 	}
+ 
+- exit:
++      exit:
+ 	kfree(block);
+ 	return ret;
+ }
+@@ -1158,9 +1158,9 @@ static int at76_dump_mib_mac_addr(struct at76_priv *priv)
+ 	       mac_addr-&gt;group_addr_status[0], mac_addr-&gt;group_addr_status[1],
+ 	       mac_addr-&gt;group_addr_status[2], mac_addr-&gt;group_addr_status[3]);
+ 
+- err:
++      err:
+ 	kfree(mac_addr);
+- exit:
++      exit:
+ 	return ret;
+ }
+ 
+@@ -1204,9 +1204,9 @@ static int at76_dump_mib_mac_wep(struct at76_priv *priv)
+ 							 '\0') :
+ 	       &quot;&lt;invalid key id&gt;&quot;);
+ 
+- err:
++      err:
+ 	kfree(mac_wep);
+- exit:
++      exit:
+ 	return ret;
+ }
+ 
+@@ -1260,9 +1260,9 @@ static int at76_dump_mib_mac_mgmt(struct at76_priv *priv)
+ 	       mac_mgmt-&gt;multi_domain_capability_implemented,
+ 	       mac_mgmt-&gt;multi_domain_capability_enabled,
+ 	       country_string);
+- err:
++      err:
+ 	kfree(mac_mgmt);
+- exit:
++      exit:
+ 	return ret;
+ }
+ 
+@@ -1310,7 +1310,7 @@ static int at76_dump_mib_mac(struct at76_priv *priv)
+ 	       mac2str(mac-&gt;desired_bssid), mac-&gt;desired_bsstype);
+       err:
+ 	kfree(mac);
+- exit:
++      exit:
+ 	return ret;
+ }
+ 
+@@ -1348,9 +1348,9 @@ static int at76_dump_mib_phy(struct at76_priv *priv)
+ 	       phy-&gt;operation_rate_set[2], phy-&gt;operation_rate_set[3],
+ 	       phy-&gt;channel_id,
+ 	       phy-&gt;current_cca_mode, phy-&gt;phy_type, phy-&gt;current_reg_domain);
+- err:
++      err:
+ 	kfree(phy);
+- exit:
++      exit:
+ 	return ret;
+ }
+ 
+@@ -1378,9 +1378,9 @@ static int at76_dump_mib_local(struct at76_priv *priv)
+ 	       local-&gt;beacon_enable,
+ 	       local-&gt;txautorate_fallback,
+ 	       local-&gt;ssid_size, local-&gt;promiscuous_mode, local-&gt;preamble_type);
+- err:
++      err:
+ 	kfree(local);
+- exit:
++      exit:
+ 	return ret;
+ }
+ 
+@@ -1405,9 +1405,9 @@ static int at76_get_mib_mdomain(struct at76_priv *priv, struct mib_mdomain *val)
+ 
+ 	memcpy(val, mdomain, sizeof(*val));
+ 
+- err:
++      err:
+ 	kfree(mdomain);
+- exit:
++      exit:
+ 	return ret;
+ }
+ 
+@@ -1452,9 +1452,9 @@ static int at76_get_current_bssid(struct at76_priv *priv)
+ 	}
+ 	memcpy(priv-&gt;bssid, mac_mgmt-&gt;current_bssid, ETH_ALEN);
+ 	info(&quot;using BSSID %s&quot;, mac2str(priv-&gt;bssid));
+- err:
++      err:
+ 	kfree(mac_mgmt);
+- exit:
++      exit:
+ 	return ret;
+ }
+ 
+@@ -1474,9 +1474,9 @@ static int at76_get_current_channel(struct at76_priv *priv)
+ 		goto err;
+ 	}
+ 	priv-&gt;channel = phy-&gt;channel_id;
+- err:
++      err:
+ 	kfree(phy);
+- exit:
++      exit:
+ 	return ret;
+ }
+ 
+@@ -3349,7 +3349,7 @@ static int at76_iw_handler_set_power(struct net_device *netdev,
+ 		}
+ 		priv-&gt;pm_mode = AT76_PM_ON;
+ 	}
+-out:
++      out:
+ 	return err;
+ }
+ 
+@@ -3832,7 +3832,7 @@ static int at76_tx(struct sk_buff *skb, struct net_device *netdev)
+ 	dev_kfree_skb(skb);
+ 	return 0;
+ 
+- err:
++      err:
+ 	return ret;
+ }
+ 
+@@ -3886,7 +3886,7 @@ static int at76_submit_rx_urb(struct at76_priv *priv)
+ 			err(&quot;%s: rx, usb_submit_urb failed: %d&quot;, priv-&gt;netdev-&gt;name, ret);
+ 	}
+ 
+-exit:
++      exit:
+ 	if (ret &lt; 0) {
+ 		if (ret != -ENODEV) {
+ 			/* If we can't submit the URB, the adapter becomes completely
+@@ -3941,7 +3941,7 @@ static int at76_open(struct net_device *netdev)
+ 	schedule_work(&amp;priv-&gt;work_restart);
+ 
+ 	at76_dbg(DBG_PROC_ENTRY, &quot;at76_open end&quot;);
+- err:
++      err:
+ 	mutex_unlock(&amp;priv-&gt;mtx);
+ 	return ret &lt; 0 ? ret : 0;
+ }
+@@ -4134,7 +4134,7 @@ static int at76_init_new_device(struct at76_priv *priv)
+ 	/* we let this timer run the whole time this driver instance lives */
+ 	mod_timer(&amp;priv-&gt;bss_list_timer, jiffies + BSS_LIST_TIMEOUT);
+ 
+- error:
++      error:
+ 	return ret;
+ }
+ 
+@@ -4175,7 +4175,7 @@ static int at76_load_external_fw(struct at76_priv *priv)
+ 		err(&quot;Downloading external firmware failed: %d&quot;, ret);
+ 	return ret;
+ 
+-  end_external_fw:
++      end_external_fw:
+ 	mutex_unlock(&amp;priv-&gt;mtx);
+ 	return ret;
+ }
+@@ -4213,7 +4213,7 @@ static int at76_load_internal_fw(struct at76_priv *priv)
+ 	usb_reset_device(priv-&gt;udev);
+ 	priv-&gt;istate = WAIT_FOR_DISCONNECT;
+ 
+-  end_internal_fw:
++      end_internal_fw:
+ 	mutex_unlock(&amp;priv-&gt;mtx);
+ 	return ret;
+ }
+@@ -4424,7 +4424,7 @@ static void at76_work_join(struct work_struct *work)
+ 	priv-&gt;istate = SCANNING;
+ 	schedule_work(&amp;priv-&gt;work_scan);
+ 
+-  end_join:
++      end_join:
+ 	mutex_unlock(&amp;priv-&gt;mtx);
+ }
+ 
+@@ -4567,7 +4567,7 @@ static void at76_work_new_bss(struct work_struct *work)
+ 	if (ret &lt; 0)
+ 		err(&quot;%s: set_mib (ibss change ok) failed: %d&quot;, netdev-&gt;name, ret);
+ 
+-  new_bss_clean:
++      new_bss_clean:
+ 	mutex_unlock(&amp;priv-&gt;mtx);
+ }
+ 
+@@ -4823,7 +4823,7 @@ static void at76_work_start_ibss(struct work_struct *work)
+ 	netif_carrier_on(priv-&gt;netdev);
+ 	netif_start_queue(priv-&gt;netdev);
+ 
+-  end_startibss:
++      end_startibss:
+ 	mutex_unlock(&amp;priv-&gt;mtx);
+ }
+ 
+@@ -5273,7 +5273,7 @@ static void at76_rx_mgmt_beacon(struct at76_priv *priv,
+ 
+ 	match-&gt;last_rx = jiffies; /* record last rx of beacon */
+ 
+-rx_mgmt_beacon_end:
++      rx_mgmt_beacon_end:
+ 	spin_unlock_irqrestore(&amp;priv-&gt;bss_list_spinlock, flags);
+ }
+ 
+@@ -6041,9 +6041,9 @@ static void at76_rx_tasklet(unsigned long param)
+ 		info(&quot;%s: it's a frame from mars: %2x&quot;, priv-&gt;netdev-&gt;name,
+ 		     frame_ctl);
+ 	}
+- finish:
++      finish:
+ 	at76_submit_rx_urb(priv);
+- no_more_urb:
++      no_more_urb:
+ 	return;
+ }
+ 
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000094.html">[at76c503a-develop] [PATCH 07/10] Run unexpand on at76_usb.c to	convert spaces to tabs	when possible
+</A></li>
+	<LI>Next message: <A HREF="000096.html">[at76c503a-develop] [PATCH 09/10] Remove at76_ieee80211_fixup(),	it's not used
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#95">[ date ]</a>
+              <a href="thread.html#95">[ thread ]</a>
+              <a href="subject.html#95">[ subject ]</a>
+              <a href="author.html#95">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">More information about the at76c503a-develop
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,124 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [at76c503a-develop] [PATCH 7/7] Remove &quot;a short overview on	Ethernet-II, 802.2, 802.3 and SNAP&quot;
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/at76c503a-develop/2007-July/index.html" >
+   <LINK REL="made" HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%207/7%5D%20Remove%20%22a%20short%20overview%20on%0A%09Ethernet-II%2C%20802.2%2C%20802.3%20and%20SNAP%22&In-Reply-To=%3C20070712065354.16841.16627.stgit%40dv.roinet.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000181.html">
+   <LINK REL="Next"  HREF="000183.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[at76c503a-develop] [PATCH 7/7] Remove &quot;a short overview on	Ethernet-II, 802.2, 802.3 and SNAP&quot;</H1>
+    <B>Pavel Roskin</B> 
+    <A HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%207/7%5D%20Remove%20%22a%20short%20overview%20on%0A%09Ethernet-II%2C%20802.2%2C%20802.3%20and%20SNAP%22&In-Reply-To=%3C20070712065354.16841.16627.stgit%40dv.roinet.com%3E"
+       TITLE="[at76c503a-develop] [PATCH 7/7] Remove &quot;a short overview on	Ethernet-II, 802.2, 802.3 and SNAP&quot;">proski at gnu.org
+       </A><BR>
+    <I>Thu Jul 12 08:53:54 CEST 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000181.html">[at76c503a-develop] [PATCH 6/7] Clean up eth frame conversion in	the rx path
+</A></li>
+        <LI>Next message: <A HREF="000183.html">[at76c503a-develop] at76_usb - fourth submission attempt
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#182">[ date ]</a>
+              <a href="thread.html#182">[ thread ]</a>
+              <a href="subject.html#182">[ subject ]</a>
+              <a href="author.html#182">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>It's way too big for a comment and doesn't belong to the source code.
+
+Signed-off-by: Pavel Roskin &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">proski at gnu.org</A>&gt;
+---
+
+ at76_usb.c |   42 ------------------------------------------
+ 1 files changed, 0 insertions(+), 42 deletions(-)
+
+diff --git a/at76_usb.c b/at76_usb.c
+index a4d10f8..af7d670 100644
+--- a/at76_usb.c
++++ b/at76_usb.c
+@@ -3577,48 +3577,6 @@ static const struct iw_handler_def at76_handler_def = {
+ 	.get_wireless_stats = at76_get_wireless_stats,
+ };
+ 
+-/* A short overview on Ethernet-II, 802.2, 802.3 and SNAP
+-   (taken from <A HREF="http://www.geocities.com/billalexander/ethernet.html">http://www.geocities.com/billalexander/ethernet.html</A>):
+-
+-Ethernet Frame Formats:
+-
+-Ethernet (a.k.a. Ethernet II)
+-
+-	+---------+---------+---------+----------
+-	|   Dst   |   Src   |  Type   |  Data...
+-	+---------+---------+---------+----------
+-
+-	 &lt;-- 6 --&gt; &lt;-- 6 --&gt; &lt;-- 2 --&gt; &lt;-46-1500-&gt;
+-
+-	 Type 0x80 0x00 = TCP/IP
+-	 Type 0x06 0x00 = XNS
+-	 Type 0x81 0x37 = Novell NetWare
+-
+-802.3
+-
+-	+---------+---------+---------+----------
+-	|   Dst   |   Src   | Length  | Data...
+-	+---------+---------+---------+----------
+-
+-	 &lt;-- 6 --&gt; &lt;-- 6 --&gt; &lt;-- 2 --&gt; &lt;-46-1500-&gt;
+-
+-802.2 (802.3 with 802.2 header)
+-
+-	+---------+---------+---------+-------+-------+-------+----------
+-	|   Dst   |   Src   | Length  | DSAP  | SSAP  |Control| Data...
+-	+---------+---------+---------+-------+-------+-------+----------
+-
+-				       &lt;- 1 -&gt; &lt;- 1 -&gt; &lt;- 1 -&gt; &lt;-43-1497-&gt;
+-
+-SNAP (802.3 with 802.2 and SNAP headers)
+-
+-	+---------+---------+---------+-------+-------+-------+-----------+---------+-----------
+-	|   Dst   |   Src   | Length  | 0xAA  | 0xAA  | 0x03  |  Org Code |   Type  | Data...
+-	+---------+---------+---------+-------+-------+-------+-----------+---------+-----------
+-
+-							       &lt;--  3  --&gt; &lt;-- 2 --&gt; &lt;-38-1492-&gt;
+-
+-*/
+ static const u8 snapsig[] = { 0xaa, 0xaa, 0x03 };
+ 
+ /* RFC 1042 encapsulates Ethernet frames in 802.2 SNAP (0xaa, 0xaa, 0x03) with
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000181.html">[at76c503a-develop] [PATCH 6/7] Clean up eth frame conversion in	the rx path
+</A></li>
+	<LI>Next message: <A HREF="000183.html">[at76c503a-develop] at76_usb - fourth submission attempt
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#182">[ date ]</a>
+              <a href="thread.html#182">[ thread ]</a>
+              <a href="subject.html#182">[ subject ]</a>
+              <a href="author.html#182">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">More information about the at76c503a-develop
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,123 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [at76c503a-develop] [PATCH 4/6] Never call net_device &quot;dev&quot;,	call it &quot;netdev&quot; for readability
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/at76c503a-develop/2007-May/index.html" >
+   <LINK REL="made" HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%204/6%5D%20Never%20call%20net_device%20%22dev%22%2C%0A%09call%20it%20%22netdev%22%20for%20readability&In-Reply-To=%3C20070502000057.14011.47651.stgit%40dv.roinet.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000065.html">
+   <LINK REL="Next"  HREF="000067.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[at76c503a-develop] [PATCH 4/6] Never call net_device &quot;dev&quot;,	call it &quot;netdev&quot; for readability</H1>
+    <B>Pavel Roskin</B> 
+    <A HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%204/6%5D%20Never%20call%20net_device%20%22dev%22%2C%0A%09call%20it%20%22netdev%22%20for%20readability&In-Reply-To=%3C20070502000057.14011.47651.stgit%40dv.roinet.com%3E"
+       TITLE="[at76c503a-develop] [PATCH 4/6] Never call net_device &quot;dev&quot;,	call it &quot;netdev&quot; for readability">proski at gnu.org
+       </A><BR>
+    <I>Wed May  2 02:00:57 CEST 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000065.html">[at76c503a-develop] [PATCH 3/6] Reorder the functions to avoid most	forward declarations
+</A></li>
+        <LI>Next message: <A HREF="000067.html">[at76c503a-develop] [PATCH 5/6] Call private data (at76_priv)	&quot;priv&quot;, not &quot;dev&quot;, the later is ambiguous
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#64">[ date ]</a>
+              <a href="thread.html#64">[ thread ]</a>
+              <a href="subject.html#64">[ subject ]</a>
+              <a href="author.html#64">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Signed-off-by: Pavel Roskin &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">proski at gnu.org</A>&gt;
+---
+
+ at76_usb.c |   21 ++++++++++++---------
+ 1 files changed, 12 insertions(+), 9 deletions(-)
+
+diff --git a/at76_usb.c b/at76_usb.c
+index 45d52d8..4659060 100644
+--- a/at76_usb.c
++++ b/at76_usb.c
+@@ -462,37 +462,40 @@ static int at76_usbdfu_download(struct usb_device *udev, u8 *dfu_buffer,
+ 
+ 
+ /* some abbrev. for wireless events */
+-static inline void at76_iwevent_scan_complete(struct net_device *dev)
++static inline void at76_iwevent_scan_complete(struct net_device *netdev)
+ {
+ 	union iwreq_data wrqu;
+ 	wrqu.data.length = 0;
+ 	wrqu.data.flags = 0;
+-	wireless_send_event(dev, SIOCGIWSCAN, &amp;wrqu, NULL);
+-	at76_dbg(DBG_WE_EVENTS, &quot;%s: SIOCGIWSCAN sent&quot;, dev-&gt;name);
++	wireless_send_event(netdev, SIOCGIWSCAN, &amp;wrqu, NULL);
++	at76_dbg(DBG_WE_EVENTS, &quot;%s: SIOCGIWSCAN sent&quot;, netdev-&gt;name);
+ }
+ 
+ 
+-static inline void at76_iwevent_bss_connect(struct net_device *dev, u8 *bssid)
++static inline void at76_iwevent_bss_connect(struct net_device *netdev,
++					    u8 *bssid)
+ {
+ 	union iwreq_data wrqu;
+ 	wrqu.data.length = 0;
+ 	wrqu.data.flags = 0;
+ 	memcpy(wrqu.ap_addr.sa_data, bssid, ETH_ALEN);
+ 	wrqu.ap_addr.sa_family = ARPHRD_ETHER;
+-	wireless_send_event(dev, SIOCGIWAP, &amp;wrqu, NULL);
+-	at76_dbg(DBG_WE_EVENTS, &quot;%s: %s: SIOCGIWAP sent&quot;, dev-&gt;name, __FUNCTION__);
++	wireless_send_event(netdev, SIOCGIWAP, &amp;wrqu, NULL);
++	at76_dbg(DBG_WE_EVENTS, &quot;%s: %s: SIOCGIWAP sent&quot;, netdev-&gt;name,
++		 __FUNCTION__);
+ }
+ 
+ 
+-static inline void at76_iwevent_bss_disconnect(struct net_device *dev)
++static inline void at76_iwevent_bss_disconnect(struct net_device *netdev)
+ {
+ 	union iwreq_data wrqu;
+ 	wrqu.data.length = 0;
+ 	wrqu.data.flags = 0;
+ 	memset(wrqu.ap_addr.sa_data, '\0', ETH_ALEN);
+ 	wrqu.ap_addr.sa_family = ARPHRD_ETHER;
+-	wireless_send_event(dev, SIOCGIWAP, &amp;wrqu, NULL);
+-	at76_dbg(DBG_WE_EVENTS, &quot;%s: %s: SIOCGIWAP sent&quot;, dev-&gt;name, __FUNCTION__);
++	wireless_send_event(netdev, SIOCGIWAP, &amp;wrqu, NULL);
++	at76_dbg(DBG_WE_EVENTS, &quot;%s: %s: SIOCGIWAP sent&quot;, netdev-&gt;name,
++		 __FUNCTION__);
+ }
+ 
+ 
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000065.html">[at76c503a-develop] [PATCH 3/6] Reorder the functions to avoid most	forward declarations
+</A></li>
+	<LI>Next message: <A HREF="000067.html">[at76c503a-develop] [PATCH 5/6] Call private data (at76_priv)	&quot;priv&quot;, not &quot;dev&quot;, the later is ambiguous
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#64">[ date ]</a>
+              <a href="thread.html#64">[ thread ]</a>
+              <a href="subject.html#64">[ subject ]</a>
+              <a href="author.html#64">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">More information about the at76c503a-develop
+mailing list</a><br>
+</body></html>

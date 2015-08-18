@@ -1,0 +1,126 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [at76c503a-develop] Status of the driver
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/at76c503a-develop/2007-May/index.html" >
+   <LINK REL="made" HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20Status%20of%20the%20driver&In-Reply-To=%3C20070501123424.GA12038%40bogon.ms20.nix%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000059.html">
+   <LINK REL="Next"  HREF="000063.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[at76c503a-develop] Status of the driver</H1>
+    <B>Guido Guenther</B> 
+    <A HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20Status%20of%20the%20driver&In-Reply-To=%3C20070501123424.GA12038%40bogon.ms20.nix%3E"
+       TITLE="[at76c503a-develop] Status of the driver">agx at sigxcpu.org
+       </A><BR>
+    <I>Tue May  1 14:34:24 CEST 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000059.html">[at76c503a-develop] Status of the driver
+</A></li>
+        <LI>Next message: <A HREF="000063.html">[at76c503a-develop] [PATCH 1/6] Merge at76_do_probe() into	at76_probe()
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#60">[ date ]</a>
+              <a href="thread.html#60">[ thread ]</a>
+              <a href="subject.html#60">[ subject ]</a>
+              <a href="author.html#60">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Hi Pavel.
+On Tue, May 01, 2007 at 12:15:58AM -0400, Pavel Roskin wrote:
+&gt;<i> I've just fixed a very bad bug in the driver.  Basically, it would cause
+</I>&gt;<i> kernel oops if the at76_usb module is loaded and unloaded twice.
+</I>Great!
+
+[..snip..]
+&gt;<i> My other serious concern is that the monitor mode is implemented on top
+</I>&gt;<i> of scan.  That's quite weird.  As a result, the device switches between
+</I>&gt;<i> different channels in the monitor mode instead of staying on the user
+</I>&gt;<i> selected channel.  At very least, the monitor mode should stay on the
+</I>&gt;<i> same channel.  Ideally, it should be completely separate from scanning.
+</I>That would be nice but can maybe be fixed up later.
+
+&gt;<i> We also need to integrate timers into workqueues.  It makes no sense to
+</I>&gt;<i> reschedule events twice.  That should be easy.
+</I>Agreed.
+
+&gt;<i> On the more cosmetic side, I'd like to rename &quot;dev&quot; to &quot;priv&quot; whenever
+</I>&gt;<i> it's used for the private data.  That's the standard convention in the
+</I>&gt;<i> network devices.  In fact, &quot;dev&quot; is often used for the network device.
+</I>&gt;<i> The driver is quite inconsistent now.  It uses &quot;dev&quot; and &quot;priv&quot; for
+</I>&gt;<i> private data, whereas the network device uses &quot;netdev&quot; and sometimes
+</I>&gt;<i> &quot;dev&quot;.
+</I>Yes, the current naming is very inconsistent and hurts the eye. I used
+priv for everything new but the old stuff should be renamed too, at
+least step by step.
+
+&gt;<i> Also, it would be nice to integrate at76_do_probe() into at76_probe().
+</I>&gt;<i> This split is quite illogical.  It splits similar code between two
+</I>Agreed.
+
+&gt;<i> I tried to find the suggestions by Johannes, but I'm afraid I'm missing
+</I>&gt;<i> some of his later e-mails.  Of the suggestions I could find, only two
+</I>&gt;<i> seem still relevant:
+</I>&gt;<i> 
+</I>&gt;<i> Re-indent the code.  I don't think we can do it wholesale, as it would
+</I>&gt;<i> damage some intentional formatting.  Bet there are still occurrences of
+</I>&gt;<i> very long lines and missing spaces around operators.  While at that, we
+</I>&gt;<i> should probably remove some debugging code.  I, for one, never trust
+</I>&gt;<i> debugging code written by others.
+</I>I reindentet much of the code using lindent a while ago, there shouldn't
+be too many bad spots left but those remaining should indeed be cleaned
+up. I wouldn't be sad to see the debugging code go, we can always keep
+it on a separate branch if we want the code to stay around.
+
+&gt;<i> Convert semaphores to mutexes.  That should be easy, as we only have one
+</I>&gt;<i> semaphore.  Semaphores are clearly a thing of the past.  All new
+</I>&gt;<i> wireless drivers are using mutexes.
+</I>&gt;<i> 
+</I>&gt;<i> Guido, could you please check if I missed anything of Johannes'
+</I>&gt;<i> suggestions?
+</I>- reorder code for less function prototypes
+- remove module parameters that can be set by iwpriv
+- pass struct at76_priv to at76_get_fw_info and fill that in instead of
+  using that many parameters
+and
+- move static u8 snapsig/rfc1042sig/hw_rates/channel_frequency out of
+  the header file
+which I just fixed.
+
+I think that's about it.
+Cheers,
+ -- Guido
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000059.html">[at76c503a-develop] Status of the driver
+</A></li>
+	<LI>Next message: <A HREF="000063.html">[at76c503a-develop] [PATCH 1/6] Merge at76_do_probe() into	at76_probe()
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#60">[ date ]</a>
+              <a href="thread.html#60">[ thread ]</a>
+              <a href="subject.html#60">[ subject ]</a>
+              <a href="author.html#60">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">More information about the at76c503a-develop
+mailing list</a><br>
+</body></html>

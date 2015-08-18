@@ -1,0 +1,115 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [at76c503a-develop] [PATCH 16/19] Make at76_dump_mib_mac_wep() more	readable
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/at76c503a-develop/2007-July/index.html" >
+   <LINK REL="made" HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%2016/19%5D%20Make%20at76_dump_mib_mac_wep%28%29%20more%0A%09readable&In-Reply-To=%3C20070710062145.29117.19755.stgit%40dv.roinet.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000160.html">
+   <LINK REL="Next"  HREF="000151.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[at76c503a-develop] [PATCH 16/19] Make at76_dump_mib_mac_wep() more	readable</H1>
+    <B>Pavel Roskin</B> 
+    <A HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%2016/19%5D%20Make%20at76_dump_mib_mac_wep%28%29%20more%0A%09readable&In-Reply-To=%3C20070710062145.29117.19755.stgit%40dv.roinet.com%3E"
+       TITLE="[at76c503a-develop] [PATCH 16/19] Make at76_dump_mib_mac_wep() more	readable">proski at gnu.org
+       </A><BR>
+    <I>Tue Jul 10 08:21:45 CEST 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000160.html">[at76c503a-develop] [PATCH 15/19] Make at76_match_mode() more	readable
+</A></li>
+        <LI>Next message: <A HREF="000151.html">[at76c503a-develop] [PATCH 17/19] Eliminate priv-&gt;rx_urb,	it shouldn't be there
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#165">[ date ]</a>
+              <a href="thread.html#165">[ thread ]</a>
+              <a href="subject.html#165">[ subject ]</a>
+              <a href="author.html#165">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>It looked scary even considering that it was a purely debugging
+function.
+
+Signed-off-by: Pavel Roskin &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">proski at gnu.org</A>&gt;
+---
+
+ at76_usb.c |   21 +++++++++++++--------
+ 1 files changed, 13 insertions(+), 8 deletions(-)
+
+diff --git a/at76_usb.c b/at76_usb.c
+index d0721de..c8bc55c 100644
+--- a/at76_usb.c
++++ b/at76_usb.c
+@@ -1091,6 +1091,7 @@ static int at76_dump_mib_mac_addr(struct at76_priv *priv)
+ static int at76_dump_mib_mac_wep(struct at76_priv *priv)
+ {
+ 	int ret = 0;
++	char *defkey;
+ 	struct mib_mac_wep *mac_wep =
+ 	    kmalloc(sizeof(struct mib_mac_wep), GFP_KERNEL);
+ 
+@@ -1106,18 +1107,22 @@ static int at76_dump_mib_mac_wep(struct at76_priv *priv)
+ 		goto err;
+ 	}
+ 
++	if (mac_wep-&gt;wep_default_key_id &lt; 4)
++		defkey =
++		    hex2str(mac_wep-&gt;
++			    wep_default_keyvalue[mac_wep-&gt;wep_default_key_id],
++			    mac_wep-&gt;encryption_level == 2 ? 13 : 5);
++	else
++		defkey = &quot;&lt;invalid key id&gt;&quot;;
++
+ 	dbg(&quot;%s: MIB MAC_WEP: priv_invoked %u def_key_id %u key_len %u &quot;
+-	    &quot;excl_unencr %u wep_icv_err %u wep_excluded %u encr_level %u key %d: %s&quot;,
+-	    priv-&gt;netdev-&gt;name, mac_wep-&gt;privacy_invoked,
++	    &quot;excl_unencr %u wep_icv_err %u wep_excluded %u encr_level %u &quot;
++	    &quot;key %d: %s&quot;, priv-&gt;netdev-&gt;name, mac_wep-&gt;privacy_invoked,
+ 	    mac_wep-&gt;wep_default_key_id, mac_wep-&gt;wep_key_mapping_len,
+ 	    mac_wep-&gt;exclude_unencrypted,
+ 	    le32_to_cpu(mac_wep-&gt;wep_icv_error_count),
+-	    le32_to_cpu(mac_wep-&gt;wep_excluded_count),
+-	    mac_wep-&gt;encryption_level, mac_wep-&gt;wep_default_key_id,
+-	    mac_wep-&gt;wep_default_key_id &lt; 4 ?
+-	    hex2str(mac_wep-&gt;wep_default_keyvalue[mac_wep-&gt;wep_default_key_id],
+-		    mac_wep-&gt;encryption_level == 2 ? 13 : 5) :
+-	    &quot;&lt;invalid key id&gt;&quot;);
++	    le32_to_cpu(mac_wep-&gt;wep_excluded_count), mac_wep-&gt;encryption_level,
++	    mac_wep-&gt;wep_default_key_id, defkey);
+ 
+       err:
+ 	kfree(mac_wep);
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000160.html">[at76c503a-develop] [PATCH 15/19] Make at76_match_mode() more	readable
+</A></li>
+	<LI>Next message: <A HREF="000151.html">[at76c503a-develop] [PATCH 17/19] Eliminate priv-&gt;rx_urb,	it shouldn't be there
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#165">[ date ]</a>
+              <a href="thread.html#165">[ thread ]</a>
+              <a href="subject.html#165">[ subject ]</a>
+              <a href="author.html#165">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">More information about the at76c503a-develop
+mailing list</a><br>
+</body></html>

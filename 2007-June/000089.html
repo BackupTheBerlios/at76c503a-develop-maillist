@@ -1,0 +1,88 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [at76c503a-develop] [PATCH 03/10] Don't document endianess in	comments, it's documented by the type
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/at76c503a-develop/2007-June/index.html" >
+   <LINK REL="made" HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%2003/10%5D%20Don%27t%20document%20endianess%20in%0A%09comments%2C%20it%27s%20documented%20by%20the%20type&In-Reply-To=%3C20070605010357.32602.47296.stgit%40dv.roinet.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000090.html">
+   <LINK REL="Next"  HREF="000092.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[at76c503a-develop] [PATCH 03/10] Don't document endianess in	comments, it's documented by the type</H1>
+    <B>Pavel Roskin</B> 
+    <A HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%2003/10%5D%20Don%27t%20document%20endianess%20in%0A%09comments%2C%20it%27s%20documented%20by%20the%20type&In-Reply-To=%3C20070605010357.32602.47296.stgit%40dv.roinet.com%3E"
+       TITLE="[at76c503a-develop] [PATCH 03/10] Don't document endianess in	comments, it's documented by the type">proski at gnu.org
+       </A><BR>
+    <I>Tue Jun  5 03:03:57 CEST 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000090.html">[at76c503a-develop] [PATCH 02/10] Rename request structures to make	them distinct from	functions
+</A></li>
+        <LI>Next message: <A HREF="000092.html">[at76c503a-develop] [PATCH 04/10] Remove support for channel	scanning in monitor mode
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#89">[ date ]</a>
+              <a href="thread.html#89">[ thread ]</a>
+              <a href="subject.html#89">[ subject ]</a>
+              <a href="author.html#89">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>While at that, improve the affected comments.
+
+Signed-off-by: Pavel Roskin &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">proski at gnu.org</A>&gt;
+---
+
+ at76_usb.h |    6 ++----
+ 1 files changed, 2 insertions(+), 4 deletions(-)
+
+diff --git a/at76_usb.h b/at76_usb.h
+index 428a562..7b7db30 100644
+--- a/at76_usb.h
++++ b/at76_usb.h
+@@ -418,10 +418,8 @@ struct bss_info {
+ 					   to make it printable */
+ 	u8 ssid_len;		/* length of ssid above */
+ 	u8 channel;
+-	u16 capa;		/* the capabilities of the BSS (in original endianess -
+-				   we only check IEEE802_11 bits in it) */
+-	u16 beacon_interval;	/* the beacon interval in units of TU (1.024 ms)
+-				   (in CPU endianess - we must calc. values from it) */
++	u16 capa;		/* BSS capabilities */
++	u16 beacon_interval;	/* beacon interval in Kus (1024 microseconds) */
+ 	u8 rates[BSS_LIST_MAX_RATE_LEN];	/* supported rates (list of bytes: 
+ 						   (basic_rate ? 0x80 : 0) + rate/(500 Kbit/s); e.g. 
+ 						   x82,x84,x8b,x96 for basic rates 1,2,5.5,11 MBit/s) */
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000090.html">[at76c503a-develop] [PATCH 02/10] Rename request structures to make	them distinct from	functions
+</A></li>
+	<LI>Next message: <A HREF="000092.html">[at76c503a-develop] [PATCH 04/10] Remove support for channel	scanning in monitor mode
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#89">[ date ]</a>
+              <a href="thread.html#89">[ thread ]</a>
+              <a href="subject.html#89">[ subject ]</a>
+              <a href="author.html#89">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">More information about the at76c503a-develop
+mailing list</a><br>
+</body></html>

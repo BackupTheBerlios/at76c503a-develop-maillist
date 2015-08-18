@@ -1,0 +1,323 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [at76c503a-develop] [PATCH 3/7] Replace at76_assert with standard	WARN_ON and BUG_ON	macros
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/at76c503a-develop/2007-July/index.html" >
+   <LINK REL="made" HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%203/7%5D%20Replace%20at76_assert%20with%20standard%0A%09WARN_ON%20and%20BUG_ON%09macros&In-Reply-To=%3C20070712065334.16841.60819.stgit%40dv.roinet.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000177.html">
+   <LINK REL="Next"  HREF="000179.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[at76c503a-develop] [PATCH 3/7] Replace at76_assert with standard	WARN_ON and BUG_ON	macros</H1>
+    <B>Pavel Roskin</B> 
+    <A HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%203/7%5D%20Replace%20at76_assert%20with%20standard%0A%09WARN_ON%20and%20BUG_ON%09macros&In-Reply-To=%3C20070712065334.16841.60819.stgit%40dv.roinet.com%3E"
+       TITLE="[at76c503a-develop] [PATCH 3/7] Replace at76_assert with standard	WARN_ON and BUG_ON	macros">proski at gnu.org
+       </A><BR>
+    <I>Thu Jul 12 08:53:34 CEST 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000177.html">[at76c503a-develop] [PATCH 2/7] Don't print misleading messages	about unexpected frames
+</A></li>
+        <LI>Next message: <A HREF="000179.html">[at76c503a-develop] [PATCH 4/7] Fix sloppiness in debug directives
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#178">[ date ]</a>
+              <a href="thread.html#178">[ thread ]</a>
+              <a href="subject.html#178">[ subject ]</a>
+              <a href="author.html#178">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Signed-off-by: Pavel Roskin &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">proski at gnu.org</A>&gt;
+---
+
+ at76_usb.c |   78 +++++++++++++++++++++---------------------------------------
+ at76_usb.h |    6 -----
+ 2 files changed, 27 insertions(+), 57 deletions(-)
+
+diff --git a/at76_usb.c b/at76_usb.c
+index 05d3b85..085c1c2 100644
+--- a/at76_usb.c
++++ b/at76_usb.c
+@@ -1473,7 +1473,7 @@ static int at76_start_ibss(struct at76_priv *priv)
+ 	struct at76_req_ibss bss;
+ 	int ret;
+ 
+-	at76_assert(priv-&gt;istate == STARTIBSS);
++	WARN_ON(priv-&gt;istate != STARTIBSS);
+ 
+ 	memset(&amp;bss, 0, sizeof(struct at76_req_ibss));
+ 	memset(bss.bssid, 0xff, ETH_ALEN);
+@@ -1526,7 +1526,7 @@ static int at76_join_bss(struct at76_priv *priv, struct bss_info *ptr)
+ {
+ 	struct at76_req_join join;
+ 
+-	at76_assert(ptr != NULL);
++	BUG_ON(ptr == NULL);
+ 
+ 	memset(&amp;join, 0, sizeof(struct at76_req_join));
+ 	memcpy(join.bssid, ptr-&gt;bssid, ETH_ALEN);
+@@ -1710,8 +1710,8 @@ static int at76_auth_req(struct at76_priv *priv, struct bss_info *bss,
+ 	int buf_len = (seq_nr != 3 ? AUTH_FRAME_SIZE :
+ 		       AUTH_FRAME_SIZE + 1 + 1 + challenge-&gt;len);
+ 
+-	at76_assert(bss != NULL);
+-	at76_assert(seq_nr != 3 || challenge != NULL);
++	BUG_ON(bss == NULL);
++	BUG_ON(seq_nr == 3 &amp;&amp; challenge == NULL);
+ 	tx_buffer = kmalloc(buf_len + MAX_PADDING_SIZE, GFP_ATOMIC);
+ 	if (!tx_buffer)
+ 		return -ENOMEM;
+@@ -1763,7 +1763,7 @@ static int at76_assoc_req(struct at76_priv *priv, struct bss_info *bss)
+ 	int len;
+ 	u16 capa;
+ 
+-	at76_assert(bss != NULL);
++	BUG_ON(bss == NULL);
+ 
+ 	tx_buffer = kmalloc(ASSOCREQ_MAX_SIZE + MAX_PADDING_SIZE, GFP_ATOMIC);
+ 	if (!tx_buffer)
+@@ -1839,8 +1839,8 @@ static int at76_reassoc_req(struct at76_priv *priv, struct bss_info *curr_bss,
+ 	int len;
+ 	int capa;
+ 
+-	at76_assert(curr_bss != NULL);
+-	at76_assert(new_bss != NULL);
++	BUG_ON(curr_bss == NULL);
++	BUG_ON(new_bss == NULL);
+ 	if (curr_bss == NULL || new_bss == NULL)
+ 		return -EFAULT;
+ 
+@@ -1914,9 +1914,7 @@ static int at76_disassoc_req(struct at76_priv *priv, struct bss_info *bss)
+ 	struct ieee80211_hdr_3addr *mgmt;
+ 	struct ieee80211_disassoc *req;
+ 
+-	at76_assert(bss != NULL);
+-	if (bss == NULL)
+-		return -EFAULT;
++	BUG_ON(bss == NULL);
+ 
+ 	tx_buffer = kmalloc(DISASSOC_FRAME_SIZE + MAX_PADDING_SIZE, GFP_ATOMIC);
+ 	if (!tx_buffer)
+@@ -2042,7 +2040,7 @@ static void at76_handle_mgmt_timeout_scan(struct at76_priv *priv)
+ 	switch (priv-&gt;scan_runs) {
+ 
+ 	case 1:
+-		at76_assert(priv-&gt;international_roaming);
++		WARN_ON(!priv-&gt;international_roaming);
+ 		ret = at76_get_mib_mdomain(priv, &amp;mdomain);
+ 		if (ret &lt; 0) {
+ 			err(&quot;at76_get_mib_mdomain returned %d&quot;, ret);
+@@ -2102,10 +2100,9 @@ static void at76_work_assoc_done(struct work_struct *work)
+ 
+ 	mutex_lock(&amp;priv-&gt;mtx);
+ 
+-	at76_assert(priv-&gt;istate == ASSOCIATING
+-		    || priv-&gt;istate == REASSOCIATING);
++	WARN_ON(priv-&gt;istate != ASSOCIATING &amp;&amp; priv-&gt;istate != REASSOCIATING);
+ 	if (priv-&gt;iw_mode == IW_MODE_INFRA) {
+-		at76_assert(priv-&gt;curr_bss != NULL);
++		WARN_ON(priv-&gt;curr_bss == NULL);
+ 		if (priv-&gt;curr_bss != NULL &amp;&amp; priv-&gt;pm_mode != AT76_PM_OFF) {
+ 			/* calculate the listen interval in units of
+ 			   beacon intervals of the curr_bss */
+@@ -4265,7 +4262,7 @@ static void at76_work_join(struct work_struct *work)
+ 	if (priv-&gt;istate == INIT)
+ 		goto end_join;
+ 
+-	at76_assert(priv-&gt;istate == JOINING);
++	WARN_ON(priv-&gt;istate != JOINING);
+ 	/* priv-&gt;curr_bss == NULL signals a new round,
+ 	   starting with list_entry(priv-&gt;bss_list.next, ...) */
+ 
+@@ -4355,11 +4352,6 @@ static void at76_work_mgmt_timeout(struct work_struct *work)
+ 		at76_handle_mgmt_timeout_scan(priv);
+ 		break;
+ 
+-	case MONITORING:
+-	case JOINING:
+-		at76_assert(0);
+-		break;
+-
+ 	case CONNECTED:	/* we haven't received the beacon of this BSS for
+ 				   BEACON_TIMEOUT seconds */
+ 		printk(KERN_INFO &quot;%s: lost beacon bssid %s\n&quot;,
+@@ -4440,7 +4432,8 @@ static void at76_work_mgmt_timeout(struct work_struct *work)
+ 		break;
+ 
+ 	default:
+-		at76_assert(0);
++		WARN_ON(1);
++		break;
+ 	}
+ 	mutex_unlock(&amp;priv-&gt;mtx);
+ }
+@@ -4490,7 +4483,7 @@ static int at76_startup_device(struct at76_priv *priv)
+ 		char ossid[IW_ESSID_MAX_SIZE + 1];
+ 
+ 		/* make priv-&gt;essid printable */
+-		at76_assert(priv-&gt;essid_size &lt;= IW_ESSID_MAX_SIZE);
++		WARN_ON(priv-&gt;essid_size &gt; IW_ESSID_MAX_SIZE);
+ 		memcpy(ossid, priv-&gt;essid, priv-&gt;essid_size);
+ 		ossid[priv-&gt;essid_size] = '\0';
+ 
+@@ -4639,7 +4632,7 @@ static void at76_work_scan(struct work_struct *work)
+ 
+ 	mutex_lock(&amp;priv-&gt;mtx);
+ 
+-	at76_assert(priv-&gt;istate == SCANNING);
++	WARN_ON(priv-&gt;istate != SCANNING);
+ 	/* only clear the bss list when a scan is actively initiated,
+ 	 * otherwise simply rely on at76_bss_list_timeout */
+ 	if (priv-&gt;scan_state == SCAN_IN_PROGRESS)
+@@ -4714,9 +4707,7 @@ static void at76_rx_mgmt_assoc(struct at76_priv *priv,
+ 		return;
+ 	}
+ 
+-	at76_assert(priv-&gt;curr_bss != NULL);
+-	if (priv-&gt;curr_bss == NULL)
+-		return;
++	BUG_ON(priv-&gt;curr_bss == NULL);
+ 
+ 	if (status == WLAN_STATUS_SUCCESS) {
+ 		struct bss_info *ptr = priv-&gt;curr_bss;
+@@ -4757,9 +4748,7 @@ static void at76_rx_mgmt_reassoc(struct at76_priv *priv,
+ 		return;
+ 	}
+ 
+-	at76_assert(priv-&gt;new_bss != NULL);
+-	if (priv-&gt;new_bss == NULL)
+-		return;
++	BUG_ON(priv-&gt;new_bss == NULL);
+ 
+ 	if (status == WLAN_STATUS_SUCCESS) {
+ 		struct bss_info *bptr = priv-&gt;new_bss;
+@@ -4802,14 +4791,8 @@ static void at76_rx_mgmt_disassoc(struct at76_priv *priv,
+ 	if (priv-&gt;istate == SCANNING || priv-&gt;istate == INIT)
+ 		return;
+ 
+-	at76_assert(priv-&gt;curr_bss != NULL);
+-	if (priv-&gt;curr_bss == NULL)
+-		return;
+-	if (priv-&gt;istate == REASSOCIATING) {
+-		at76_assert(priv-&gt;new_bss != NULL);
+-		if (priv-&gt;new_bss == NULL)
+-			return;
+-	}
++	BUG_ON(priv-&gt;curr_bss == NULL);
++	BUG_ON(priv-&gt;istate == REASSOCIATING &amp;&amp; priv-&gt;new_bss == NULL);
+ 
+ 	/* Not our BSSID, ignore */
+ 	if (compare_ether_addr(mgmt-&gt;addr3, priv-&gt;curr_bss-&gt;bssid))
+@@ -4870,9 +4853,7 @@ static void at76_rx_mgmt_auth(struct at76_priv *priv,
+ 		return;
+ 	}
+ 
+-	at76_assert(priv-&gt;curr_bss != NULL);
+-	if (priv-&gt;curr_bss == NULL)
+-		return;
++	BUG_ON(priv-&gt;curr_bss == NULL);
+ 
+ 	/* Not our BSSID or not for our STA, ignore */
+ 	if (compare_ether_addr(mgmt-&gt;addr3, priv-&gt;curr_bss-&gt;bssid)
+@@ -4897,7 +4878,7 @@ static void at76_rx_mgmt_auth(struct at76_priv *priv,
+ 		return;
+ 	}
+ 
+-	at76_assert(seq_nr == 2);
++	WARN_ON(seq_nr != 2);
+ 	at76_auth_req(priv, priv-&gt;curr_bss, seq_nr + 1, resp-&gt;info_element);
+ 	at76_dbg(DBG_MGMT_TIMER, &quot;%s:%d: starting mgmt_timer + HZ&quot;, __func__,
+ 		 __LINE__);
+@@ -4924,9 +4905,7 @@ static void at76_rx_mgmt_deauth(struct at76_priv *priv,
+ 		return;
+ 	}
+ 
+-	at76_assert(priv-&gt;curr_bss != NULL);
+-	if (priv-&gt;curr_bss == NULL)
+-		return;
++	BUG_ON(priv-&gt;curr_bss == NULL);
+ 
+ 	/* Not our BSSID, ignore */
+ 	if (compare_ether_addr(mgmt-&gt;addr3, priv-&gt;curr_bss-&gt;bssid))
+@@ -4972,9 +4951,8 @@ static void at76_rx_mgmt_beacon(struct at76_priv *priv,
+ 	if (priv-&gt;istate == CONNECTED) {
+ 		/* in state CONNECTED we use the mgmt_timer to control
+ 		   the beacon of the BSS */
+-		at76_assert(priv-&gt;curr_bss != NULL);
+-		if (priv-&gt;curr_bss == NULL)
+-			goto rx_mgmt_beacon_end;
++		BUG_ON(priv-&gt;curr_bss == NULL);
++
+ 		if (!compare_ether_addr(priv-&gt;curr_bss-&gt;bssid, mgmt-&gt;addr3)) {
+ 			/* We got our AP's beacon, defer the timeout handler.
+ 			   Kill pending work first, as schedule_delayed_work()
+@@ -5413,7 +5391,7 @@ static struct sk_buff *at76_check_for_rx_frags(struct at76_priv *priv)
+ 		return NULL;
+ 	}
+ 
+-	at76_assert(length &gt; AT76_RX_HDRLEN);
++	WARN_ON(length &lt;= AT76_RX_HDRLEN);
+ 
+ 	/* remove the at76_rx_buffer header - we don't need it anymore */
+ 	/* we need the IEEE802.11 header (for the addresses) if this packet
+@@ -5545,10 +5523,8 @@ static struct sk_buff *at76_check_for_rx_frags(struct at76_priv *priv)
+ 			 priv-&gt;netdev-&gt;name, fragnr);
+ 		return NULL;
+ 	}
+-	at76_assert(optr != NULL);
+-	if (optr == NULL)
+-		return NULL;
+ 
++	BUG_ON(optr == NULL);
+ 	if (optr-&gt;skb != NULL) {
+ 		/* swap the skb's */
+ 		skb = optr-&gt;skb;
+diff --git a/at76_usb.h b/at76_usb.h
+index 9980f05..afc4af0 100644
+--- a/at76_usb.h
++++ b/at76_usb.h
+@@ -663,10 +663,4 @@ struct at76_rx_radiotap {
+ 		printk(KERN_DEBUG DRIVER_NAME &quot;: &quot; format &quot;\n&quot; , ## arg); \
+ 	} while (0)
+ 
+-#define at76_assert(x) \
+-  do { \
+-   if (!(x)) \
+-     err(&quot;%d: assertion &quot; #x &quot; failed&quot;, __LINE__); \
+-  } while (0)
+-
+ #endif				/* _AT76_USB_H */
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000177.html">[at76c503a-develop] [PATCH 2/7] Don't print misleading messages	about unexpected frames
+</A></li>
+	<LI>Next message: <A HREF="000179.html">[at76c503a-develop] [PATCH 4/7] Fix sloppiness in debug directives
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#178">[ date ]</a>
+              <a href="thread.html#178">[ thread ]</a>
+              <a href="subject.html#178">[ subject ]</a>
+              <a href="author.html#178">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">More information about the at76c503a-develop
+mailing list</a><br>
+</body></html>

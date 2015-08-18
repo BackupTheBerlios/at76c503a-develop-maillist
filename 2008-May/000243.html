@@ -1,0 +1,198 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [at76c503a-develop] [PATCH 3/3] Add WPA support for 1.103 firmware
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/at76c503a-develop/2008-May/index.html" >
+   <LINK REL="made" HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%203/3%5D%20Add%20WPA%20support%20for%201.103%20firmware&In-Reply-To=%3C20080505232841.10104.47347.stgit%40localhost%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000242.html">
+   <LINK REL="Next"  HREF="000244.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[at76c503a-develop] [PATCH 3/3] Add WPA support for 1.103 firmware</H1>
+    <B>Milan Plzik</B> 
+    <A HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%203/3%5D%20Add%20WPA%20support%20for%201.103%20firmware&In-Reply-To=%3C20080505232841.10104.47347.stgit%40localhost%3E"
+       TITLE="[at76c503a-develop] [PATCH 3/3] Add WPA support for 1.103 firmware">milan.plzik at gmail.com
+       </A><BR>
+    <I>Tue May  6 01:28:41 CEST 2008</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000242.html">[at76c503a-develop] [PATCH 2/3] Adds support for WEP operation with	1.103.x firmware.
+</A></li>
+        <LI>Next message: <A HREF="000244.html">[at76c503a-develop] at76usb patches and where to go with them :)
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#243">[ date ]</a>
+              <a href="thread.html#243">[ thread ]</a>
+              <a href="subject.html#243">[ subject ]</a>
+              <a href="author.html#243">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Based on atmelwlandriver analysis, this patch implements support for WPA.
+TKIP was tested and working, AES/CCMP needs testing on 505A or 505AMX
+device.
+
+Signed-off-by: Milan Plzik &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">milan.plzik at gmail.com</A>&gt;
+---
+
+ drivers/net/wireless/at76_usb.c |   67 ++++++++++++++++++++++++++++++++++++---
+ 1 files changed, 62 insertions(+), 5 deletions(-)
+
+diff --git a/drivers/net/wireless/at76_usb.c b/drivers/net/wireless/at76_usb.c
+index 6cfd370..eae3036 100644
+--- a/drivers/net/wireless/at76_usb.c
++++ b/drivers/net/wireless/at76_usb.c
+@@ -1002,6 +1002,40 @@ static int at76_add_mac_address(struct at76_priv *priv, void *addr)
+ 	return ret;
+ }
+ 
++static int at76_set_tkip_bssid(struct at76_priv *priv, const void *addr)
++{
++	int ret = 0;
++
++	priv-&gt;mib_buf.type = MIB_MAC_ENCRYPTION;
++	priv-&gt;mib_buf.size = ETH_ALEN;
++	priv-&gt;mib_buf.index = offsetof(struct mib_mac_encryption, tkip_bssid);
++	memcpy(priv-&gt;mib_buf.data.addr, addr, ETH_ALEN);
++
++	ret = at76_set_mib(priv, &amp;priv-&gt;mib_buf);
++	if (ret &lt; 0)
++		printk(KERN_ERR &quot;%s: set_mib (MAC_ENCRYPTION, tkip_bssid) failed: %d\n&quot;,
++		       wiphy_name(priv-&gt;hw-&gt;wiphy), ret);
++
++	return ret;
++}
++
++static int at76_reset_rsc(struct at76_priv *priv)
++{
++	int ret = 0;
++
++	priv-&gt;mib_buf.type = MIB_MAC_ENCRYPTION;
++	priv-&gt;mib_buf.size = 4 * 8;
++	priv-&gt;mib_buf.index = offsetof(struct mib_mac_encryption, key_rsc);
++	memset(priv-&gt;mib_buf.data.data, 0 , priv-&gt;mib_buf.size);
++
++	ret = at76_set_mib(priv, &amp;priv-&gt;mib_buf);
++	if (ret &lt; 0)
++		printk(KERN_ERR &quot;%s: set_mib (MAC_ENCRYPTION, key_rsc) failed: %d\n&quot;,
++		       wiphy_name(priv-&gt;hw-&gt;wiphy), ret);
++
++	return ret;
++}
++
+ static void at76_dump_mib_mac_addr(struct at76_priv *priv)
+ {
+ 	int i;
+@@ -1802,9 +1836,9 @@ static int at76_mac80211_tx(struct ieee80211_hw *hw, struct sk_buff *skb,
+ 	tx_buffer-&gt;wlength = cpu_to_le16(skb-&gt;len);
+ 	tx_buffer-&gt;tx_rate = control-&gt;tx_rate-&gt;hw_value;
+ 	if (FIRMWARE_IS_WPA(priv-&gt;fw_version) &amp;&amp; !(control-&gt;flags &amp; IEEE80211_TXCTL_DO_NOT_ENCRYPT)) {
+-		tx_buffer-&gt;key_id = (control-&gt;key_idx);
+-		tx_buffer-&gt;cipher_type = priv-&gt;keys[control-&gt;key_idx].cipher;
+-		tx_buffer-&gt;cipher_length = priv-&gt;keys[control-&gt;key_idx].keylen;
++		tx_buffer-&gt;key_id = (control-&gt;hw_key-&gt;keyidx);
++		tx_buffer-&gt;cipher_type = priv-&gt;keys[control-&gt;hw_key-&gt;keyidx].cipher;
++		tx_buffer-&gt;cipher_length = priv-&gt;keys[control-&gt;hw_key-&gt;keyidx].keylen;
+ 		tx_buffer-&gt;reserved = 0;
+ 	} else {
+ 		tx_buffer-&gt;key_id = 0;
+@@ -1947,7 +1981,8 @@ static int at76_join(struct at76_priv *priv)
+ 		       wiphy_name(priv-&gt;hw-&gt;wiphy), ret);
+ 		return 0;
+ 	}
+-
++	
++	at76_set_tkip_bssid(priv, priv-&gt;bssid);
+ 	at76_set_pm_mode(priv);
+ 
+ 	return 0;
+@@ -2183,7 +2218,7 @@ static int at76_set_key_newfw(struct ieee80211_hw *hw, enum set_key_cmd cmd,
+ 		if (at76_set_mib(priv, &amp;priv-&gt;mib_buf) != CMD_STATUS_COMPLETE)
+ 			ret = -EOPNOTSUPP; /* -EIO would be probably better */
+ 		else {
+-			ret = 0;
++
+ 			priv-&gt;keys[key-&gt;keyidx].cipher = CIPHER_NONE;
+ 			priv-&gt;keys[key-&gt;keyidx].keylen = 0;
+ 		};
+@@ -2194,6 +2229,7 @@ static int at76_set_key_newfw(struct ieee80211_hw *hw, enum set_key_cmd cmd,
+ 			priv-&gt;default_pairwise_key = 0xff;
+ 		/* If default pairwise key is removed, fall back to 
+ 		 * group key? */
++		ret = 0;
+ 		goto exit;
+ 	};
+ 	
+@@ -2221,6 +2257,22 @@ static int at76_set_key_newfw(struct ieee80211_hw *hw, enum set_key_cmd cmd,
+ 					goto exit;
+ 				};
+ 				break;
++			case ALG_TKIP:
++				key-&gt;flags |= IEEE80211_KEY_FLAG_GENERATE_MMIC;
++				priv-&gt;keys[key-&gt;keyidx].cipher = CIPHER_TKIP;
++				priv-&gt;keys[key-&gt;keyidx].keylen = 12;
++				break;
++
++			case ALG_CCMP:
++				if (!at76_is_505a(priv-&gt;board_type)) {
++					ret = -EOPNOTSUPP;
++					goto exit;
++				};
++				key-&gt;flags |= IEEE80211_KEY_FLAG_GENERATE_MMIC;
++				priv-&gt;keys[key-&gt;keyidx].cipher = CIPHER_CCMP;
++				priv-&gt;keys[key-&gt;keyidx].keylen = 16;
++				break;
++				
+ 			default:
+ 				ret = -EOPNOTSUPP;
+ 				goto exit;
+@@ -2245,6 +2297,10 @@ static int at76_set_key_newfw(struct ieee80211_hw *hw, enum set_key_cmd cmd,
+ 			ret = -EOPNOTSUPP; /* -EIO would be probably better */
+ 			goto exit;
+ 		};
++
++		if ((key-&gt;alg == ALG_TKIP) || (key-&gt;alg == ALG_CCMP))
++			at76_reset_rsc(priv);
++
+ 		key-&gt;hw_key_idx = key-&gt;keyidx;
+ 
+ 		/* Set up default keys */
+@@ -2742,5 +2798,6 @@ MODULE_AUTHOR(&quot;Balint Seeber &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">n0_5p4m_p13453 at hotmail.com</A>&gt;&quot;);
+ MODULE_AUTHOR(&quot;Pavel Roskin &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">proski at gnu.org</A>&gt;&quot;);
+ MODULE_AUTHOR(&quot;Guido Guenther &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">agx at sigxcpu.org</A>&gt;&quot;);
+ MODULE_AUTHOR(&quot;Kalle Valo &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">kalle.valo at iki.fi</A>&gt;&quot;);
++MODULE_AUTHOR(&quot;Milan Plzik &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">milan.plzik at gmail.com</A>&gt;&quot;);
+ MODULE_DESCRIPTION(DRIVER_DESC);
+ MODULE_LICENSE(&quot;GPL&quot;);
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000242.html">[at76c503a-develop] [PATCH 2/3] Adds support for WEP operation with	1.103.x firmware.
+</A></li>
+	<LI>Next message: <A HREF="000244.html">[at76c503a-develop] at76usb patches and where to go with them :)
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#243">[ date ]</a>
+              <a href="thread.html#243">[ thread ]</a>
+              <a href="subject.html#243">[ subject ]</a>
+              <a href="author.html#243">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">More information about the at76c503a-develop
+mailing list</a><br>
+</body></html>

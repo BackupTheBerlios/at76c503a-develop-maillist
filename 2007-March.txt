@@ -1,0 +1,2346 @@
+From proski at gnu.org  Sun Mar  4 09:35:13 2007
+From: proski at gnu.org (Pavel Roskin)
+Date: Sun, 04 Mar 2007 03:35:13 -0500
+Subject: [at76c503a-develop] [PATCH 1/8] Replace references to at75c503a
+	with at76_usb where	appropriate
+Message-ID: <20070304083512.4169.29126.stgit@np.roinet.com>
+
+Signed-off-by: Pavel Roskin <proski at gnu.org>
+---
+
+ Makefile       |    8 ++++---
+ README         |    2 +-
+ at76_usb.c     |    2 +-
+ at76_usb.spec  |   62 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ at76c503a.spec |   62 --------------------------------------------------------
+ 5 files changed, 68 insertions(+), 68 deletions(-)
+
+diff --git a/Makefile b/Makefile
+index 2e90fe3..665906c 100644
+--- a/Makefile
++++ b/Makefile
+@@ -33,15 +33,15 @@ KERNELRELEASE = $(shell sed -ne 's/"//g;s/^\#define UTS_RELEASE //p' \
+ 
+ obj-m = at76_usb.o
+ 
+-SRCS = at76c503.c at76c503.h
++SRCS = at76_usb.c at76_usb.h at76_usb_ids.h
+ 
+-SPECFILE = at76c503a.spec
++SPECFILE = at76_usb.spec
+ 
+ DISTFILES = $(SRCS) Makefile README COPYING CHANGELOG kernel_patch.diff
+ 
+-# get the version from at76c503.h
++# get the version from at76_usb.h
+ ifndef M
+-VERSION = $(shell sed -n 's/^\#define.*DRIVER_VERSION.*"\(.*\)".*$$/\1/p' at76c503.h)
++VERSION = $(shell sed -n 's/^\#define.*DRIVER_VERSION.*"\(.*\)".*$$/\1/p' at76_usb.h)
+ DISTNAME = at76_usb-$(VERSION)
+ DISTDIR = $(DISTNAME)
+ endif
+diff --git a/README b/README
+index 1b34105..24a3152 100644
+--- a/README
++++ b/README
+@@ -152,7 +152,7 @@ Following are some of the supported parameters:
+ - long preamble: iwpriv wlanX short_preamble 0
+ - short preamble: iwpriv wlanX short_preamble 1
+ - amount of debug messages: iwpriv wlanX set_debug N
+-  with N a combination of bits, see DBG_* in at76c503.h
++  with N a combination of bits, see DBG_* in at76_usb.h
+ - power save mode: iwpriv wlanX powersave_mode N (numbers 1, 2, 3 for
+   for none, save and smart save respectively)
+ - scan channel time: iwpriv wlanX scan_times <min_ch_time> <max_ch_time>
+diff --git a/at76_usb.c b/at76_usb.c
+index 5ba2460..c372f53 100644
+--- a/at76_usb.c
++++ b/at76_usb.c
+@@ -3844,7 +3844,7 @@ static void rx_data(struct at76c503 *dev)
+ 	if ((skb=check_for_rx_frags(dev)) == NULL)
+ 		return;
+ 
+-	/* if an skb is returned, the at76c503a_rx_header and the FCS is already removed */
++	/* if an skb is returned, the at76c503_rx_buffer and the FCS is already removed */
+ 	i802_11_hdr = (struct ieee80211_hdr_3addr *)skb->data;
+ 
+ 	skb->dev = netdev;
+diff --git a/at76_usb.spec b/at76_usb.spec
+new file mode 100644
+index 0000000..81ddf8f
+--- /dev/null
++++ b/at76_usb.spec
+@@ -0,0 +1,62 @@
++%define KERNELVER %(rpm -q --qf "%%{version}-%%{release}" kernel-devel)
++%define PACKVER 0.14dev
++# RPM Release number of this version
++%define TNREL 1
++
++# Real stuff
++Summary:   Linux driver for Atmel AT76C503/505/505A based USB WLAN adapters
++Name:      at76_usb
++Version:   %{PACKVER}
++Release:   tn%{TNREL}
++License:   GPL
++Group:     System Environment/Kernel 
++Packager:  Tim Niemueller <tim at niemueller.de>
++Source:    %{name}-%{version}.tar.gz
++URL:       http://at76c503a.berlios.de/
++Prefix:	   %{_prefix}
++BuildRequires: kernel = %{KERNELVER}, kernel-devel = %{KERNELVER}
++BuildRoot: %{_tmppath}/%{name}-%{version}
++
++%description
++This is a Linux driver for the Atmel based USB WLAN adapters.  Unlike
++the driver developed by Atmel (atmelwlandriver), this driver is intended
++to be accepted into the kernel, so it aims to be bloat-free, streamlined
++and modern.
++
++%prep
++%setup -n %{name}-%{version}
++
++#if [ ! -e /usr/src/linux-2.4/.config ]; then
++#  echo "You need to run 'make menuconfig' once in /usr/src/linux-2.4"
++#  echo "Then exit immediately and save the configuration. The "
++#  echo "config file is needed to compile hostap. Thanks."
++#  exit 1
++#fi
++
++%build
++make KERNEL_PATH=/lib/modules/%{KERNELVER}/build
++
++%install
++rm -rf $RPM_BUILD_ROOT
++
++make install INSTALL_MOD_PATH=$RPM_BUILD_ROOT DEPMOD=true \
++	KERNEL_PATH=/lib/modules/%{KERNELVER}/build
++
++%clean 
++rm -rf $RPM_BUILD_ROOT
++
++%post
++/sbin/depmod -a
++
++%postun
++/sbin/depmod -a
++
++%files
++%defattr(-,root,root)
++/lib/modules/%{KERNELVER}/kernel/drivers/net/wireless/at76_usb.ko
++
++%changelog
++* Mon Jul 28 2003 Tim Niemueller <tim at niemueller.de>
++- Initial rpm release
++- Wrote spec file and compiled for current Red Hat 9 kernel
++
+diff --git a/at76c503a.spec b/at76c503a.spec
+deleted file mode 100644
+index 81ddf8f..0000000
+--- a/at76c503a.spec
++++ /dev/null
+@@ -1,62 +0,0 @@
+-%define KERNELVER %(rpm -q --qf "%%{version}-%%{release}" kernel-devel)
+-%define PACKVER 0.14dev
+-# RPM Release number of this version
+-%define TNREL 1
+-
+-# Real stuff
+-Summary:   Linux driver for Atmel AT76C503/505/505A based USB WLAN adapters
+-Name:      at76_usb
+-Version:   %{PACKVER}
+-Release:   tn%{TNREL}
+-License:   GPL
+-Group:     System Environment/Kernel 
+-Packager:  Tim Niemueller <tim at niemueller.de>
+-Source:    %{name}-%{version}.tar.gz
+-URL:       http://at76c503a.berlios.de/
+-Prefix:	   %{_prefix}
+-BuildRequires: kernel = %{KERNELVER}, kernel-devel = %{KERNELVER}
+-BuildRoot: %{_tmppath}/%{name}-%{version}
+-
+-%description
+-This is a Linux driver for the Atmel based USB WLAN adapters.  Unlike
+-the driver developed by Atmel (atmelwlandriver), this driver is intended
+-to be accepted into the kernel, so it aims to be bloat-free, streamlined
+-and modern.
+-
+-%prep
+-%setup -n %{name}-%{version}
+-
+-#if [ ! -e /usr/src/linux-2.4/.config ]; then
+-#  echo "You need to run 'make menuconfig' once in /usr/src/linux-2.4"
+-#  echo "Then exit immediately and save the configuration. The "
+-#  echo "config file is needed to compile hostap. Thanks."
+-#  exit 1
+-#fi
+-
+-%build
+-make KERNEL_PATH=/lib/modules/%{KERNELVER}/build
+-
+-%install
+-rm -rf $RPM_BUILD_ROOT
+-
+-make install INSTALL_MOD_PATH=$RPM_BUILD_ROOT DEPMOD=true \
+-	KERNEL_PATH=/lib/modules/%{KERNELVER}/build
+-
+-%clean 
+-rm -rf $RPM_BUILD_ROOT
+-
+-%post
+-/sbin/depmod -a
+-
+-%postun
+-/sbin/depmod -a
+-
+-%files
+-%defattr(-,root,root)
+-/lib/modules/%{KERNELVER}/kernel/drivers/net/wireless/at76_usb.ko
+-
+-%changelog
+-* Mon Jul 28 2003 Tim Niemueller <tim at niemueller.de>
+-- Initial rpm release
+-- Wrote spec file and compiled for current Red Hat 9 kernel
+-
+
+
+
+
+From proski at gnu.org  Sun Mar  4 09:35:18 2007
+From: proski at gnu.org (Pavel Roskin)
+Date: Sun, 04 Mar 2007 03:35:18 -0500
+Subject: [at76c503a-develop] [PATCH 2/8] Rename .cvsignore to .gitignore
+In-Reply-To: <20070304083512.4169.29126.stgit@np.roinet.com>
+References: <20070304083512.4169.29126.stgit@np.roinet.com>
+Message-ID: <20070304083518.4169.58953.stgit@np.roinet.com>
+
+Signed-off-by: Pavel Roskin <proski at gnu.org>
+---
+
+ .cvsignore |    7 -------
+ .gitignore |    7 +++++++
+ 2 files changed, 7 insertions(+), 7 deletions(-)
+
+diff --git a/.cvsignore b/.cvsignore
+deleted file mode 100644
+index 661f39e..0000000
+--- a/.cvsignore
++++ /dev/null
+@@ -1,7 +0,0 @@
+-*.d
+-*.mod.c
+-*.o
+-*.ko
+-.*.cmd
+-.tmp_versions
+-*.symvers
+diff --git a/.gitignore b/.gitignore
+new file mode 100644
+index 0000000..661f39e
+--- /dev/null
++++ b/.gitignore
+@@ -0,0 +1,7 @@
++*.d
++*.mod.c
++*.o
++*.ko
++.*.cmd
++.tmp_versions
++*.symvers
+
+
+
+
+From proski at gnu.org  Sun Mar  4 09:35:24 2007
+From: proski at gnu.org (Pavel Roskin)
+Date: Sun, 04 Mar 2007 03:35:24 -0500
+Subject: [at76c503a-develop] [PATCH 3/8] Don't use __attribute__((packed))
+	on structure fileds
+In-Reply-To: <20070304083512.4169.29126.stgit@np.roinet.com>
+References: <20070304083512.4169.29126.stgit@np.roinet.com>
+Message-ID: <20070304083524.4169.24455.stgit@np.roinet.com>
+
+Signed-off-by: Pavel Roskin <proski at gnu.org>
+---
+
+ at76_usb.h |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/at76_usb.h b/at76_usb.h
+index 8af15aa..db81a53 100644
+--- a/at76_usb.h
++++ b/at76_usb.h
+@@ -627,10 +627,10 @@ struct at76c503 {
+ /* message data item for INT, BOUNDEDINT, ENUMINT */
+ typedef struct p80211item_uint32
+ {
+-	uint32_t		did	__attribute__ ((packed));
+-	uint16_t		status	__attribute__ ((packed));
+-	uint16_t		len	__attribute__ ((packed));
+-	uint32_t		data	__attribute__ ((packed));
++	uint32_t did;
++	uint16_t status;
++	uint16_t len;
++	uint32_t data;
+ } __attribute__ ((packed)) p80211item_uint32_t;
+ 
+ typedef struct p80211msg
+
+
+
+
+From proski at gnu.org  Sun Mar  4 09:35:30 2007
+From: proski at gnu.org (Pavel Roskin)
+Date: Sun, 04 Mar 2007 03:35:30 -0500
+Subject: [at76c503a-develop] [PATCH 4/8] Remove all typedefs,
+	they are not recommended in Linux code
+In-Reply-To: <20070304083512.4169.29126.stgit@np.roinet.com>
+References: <20070304083512.4169.29126.stgit@np.roinet.com>
+Message-ID: <20070304083529.4169.73643.stgit@np.roinet.com>
+
+Signed-off-by: Pavel Roskin <proski at gnu.org>
+---
+
+ at76_usb.c |   10 +++++-----
+ at76_usb.h |   35 ++++++++++++++---------------------
+ 2 files changed, 19 insertions(+), 26 deletions(-)
+
+diff --git a/at76_usb.c b/at76_usb.c
+index c372f53..e0abd67 100644
+--- a/at76_usb.c
++++ b/at76_usb.c
+@@ -3969,8 +3969,8 @@ static void rx_monitor_mode(struct at76c503 *dev)
+ 	}
+ 
+ 	if (netdev->type == ARPHRD_IEEE80211_PRISM) {
+-		int skblen = sizeof(p80211msg_lnxind_wlansniffrm_t) + length;
+-		p80211msg_lnxind_wlansniffrm_t *prism;
++		int skblen = sizeof(struct p80211msg) + length;
++		struct p80211msg *prism;
+ 		u8* payload;
+ 
+ 		if ((skb = dev_alloc_skb(skblen)) == NULL) {
+@@ -3981,11 +3981,11 @@ static void rx_monitor_mode(struct at76c503 *dev)
+ 
+ 		skb_put(skb, skblen);
+ 
+-		prism = (p80211msg_lnxind_wlansniffrm_t*)skb->data;
+-		payload = skb->data + sizeof(p80211msg_lnxind_wlansniffrm_t);
++		prism = (struct p80211msg*)skb->data;
++		payload = skb->data + sizeof(struct p80211msg);
+ 
+ 		prism->msgcode = DIDmsg_lnxind_wlansniffrm;
+-		prism->msglen = sizeof(p80211msg_lnxind_wlansniffrm_t);
++		prism->msglen = sizeof(struct p80211msg);
+ 		strcpy(prism->devname, netdev->name);
+ 
+ 		prism->hosttime.did = DIDmsg_lnxind_wlansniffrm_hosttime;
+diff --git a/at76_usb.h b/at76_usb.h
+index db81a53..4cb9f4c 100644
+--- a/at76_usb.h
++++ b/at76_usb.h
+@@ -625,20 +625,13 @@ struct at76c503 {
+ /* Quasi-monitor mode defs (copied from <kernel>/drivers/net/wireless/orinoco.h) */
+ 
+ /* message data item for INT, BOUNDEDINT, ENUMINT */
+-typedef struct p80211item_uint32
++struct p80211item_u32
+ {
+ 	uint32_t did;
+ 	uint16_t status;
+ 	uint16_t len;
+ 	uint32_t data;
+-} __attribute__ ((packed)) p80211item_uint32_t;
+-
+-typedef struct p80211msg
+-{
+-	uint32_t	msgcode		__attribute__ ((packed));
+-	uint32_t	msglen		__attribute__ ((packed));
+-	uint8_t				devname[IFNAMSIZ];
+-} __attribute__ ((packed)) p80211msg_t;
++} __attribute__ ((packed));
+ 
+ #define P80211ENUM_msgitem_status_data_ok	0
+ #define P80211ENUM_msgitem_status_no_value	1
+@@ -657,22 +650,22 @@ typedef struct p80211msg
+ #define DIDmsg_lnxind_wlansniffrm_istx 0x9041
+ #define DIDmsg_lnxind_wlansniffrm_frmlen 0xA041
+ 
+-typedef struct p80211msg_lnxind_wlansniffrm
++struct p80211msg
+ {
+ 	uint32_t		msgcode;
+ 	uint32_t		msglen;
+ 	uint8_t			devname[IFNAMSIZ];
+-	p80211item_uint32_t	hosttime;
+-	p80211item_uint32_t	mactime;
+-	p80211item_uint32_t	channel;
+-	p80211item_uint32_t	rssi;
+-	p80211item_uint32_t	sq;
+-	p80211item_uint32_t	signal;
+-	p80211item_uint32_t	noise;
+-	p80211item_uint32_t	rate;
+-	p80211item_uint32_t	istx;
+-	p80211item_uint32_t	frmlen;
+-} __attribute__ ((packed)) p80211msg_lnxind_wlansniffrm_t;
++	struct p80211item_u32	hosttime;
++	struct p80211item_u32	mactime;
++	struct p80211item_u32	channel;
++	struct p80211item_u32	rssi;
++	struct p80211item_u32	sq;
++	struct p80211item_u32	signal;
++	struct p80211item_u32	noise;
++	struct p80211item_u32	rate;
++	struct p80211item_u32	istx;
++	struct p80211item_u32	frmlen;
++} __attribute__ ((packed));
+ 
+ #define BEACON_MAX_DATA_LENGTH 1500
+ /* beacon in ieee80211_hdr_3addr.payload */
+
+
+
+
+From proski at gnu.org  Sun Mar  4 09:35:36 2007
+From: proski at gnu.org (Pavel Roskin)
+Date: Sun, 04 Mar 2007 03:35:36 -0500
+Subject: [at76c503a-develop] [PATCH 5/8] Expand and remove EP and NUM_EP
+	macros
+In-Reply-To: <20070304083512.4169.29126.stgit@np.roinet.com>
+References: <20070304083512.4169.29126.stgit@np.roinet.com>
+Message-ID: <20070304083535.4169.25890.stgit@np.roinet.com>
+
+Signed-off-by: Pavel Roskin <proski at gnu.org>
+---
+
+ at76_usb.c |   13 +++++--------
+ 1 files changed, 5 insertions(+), 8 deletions(-)
+
+diff --git a/at76_usb.c b/at76_usb.c
+index e0abd67..a179ea5 100644
+--- a/at76_usb.c
++++ b/at76_usb.c
+@@ -211,10 +211,6 @@ static void set_monitor_mode(struct at76c503 *dev, int use_prism);
+ /* second step of initialization (after fw download) */
+ static int init_new_device(struct at76c503 *dev);
+ 
+-/* number of endpoints of an interface */
+-#define NUM_EP(intf) (intf)->altsetting[0].desc.bNumEndpoints
+-#define EP(intf,nr) (intf)->altsetting[0].endpoint[(nr)].desc
+-
+ static unsigned long spin_l_istate_flags;
+ #define LOCK_ISTATE()   spin_lock_irqsave(&dev->istate_spinlock,spin_l_istate_flags);
+ #define UNLOCK_ISTATE() spin_unlock_irqrestore(&dev->istate_spinlock,spin_l_istate_flags);
+@@ -6124,10 +6120,11 @@ static int at76c503_alloc_urbs(struct at76c503 *dev)
+ 
+ 	dbg(DBG_PROC_ENTRY, "%s: ENTER", __FUNCTION__);
+ 
+-	dbg(DBG_URB, "%s: NumEndpoints %d ", __FUNCTION__, NUM_EP(interface));
++	dbg(DBG_URB, "%s: NumEndpoints %d ", __FUNCTION__,
++	    interface->altsetting[0].desc.bNumEndpoints);
+ 
+-	for(i = 0; i < NUM_EP(interface); i++) {
+-		endpoint = &EP(interface,i);
++	for(i = 0; i < interface->altsetting[0].desc.bNumEndpoints; i++) {
++		endpoint = &interface->altsetting[0].endpoint[i].desc;
+ 
+ 		dbg(DBG_URB, "%s: %d. endpoint: addr x%x attr x%x",
+ 		    __FUNCTION__,
+@@ -6274,7 +6271,7 @@ static int init_new_device(struct at76c503 *dev)
+ 	dev->interface = dev->udev->actconfig->interface[0];
+ 
+ 	dbg(DBG_DEVSTART, "USB interface: %d endpoints",
+-	    NUM_EP(dev->interface));
++	    dev->interface->altsetting[0].desc.bNumEndpoints);
+ 
+ 	if (at76c503_alloc_urbs(dev) < 0)
+ 		goto error;
+
+
+
+
+From proski at gnu.org  Sun Mar  4 09:35:42 2007
+From: proski at gnu.org (Pavel Roskin)
+Date: Sun, 04 Mar 2007 03:35:42 -0500
+Subject: [at76c503a-develop] [PATCH 6/8] Remove last reference to "struct
+	module", it's useless now
+In-Reply-To: <20070304083512.4169.29126.stgit@np.roinet.com>
+References: <20070304083512.4169.29126.stgit@np.roinet.com>
+Message-ID: <20070304083541.4169.45534.stgit@np.roinet.com>
+
+Signed-off-by: Pavel Roskin <proski at gnu.org>
+---
+
+ at76_usb.c |    8 +++-----
+ 1 files changed, 3 insertions(+), 5 deletions(-)
+
+diff --git a/at76_usb.c b/at76_usb.c
+index a179ea5..0ddbe3b 100644
+--- a/at76_usb.c
++++ b/at76_usb.c
+@@ -6428,8 +6428,8 @@ static int at76c503_get_fw_info(u8 *fw_data, int fw_size,
+ }
+ 
+ /* == PROC at76c503_do_probe == */
+-static int at76c503_do_probe(struct module *mod, struct usb_device *udev,
+-			     u8 *fw_data, int fw_size, u32 board_type)
++static int at76c503_do_probe(struct usb_device *udev, u8 *fw_data, int fw_size,
++			     u32 board_type)
+ {
+ 	struct usb_interface *intf = udev->actconfig->interface[0];
+ 	int ret;
+@@ -6590,9 +6590,7 @@ static int at76c50x_probe(struct usb_interface *interface,
+ 	} else
+ 		dbg(DBG_FW, "re-using previously loaded fw");
+ 
+-	retval = at76c503_do_probe(THIS_MODULE, udev,
+-				   fw->data, fw->size,
+-				   boardtype);
++	retval = at76c503_do_probe(udev, fw->data, fw->size, boardtype);
+ 	return retval;
+ }
+ 
+
+
+
+
+From proski at gnu.org  Sun Mar  4 09:35:48 2007
+From: proski at gnu.org (Pavel Roskin)
+Date: Sun, 04 Mar 2007 03:35:48 -0500
+Subject: [at76c503a-develop] [PATCH 7/8] Don't include unneeded headers
+In-Reply-To: <20070304083512.4169.29126.stgit@np.roinet.com>
+References: <20070304083512.4169.29126.stgit@np.roinet.com>
+Message-ID: <20070304083547.4169.18501.stgit@np.roinet.com>
+
+Signed-off-by: Pavel Roskin <proski at gnu.org>
+---
+
+ at76_usb.c |    2 --
+ 1 files changed, 0 insertions(+), 2 deletions(-)
+
+diff --git a/at76_usb.c b/at76_usb.c
+index 0ddbe3b..0faa4fb 100644
+--- a/at76_usb.c
++++ b/at76_usb.c
+@@ -20,10 +20,8 @@
+ 
+ #include <linux/init.h>
+ #include <linux/kernel.h>
+-#include <linux/version.h>
+ #include <linux/sched.h>
+ #include <linux/errno.h>
+-#include <linux/poll.h>
+ #include <linux/slab.h>
+ #include <linux/module.h>
+ #include <linux/spinlock.h>
+
+
+
+
+From proski at gnu.org  Sun Mar  4 09:35:53 2007
+From: proski at gnu.org (Pavel Roskin)
+Date: Sun, 04 Mar 2007 03:35:53 -0500
+Subject: [at76c503a-develop] [PATCH 8/8] Use cur_altsetting instead of
+	altsetting[0] as	usb-skeleton.c suggests
+In-Reply-To: <20070304083512.4169.29126.stgit@np.roinet.com>
+References: <20070304083512.4169.29126.stgit@np.roinet.com>
+Message-ID: <20070304083553.4169.84833.stgit@np.roinet.com>
+
+Signed-off-by: Pavel Roskin <proski at gnu.org>
+---
+
+ at76_usb.c |    8 +++++---
+ 1 files changed, 5 insertions(+), 3 deletions(-)
+
+diff --git a/at76_usb.c b/at76_usb.c
+index 0faa4fb..2a005ca 100644
+--- a/at76_usb.c
++++ b/at76_usb.c
+@@ -6115,14 +6115,16 @@ static int at76c503_alloc_urbs(struct at76c503 *dev)
+ 	struct usb_endpoint_descriptor *endpoint;
+ 	struct usb_device *udev = dev->udev;
+ 	int i, buffer_size;
++	struct usb_host_interface *iface_desc;
+ 
+ 	dbg(DBG_PROC_ENTRY, "%s: ENTER", __FUNCTION__);
+ 
+ 	dbg(DBG_URB, "%s: NumEndpoints %d ", __FUNCTION__,
+ 	    interface->altsetting[0].desc.bNumEndpoints);
+ 
+-	for(i = 0; i < interface->altsetting[0].desc.bNumEndpoints; i++) {
+-		endpoint = &interface->altsetting[0].endpoint[i].desc;
++	iface_desc = interface->cur_altsetting;
++	for (i = 0; i < iface_desc->desc.bNumEndpoints; i++) {
++		endpoint = &iface_desc->endpoint[i].desc;
+ 
+ 		dbg(DBG_URB, "%s: %d. endpoint: addr x%x attr x%x",
+ 		    __FUNCTION__,
+@@ -6269,7 +6271,7 @@ static int init_new_device(struct at76c503 *dev)
+ 	dev->interface = dev->udev->actconfig->interface[0];
+ 
+ 	dbg(DBG_DEVSTART, "USB interface: %d endpoints",
+-	    dev->interface->altsetting[0].desc.bNumEndpoints);
++	    dev->interface->cur_altsetting->desc.bNumEndpoints);
+ 
+ 	if (at76c503_alloc_urbs(dev) < 0)
+ 		goto error;
+
+
+
+
+From agx at sigxcpu.org  Sun Mar  4 16:53:25 2007
+From: agx at sigxcpu.org (Guido Guenther)
+Date: Sun, 4 Mar 2007 16:53:25 +0100
+Subject: [at76c503a-develop] [PATCH 1/8] Replace references to at75c503a
+	with at76_usb where	appropriate
+In-Reply-To: <20070304083512.4169.29126.stgit@np.roinet.com>
+References: <20070304083512.4169.29126.stgit@np.roinet.com>
+Message-ID: <20070304155325.GA11825@bogon.ms20.nix>
+
+Hi Pavel,
+On Sun, Mar 04, 2007 at 03:35:13AM -0500, Pavel Roskin wrote:
+> Signed-off-by: Pavel Roskin <proski at gnu.org>
+This and the other 7 patches applied and pushed out to:
+ git-clone  http://honk.sigxcpu.org/git/at76c503a.git
+Thanks,
+ -- Guido
+
+
+From proski at gnu.org  Mon Mar  5 04:58:33 2007
+From: proski at gnu.org (Pavel Roskin)
+Date: Sun, 04 Mar 2007 22:58:33 -0500
+Subject: [at76c503a-develop] [PATCH 1/3] Simplify get_cmd_status() to return
+	the status byte only
+Message-ID: <20070305035833.5752.96233.stgit@dl.roinet.com>
+
+It's not reasonable to require callers to allocate a 40 byte long buffer
+so that one byte could be used.  Besides, the callers didn't check the
+kmalloc() result for NULL.  40 bytes can be allocated on stack, it's not
+too much even for 4k stacks.
+
+Signed-off-by: Pavel Roskin <proski at gnu.org>
+---
+
+ at76_usb.c |   71 +++++++++++++++++++++++++-----------------------------------
+ 1 files changed, 30 insertions(+), 41 deletions(-)
+
+diff --git a/at76_usb.c b/at76_usb.c
+index eecec75..9910a53 100644
+--- a/at76_usb.c
++++ b/at76_usb.c
+@@ -775,13 +775,19 @@ static inline int get_mib(struct usb_device *udev,
+ 			       buf, buf_size, USB_CTRL_GET_TIMEOUT);
+ }
+ 
+-static inline int get_cmd_status(struct usb_device *udev,
+-		   u8 cmd, u8 *cmd_status)
++/* Return positive number for status, negative for an error */
++static inline int get_cmd_status(struct usb_device *udev, u8 cmd)
+ {
+-	return usb_control_msg(udev, usb_rcvctrlpipe(udev,0),
+-			       0x22, INTERFACE_VENDOR_REQUEST_IN,
+-			       cmd, 0,
+-			       cmd_status, 40, USB_CTRL_GET_TIMEOUT);
++	u8 stat_buf[40];
++	int ret;
++
++	ret = usb_control_msg(udev, usb_rcvctrlpipe(udev,0), 0x22,
++			      INTERFACE_VENDOR_REQUEST_IN, cmd, 0, stat_buf,
++			      sizeof(stat_buf), USB_CTRL_GET_TIMEOUT);
++	if (ret < 0)
++		return ret;
++
++	return stat_buf[5];
+ }
+ 
+ #define EXT_FW_BLOCK_SIZE 1024
+@@ -876,34 +882,28 @@ static const char* get_cmd_status_string(u8 cmd_status)
+ /* TODO: should timeout */
+ static int wait_completion(struct at76c503 *dev, int cmd)
+ {
+-	u8 *cmd_status = kmalloc(40, GFP_KERNEL);
+ 	struct net_device *netdev = dev->netdev;
+-	int ret = 0;
++	int status = 0;
+ 
+ 	do {
+-		ret = get_cmd_status(dev->udev, cmd, cmd_status);
+-		if (ret < 0) {
+-			err("%s: get_cmd_status failed: %d", netdev->name, ret);
++		status = get_cmd_status(dev->udev, cmd);
++		if (status < 0) {
++			err("%s: get_cmd_status failed: %d", netdev->name, status);
+ 			break;
+ 		}
+ 
+-		dbg(DBG_WAIT_COMPLETE, "%s: Waiting on cmd %d, cmd_status[5] = %d (%s)",
+-		    dev->netdev->name, cmd, cmd_status[5], get_cmd_status_string(cmd_status[5]));
++		dbg(DBG_WAIT_COMPLETE, "%s: Waiting on cmd %d, status = %d (%s)",
++		    dev->netdev->name, cmd, status, get_cmd_status_string(status));
+ 
+-		if (cmd_status[5] == CMD_STATUS_IN_PROGRESS ||
+-		   cmd_status[5] == CMD_STATUS_IDLE){
++		if (status == CMD_STATUS_IN_PROGRESS ||
++		    status == CMD_STATUS_IDLE) {
+ 			set_current_state(TASK_INTERRUPTIBLE);
+ 			schedule_timeout(HZ/10); /* 100 ms */
+ 		} else
+ 			break;
+ 	} while (1);
+ 
+-	if (ret >= 0)
+-		/* if get_cmd_status did not fail, return the status
+-		   retrieved */
+-		ret = cmd_status[5];
+-	kfree(cmd_status);
+-	return ret;
++	return status;
+ }
+ 
+ static int set_mib(struct at76c503 *dev, struct set_mib_buffer *buf)
+@@ -1660,32 +1660,23 @@ static void mgmt_timeout(unsigned long par)
+  */
+ static void handle_mgmt_timeout_scan(struct at76c503 *dev)
+ {
+-
+-	u8 *cmd_status;
+-	int ret;
++	int status, ret;
+ 	struct mib_mdomain mdomain;
+ 
+-	cmd_status = kmalloc(40, GFP_KERNEL);
+-	if (cmd_status == NULL) {
+-		err("%s: %s: cmd_status kmalloc returned NULL", 
+-		    dev->netdev->name, __FUNCTION__);
+-		return;
+-	}
+-
+-	if ((ret=get_cmd_status(dev->udev, CMD_SCAN, cmd_status)) < 0) {
++	if ((status = get_cmd_status(dev->udev, CMD_SCAN)) < 0) {
+ 		err("%s: %s: get_cmd_status failed with %d",
+-		    dev->netdev->name, __FUNCTION__, ret);
+-		cmd_status[5] = CMD_STATUS_IN_PROGRESS;	
++		    dev->netdev->name, __FUNCTION__, status);
++		status = CMD_STATUS_IN_PROGRESS;	
+                 /* INFO: Hope it was a one off error - if not, scanning 
+ 		   further down the line and stop this cycle */
+ 	}
+ 	LOCK_ISTATE()
+ 	dbg(DBG_PROGRESS, "%s %s:%d got cmd_status %d (istate %d, "
+ 	    "scan_runs %d)",
+-	    dev->netdev->name, __FUNCTION__, __LINE__, cmd_status[5],
++	    dev->netdev->name, __FUNCTION__, __LINE__, status,
+ 	    dev->istate, dev->scan_runs);
+ 	UNLOCK_ISTATE()
+-	if (cmd_status[5] == CMD_STATUS_COMPLETE) {
++	if (status == CMD_STATUS_COMPLETE) {
+ 		LOCK_ISTATE()
+ 		if (dev->istate == SCANNING) {
+ 			UNLOCK_ISTATE()
+@@ -1753,11 +1744,11 @@ static void handle_mgmt_timeout_scan(struct at76c503 *dev)
+ 		}
+ 
+ 	} else { 
+-		if ((cmd_status[5] != CMD_STATUS_IN_PROGRESS) &&
+-		    (cmd_status[5] != CMD_STATUS_IDLE))
++		if ((status != CMD_STATUS_IN_PROGRESS) &&
++		    (status != CMD_STATUS_IDLE))
+ 			err("%s: %s: Bad scan status: %s", 
+ 			    dev->netdev->name, __FUNCTION__, 
+-			    get_cmd_status_string(cmd_status[5]));
++			    get_cmd_status_string(status));
+ 
+ 		/* the first cmd status after scan start is always a IDLE ->
+ 		   start the timer to poll again until COMPLETED */
+@@ -1765,8 +1756,6 @@ static void handle_mgmt_timeout_scan(struct at76c503 *dev)
+ 		    __FUNCTION__, __LINE__, SCAN_POLL_INTERVAL);
+ 		mod_timer(&dev->mgmt_timer, jiffies + SCAN_POLL_INTERVAL);
+ 	}
+-
+-	kfree(cmd_status);
+ }
+ 
+ /* the deferred procedure called from kevent() */
+
+
+
+
+From proski at gnu.org  Mon Mar  5 04:58:38 2007
+From: proski at gnu.org (Pavel Roskin)
+Date: Sun, 04 Mar 2007 22:58:38 -0500
+Subject: [at76c503a-develop] [PATCH 2/3] Allocate mac_mgmt on stack,
+	it's just 24 bytes long
+In-Reply-To: <20070305035833.5752.96233.stgit@dl.roinet.com>
+References: <20070305035833.5752.96233.stgit@dl.roinet.com>
+Message-ID: <20070305035838.5752.48675.stgit@dl.roinet.com>
+
+mac_mgmt was allocated by kmalloc(), but the result wasn't checked.
+Signed-off-by: Pavel Roskin <proski at gnu.org>
+---
+
+ at76_usb.c |   11 +++++------
+ 1 files changed, 5 insertions(+), 6 deletions(-)
+
+diff --git a/at76_usb.c b/at76_usb.c
+index 9910a53..c710c6a 100644
+--- a/at76_usb.c
++++ b/at76_usb.c
+@@ -2262,17 +2262,17 @@ static void kevent(struct work_struct *work)
+ 	}
+ 	if (test_bit(KEVENT_NEW_BSS, &dev->kevent_flags)) {
+ 		struct net_device *netdev = dev->netdev;
+-		struct mib_mac_mgmt *mac_mgmt = kmalloc(sizeof(struct mib_mac_mgmt), GFP_KERNEL);
++		struct mib_mac_mgmt mac_mgmt;
+ 
+-		ret = get_mib(dev->udev, MIB_MAC_MGMT, (u8*)mac_mgmt,
++		ret = get_mib(dev->udev, MIB_MAC_MGMT, (u8*)&mac_mgmt,
+ 			      sizeof(struct mib_mac_mgmt));
+ 		if (ret < 0) {
+ 			err("%s: get_mib failed: %d", netdev->name, ret);
+ 			goto new_bss_clean;
+ 		}
+ 
+-		dbg(DBG_PROGRESS, "ibss_change = 0x%2x", mac_mgmt->ibss_change);
+-		memcpy(dev->bssid, mac_mgmt->current_bssid, ETH_ALEN);
++		dbg(DBG_PROGRESS, "ibss_change = 0x%2x", mac_mgmt.ibss_change);
++		memcpy(dev->bssid, mac_mgmt.current_bssid, ETH_ALEN);
+ 		dbg(DBG_PROGRESS, "using BSSID %s", mac2str(dev->bssid));
+     
+ 		iwevent_bss_connect(dev->netdev, dev->bssid);
+@@ -2287,8 +2287,7 @@ static void kevent(struct work_struct *work)
+ 			goto new_bss_clean;
+ 		}
+ 		clear_bit(KEVENT_NEW_BSS, &dev->kevent_flags);
+-	new_bss_clean:
+-		kfree(mac_mgmt);
++	new_bss_clean: ;
+ 	}
+ 
+ 	if (test_bit(KEVENT_SET_PROMISC, &dev->kevent_flags)) {
+
+
+
+
+From proski at gnu.org  Mon Mar  5 04:58:44 2007
+From: proski at gnu.org (Pavel Roskin)
+Date: Sun, 04 Mar 2007 22:58:44 -0500
+Subject: [at76c503a-develop] [PATCH 3/3] Remove all locking for istate
+In-Reply-To: <20070305035833.5752.96233.stgit@dl.roinet.com>
+References: <20070305035833.5752.96233.stgit@dl.roinet.com>
+Message-ID: <20070305035844.5752.31537.stgit@dl.roinet.com>
+
+Access to integer variables is already atomic.  The istate locking
+causes warnings from the lock checker.  If there are any specific
+scenarios when locking is needed, they should be addressed individually.
+
+Locking around debug statements that simply read istate is a clear
+indication that the locking code was written by somebody lacking
+competence in the field and should be reverted completely.  Coding style
+is another indicator.
+
+Signed-off-by: Pavel Roskin <proski at gnu.org>
+---
+
+ at76_usb.c |  159 ++++++++++++++----------------------------------------------
+ at76_usb.h |    3 -
+ 2 files changed, 37 insertions(+), 125 deletions(-)
+
+diff --git a/at76_usb.c b/at76_usb.c
+index c710c6a..59a5ed5 100644
+--- a/at76_usb.c
++++ b/at76_usb.c
+@@ -209,19 +209,6 @@ static void set_monitor_mode(struct at76c503 *dev, int use_prism);
+ /* second step of initialization (after fw download) */
+ static int init_new_device(struct at76c503 *dev);
+ 
+-static unsigned long spin_l_istate_flags;
+-#define LOCK_ISTATE()   spin_lock_irqsave(&dev->istate_spinlock,spin_l_istate_flags);
+-#define UNLOCK_ISTATE() spin_unlock_irqrestore(&dev->istate_spinlock,spin_l_istate_flags);
+-
+-#define NEW_STATE(dev,newstate) \
+-  do {\
+-    LOCK_ISTATE();\
+-    dbg(DBG_PROGRESS, "%s: state %d -> %d (" #newstate ")",\
+-        dev->netdev->name, dev->istate, newstate);\
+-    dev->istate = newstate;\
+-    UNLOCK_ISTATE();\
+-  } while (0)
+-
+ /* Firmware download */
+ /* DFU states */
+ #define STATE_IDLE  			0x00
+@@ -1535,7 +1522,6 @@ static int start_scan(struct at76c503 *dev, int use_essid, int ir_step)
+ 	/* INFO: For probe_delay, not multiplying by 1024 as this will be 
+ 	   slightly less than min_channel_time
+ 	   (per spec: probe delay < min. channel time) */
+-	LOCK_ISTATE()
+ 	if (dev->istate == MONITORING) {
+ 		scan.min_channel_time = cpu_to_le16(dev->monitor_scan_min_time);
+ 		scan.max_channel_time = cpu_to_le16(dev->monitor_scan_max_time);
+@@ -1545,7 +1531,6 @@ static int start_scan(struct at76c503 *dev, int use_essid, int ir_step)
+ 		scan.max_channel_time = cpu_to_le16(dev->scan_max_time);
+ 		scan.probe_delay = cpu_to_le16(dev->scan_min_time * 1000);
+ 	}
+-	UNLOCK_ISTATE()
+ 	if (dev->international_roaming == IR_ON && ir_step == 1)
+ 		scan.international_scan = 0;
+ 	else
+@@ -1670,16 +1655,12 @@ static void handle_mgmt_timeout_scan(struct at76c503 *dev)
+                 /* INFO: Hope it was a one off error - if not, scanning 
+ 		   further down the line and stop this cycle */
+ 	}
+-	LOCK_ISTATE()
+ 	dbg(DBG_PROGRESS, "%s %s:%d got cmd_status %d (istate %d, "
+ 	    "scan_runs %d)",
+ 	    dev->netdev->name, __FUNCTION__, __LINE__, status,
+ 	    dev->istate, dev->scan_runs);
+-	UNLOCK_ISTATE()
+ 	if (status == CMD_STATUS_COMPLETE) {
+-		LOCK_ISTATE()
+ 		if (dev->istate == SCANNING) {
+-			UNLOCK_ISTATE()
+ 			dump_bss_table(dev,0);
+ 			switch (dev->scan_runs) {
+ 
+@@ -1721,7 +1702,7 @@ static void handle_mgmt_timeout_scan(struct at76c503 *dev)
+ 				dev->site_survey_state = SITE_SURVEY_COMPLETED;
+ 				/* report the end of scan to user space */
+ 				iwevent_scan_complete(dev->netdev);
+-				NEW_STATE(dev,JOINING);
++				dev->istate = JOINING;
+ 				/* call join_bss immediately after
+ 				   re-run of all other threads in kevent */
+ 				defer_kevent(dev,KEVENT_JOIN);
+@@ -1734,7 +1715,6 @@ static void handle_mgmt_timeout_scan(struct at76c503 *dev)
+ 		} else {
+ 			
+ 			assert(dev->istate == MONITORING);
+-			UNLOCK_ISTATE()
+ 			dbg(DBG_MONITOR_MODE, "%s: MONITOR MODE: restart scan",
+ 			    dev->netdev->name);
+ 			start_scan(dev, 0, 0);
+@@ -1761,7 +1741,6 @@ static void handle_mgmt_timeout_scan(struct at76c503 *dev)
+ /* the deferred procedure called from kevent() */
+ static void handle_mgmt_timeout(struct at76c503 *dev)
+ {
+-	LOCK_ISTATE()
+ 	if ((dev->istate != SCANNING && dev->istate != MONITORING) || 
+ 	     (at76_debug & DBG_MGMT_TIMER))
+ 		/* this is normal behavior in states MONITORING, SCANNING ... */
+@@ -1772,18 +1751,15 @@ static void handle_mgmt_timeout(struct at76c503 *dev)
+ 
+ 	case MONITORING:
+ 	case SCANNING: 
+-		UNLOCK_ISTATE()
+ 		handle_mgmt_timeout_scan(dev);
+ 		break;
+ 
+ 	case JOINING:
+-		UNLOCK_ISTATE()
+ 		assert(0);
+ 		break;
+ 
+ 	case CONNECTED: /* we haven't received the beacon of this BSS for 
+ 			   BEACON_TIMEOUT seconds */
+-		UNLOCK_ISTATE()
+ 		info("%s: lost beacon bssid %s",
+ 		     dev->netdev->name, mac2str(dev->curr_bss->bssid));
+ 		/* jal: starting mgmt_timer in ad-hoc mode is questionable, 
+@@ -1792,13 +1768,12 @@ static void handle_mgmt_timeout(struct at76c503 *dev)
+ 			netif_carrier_off(dev->netdev);
+ 			netif_stop_queue(dev->netdev);
+ 			iwevent_bss_disconnect(dev->netdev);
+-			NEW_STATE(dev,SCANNING);
++			dev->istate = SCANNING;
+ 			defer_kevent(dev,KEVENT_SCAN);
+ 		}
+ 		break;
+ 
+ 	case AUTHENTICATING:
+-		UNLOCK_ISTATE()
+ 		if (dev->retries-- >= 0) {
+ 			auth_req(dev, dev->curr_bss, 1, NULL);
+ 			dbg(DBG_MGMT_TIMER, "%s:%d: starting mgmt_timer + HZ",
+@@ -1806,13 +1781,12 @@ static void handle_mgmt_timeout(struct at76c503 *dev)
+ 			mod_timer(&dev->mgmt_timer, jiffies+HZ);
+ 		} else {
+ 			/* try to get next matching BSS */
+-			NEW_STATE(dev,JOINING);
++			dev->istate = JOINING;
+ 			defer_kevent(dev,KEVENT_JOIN);
+ 		}
+ 		break;
+ 
+ 	case ASSOCIATING:
+-		UNLOCK_ISTATE()
+ 		if (dev->retries-- >= 0) {
+ 			assoc_req(dev,dev->curr_bss);
+ 			dbg(DBG_MGMT_TIMER, "%s:%d: starting mgmt_timer + HZ",
+@@ -1824,19 +1798,18 @@ static void handle_mgmt_timeout(struct at76c503 *dev)
+ 			   in the future ... */
+ 
+ 			/* try to get next matching BSS */
+-			NEW_STATE(dev,JOINING);
++			dev->istate = JOINING;
+ 			defer_kevent(dev,KEVENT_JOIN);
+ 		}
+ 		break;
+ 
+ 	case REASSOCIATING:
+-		UNLOCK_ISTATE()
+ 		if (dev->retries-- >= 0)
+ 			reassoc_req(dev, dev->curr_bss, dev->new_bss);
+ 		else {
+ 			/* we disassociate from the curr_bss and
+ 			   scan again ... */
+-			NEW_STATE(dev,DISASSOCIATING);
++			dev->istate = DISASSOCIATING;
+ 			dev->retries = DISASSOC_RETRIES;
+ 			disassoc_req(dev, dev->curr_bss);
+ 		}
+@@ -1846,7 +1819,6 @@ static void handle_mgmt_timeout(struct at76c503 *dev)
+ 		break;
+ 
+ 	case DISASSOCIATING:
+-		UNLOCK_ISTATE()
+ 		if (dev->retries-- >= 0) {
+ 			disassoc_req(dev, dev->curr_bss);
+ 			dbg(DBG_MGMT_TIMER, "%s:%d: starting mgmt_timer + HZ",
+@@ -1854,17 +1826,15 @@ static void handle_mgmt_timeout(struct at76c503 *dev)
+ 			mod_timer(&dev->mgmt_timer,jiffies+HZ);
+ 		} else {
+ 			/* we scan again ... */
+-			NEW_STATE(dev,SCANNING);
++			dev->istate = SCANNING;
+ 			defer_kevent(dev,KEVENT_SCAN);
+ 		}
+ 		break;
+ 
+ 	case INIT:
+-		UNLOCK_ISTATE()
+ 		break;
+ 
+ 	default:
+-		UNLOCK_ISTATE()
+ 		assert(0);
+ 	} /* switch (dev->istate) */
+ 
+@@ -2300,9 +2270,7 @@ static void kevent(struct work_struct *work)
+ 	/* check this _before_ KEVENT_JOIN, 'cause _JOIN sets _STARTIBSS bit */
+ 	if (test_bit(KEVENT_STARTIBSS, &dev->kevent_flags)) {
+ 		clear_bit(KEVENT_STARTIBSS, &dev->kevent_flags);
+-		LOCK_ISTATE()
+ 		assert(dev->istate == STARTIBSS);
+-		UNLOCK_ISTATE()
+ 		ret = start_ibss(dev);
+ 		if (ret < 0) {
+ 			err("%s: start_ibss failed: %d", dev->netdev->name, ret);
+@@ -2341,13 +2309,10 @@ end_startibss:
+ 	/* check this _before_ KEVENT_SCAN, 'cause _SCAN sets _JOIN bit */
+ 	if (test_bit(KEVENT_JOIN, &dev->kevent_flags)) {
+ 		clear_bit(KEVENT_JOIN, &dev->kevent_flags);
+-		LOCK_ISTATE()
+ 		if (dev->istate == INIT) {
+-			UNLOCK_ISTATE()	
+ 			goto end_join;
+ 		}
+ 		assert(dev->istate == JOINING);
+-		UNLOCK_ISTATE()
+ 		/* dev->curr_bss == NULL signals a new round,
+ 		   starting with list_entry(dev->bss_list.next, ...) */
+ 
+@@ -2381,7 +2346,7 @@ end_startibss:
+ 			/* here we have joined the (I)BSS */
+ 			if (dev->iw_mode == IW_MODE_ADHOC) {
+ 				struct bss_info *bptr = dev->curr_bss;
+-				NEW_STATE(dev,CONNECTED);
++				dev->istate = CONNECTED;
+ 				/* get ESSID, BSSID and channel for dev->curr_bss */
+ 				dev->essid_size = bptr->ssid_len;
+ 				memcpy(dev->essid, bptr->ssid, bptr->ssid_len);
+@@ -2394,7 +2359,7 @@ end_startibss:
+ 				del_timer_sync(&dev->mgmt_timer);
+ 			} else {
+ 				/* send auth req */
+-				NEW_STATE(dev,AUTHENTICATING);
++				dev->istate = AUTHENTICATING;
+ 				auth_req(dev, dev->curr_bss, 1, NULL);
+ 				dbg(DBG_MGMT_TIMER, "%s:%d: starting mgmt_timer + HZ",
+ 				    __FUNCTION__, __LINE__);
+@@ -2405,12 +2370,12 @@ end_startibss:
+ 
+ 		/* here we haven't found a matching (i)bss ... */
+ 		if (dev->iw_mode == IW_MODE_ADHOC) {
+-			NEW_STATE(dev,STARTIBSS);
++			dev->istate = STARTIBSS;
+ 			defer_kevent(dev,KEVENT_STARTIBSS);
+ 			goto end_join;
+ 		}
+ 		/* haven't found a matching BSS in infra mode - try again */
+-		NEW_STATE(dev,SCANNING);
++		dev->istate = SCANNING;
+ 		defer_kevent(dev, KEVENT_SCAN);
+ 	} /* if (test_bit(KEVENT_JOIN, &dev->kevent_flags)) */
+ end_join:
+@@ -2423,13 +2388,11 @@ end_join:
+ 	if (test_bit(KEVENT_SCAN, &dev->kevent_flags)) {
+ 		clear_bit(KEVENT_SCAN, &dev->kevent_flags);
+ 
+-		LOCK_ISTATE()
+ 		assert(dev->istate == SCANNING);
+ 		/* only clear the bss list when a scan is actively initiated,
+ 		 * otherwise simply rely on bss_list_timeout */
+ 		if (dev->site_survey_state == SITE_SURVEY_IN_PROGRESS)
+ 			free_bss_list(dev);
+-		UNLOCK_ISTATE()
+ 
+ 		dev->scan_runs = 2;
+ 		if ((ret = start_scan(dev, 0, 1)) < 0) {
+@@ -2452,11 +2415,9 @@ end_join:
+ 
+ 	if (test_bit(KEVENT_RESTART, &dev->kevent_flags)) {
+ 		clear_bit(KEVENT_RESTART, &dev->kevent_flags);
+-		LOCK_ISTATE()
+ #if 0
+ 		assert(dev->istate == INIT);
+ #endif
+-		UNLOCK_ISTATE()
+ 		startup_device(dev);
+ 
+ 		/* call it here for default_iw_mode == IW_MODE_MONITOR and
+@@ -2469,10 +2430,10 @@ end_join:
+ 		netif_carrier_off(dev->netdev); /* disable running netdev watchdog */
+ 		netif_stop_queue(dev->netdev); /* stop tx data packets */
+ 		if (dev->iw_mode != IW_MODE_MONITOR) {
+-			NEW_STATE(dev,SCANNING);
++			dev->istate = SCANNING;
+ 			defer_kevent(dev,KEVENT_SCAN);
+ 		} else {
+-			NEW_STATE(dev,MONITORING);
++			dev->istate = MONITORING;
+ 			start_scan(dev,0,0);
+ 			dbg(DBG_MGMT_TIMER, "%s:%d: starting mgmt_timer for %d ticks",
+ 			    __FUNCTION__, __LINE__, SCAN_POLL_INTERVAL);
+@@ -2482,10 +2443,8 @@ end_join:
+ 
+ 	if (test_bit(KEVENT_ASSOC_DONE, &dev->kevent_flags)) {
+ 		clear_bit(KEVENT_ASSOC_DONE, &dev->kevent_flags);
+-		LOCK_ISTATE()
+ 		assert(dev->istate == ASSOCIATING ||
+ 		       dev->istate == REASSOCIATING);
+-		UNLOCK_ISTATE()
+ 		if (dev->iw_mode == IW_MODE_INFRA) {
+ 			assert(dev->curr_bss != NULL);
+ 			if (dev->curr_bss != NULL && 
+@@ -2522,7 +2481,7 @@ end_join:
+ 
+ 		netif_carrier_on(dev->netdev);
+ 		netif_wake_queue(dev->netdev); /* _start_queue ??? */
+-		NEW_STATE(dev,CONNECTED);
++		dev->istate = CONNECTED;
+ 		iwevent_bss_connect(dev->netdev,dev->curr_bss->bssid);
+ 		dbg(DBG_PROGRESS, "%s: connected to BSSID %s",
+ 		    dev->netdev->name, mac2str(dev->curr_bss->bssid));
+@@ -2537,7 +2496,7 @@ end_join:
+ 
+ 		usb_reset_device(dev->udev);
+ 
+-		NEW_STATE(dev, WAIT_FOR_DISCONNECT);
++		dev->istate =  WAIT_FOR_DISCONNECT;
+ 	}
+ 
+ 	if (test_bit(KEVENT_EXTERNAL_FW, &dev->kevent_flags)) {
+@@ -2567,7 +2526,7 @@ end_join:
+ 				schedule_timeout(HZ/5+1);
+ 			}
+ 		}
+-		NEW_STATE(dev,INIT);
++		dev->istate = INIT;
+ 		init_new_device(dev);
+ 	}
+ end_external_fw:
+@@ -2596,7 +2555,7 @@ end_external_fw:
+ 			}
+ 
+ 		dbg(DBG_DEVSTART, "sleeping for 2 seconds");
+-		NEW_STATE(dev,EXTFW_DOWNLOAD);
++		dev->istate = EXTFW_DOWNLOAD;
+ 		mod_timer(&dev->fw_dl_timer, jiffies+2*HZ+1);
+ 	}
+ end_internal_fw:
+@@ -2780,9 +2739,7 @@ static void rx_mgmt_assoc(struct at76c503 *dev,
+ 	    dev->netdev->name, mac2str(mgmt->addr3), capa, status, assoc_id,
+ 	    hex2str(dev->obuf, resp->data+2,
+ 		    min((size_t)*(resp->data+1),(sizeof(dev->obuf)-1)/2), '\0'));
+-	LOCK_ISTATE()
+ 	if (dev->istate == ASSOCIATING) {
+-		UNLOCK_ISTATE()
+ 		assert(dev->curr_bss != NULL);
+ 		if (dev->curr_bss == NULL)
+ 			return;
+@@ -2797,12 +2754,11 @@ static void rx_mgmt_assoc(struct at76c503 *dev,
+ 			dev->channel = ptr->channel;
+ 			defer_kevent(dev,KEVENT_ASSOC_DONE);
+ 		} else {
+-			NEW_STATE(dev,JOINING);
++			dev->istate = JOINING;
+ 			defer_kevent(dev,KEVENT_JOIN);
+ 		}
+ 		del_timer_sync(&dev->mgmt_timer);
+ 	} else {
+-		UNLOCK_ISTATE()
+ 		info("%s: AssocResp in state %d ignored",
+ 		     dev->netdev->name, dev->istate);
+ 	}
+@@ -2825,9 +2781,7 @@ static void rx_mgmt_reassoc(struct at76c503 *dev,
+ 	    dev->netdev->name, mac2str(mgmt->addr3), capa, status, assoc_id,
+ 	    hex2str(dev->obuf, resp->data+2,
+ 		    min((size_t)*(resp->data+1),(sizeof(dev->obuf)-1)/2), '\0'));
+-	LOCK_ISTATE()
+ 	if (dev->istate == REASSOCIATING) {
+-		UNLOCK_ISTATE()
+ 		assert(dev->new_bss != NULL);
+ 		if (dev->new_bss == NULL)
+ 			return;
+@@ -2835,7 +2789,7 @@ static void rx_mgmt_reassoc(struct at76c503 *dev,
+ 		if (status == WLAN_STATUS_SUCCESS) {
+ 			struct bss_info *bptr = dev->new_bss;
+ 			bptr->assoc_id = assoc_id;
+-			NEW_STATE(dev,CONNECTED);
++			dev->istate = CONNECTED;
+ 
+ 			iwevent_bss_connect(dev->netdev,bptr->bssid);
+ 
+@@ -2854,13 +2808,12 @@ static void rx_mgmt_reassoc(struct at76c503 *dev,
+ 			defer_kevent(dev, KEVENT_ASSOC_DONE);
+ 		} else {
+ 			del_timer_sync(&dev->mgmt_timer);
+-			NEW_STATE(dev,JOINING);
++			dev->istate = JOINING;
+ 			defer_kevent(dev,KEVENT_JOIN);
+ 		}
+ 	} else {
+ 		info("%s: ReAssocResp in state %d ignored",
+ 		     dev->netdev->name, dev->istate);
+-		UNLOCK_ISTATE()
+ 	}
+ } /* rx_mgmt_reassoc */
+ 
+@@ -2877,24 +2830,17 @@ static void rx_mgmt_disassoc(struct at76c503 *dev,
+ 	    le16_to_cpu(resp->reason),
+ 	    hex2str(dev->obuf, mgmt->addr1, 
+ 		    min((int)sizeof(dev->obuf)/3, ETH_ALEN), ':'));
+-	LOCK_ISTATE()
+-	if (dev->istate == SCANNING || dev->istate == INIT) {
+-		UNLOCK_ISTATE()
++	if (dev->istate == SCANNING || dev->istate == INIT)
+ 		return;
+-	}
+-	UNLOCK_ISTATE()
+ 
+ 	assert(dev->curr_bss != NULL);
+ 	if (dev->curr_bss == NULL)
+ 		return;
+-	LOCK_ISTATE()
+ 	if (dev->istate == REASSOCIATING) {
+-		UNLOCK_ISTATE()
+ 		assert(dev->new_bss != NULL);
+ 		if (dev->new_bss == NULL)
+ 			return;
+-	} else
+-		UNLOCK_ISTATE()
++	}
+ 	if (!compare_ether_addr(mgmt->addr3, dev->curr_bss->bssid) &&
+ 		(!compare_ether_addr(dev->netdev->dev_addr, mgmt->addr1) ||
+ 		 is_broadcast_ether_addr(mgmt->addr1))) {
+@@ -2902,7 +2848,6 @@ static void rx_mgmt_disassoc(struct at76c503 *dev,
+ 		   trying to connect to, directed to us or broadcasted */
+ 		/* jal: TODO: can the DisAssoc also come from the BSS
+ 		   we've sent a ReAssocReq to (i.e. from dev->new_bss) ? */
+-		LOCK_ISTATE()
+ 		if (dev->istate == DISASSOCIATING ||
+ 		    dev->istate == ASSOCIATING  ||
+ 		    dev->istate == REASSOCIATING  ||
+@@ -2910,20 +2855,18 @@ static void rx_mgmt_disassoc(struct at76c503 *dev,
+ 		    dev->istate == JOINING)
+ 		{
+ 			if (dev->istate == CONNECTED) {
+-				UNLOCK_ISTATE()
+ 				netif_carrier_off(dev->netdev);
+ 				netif_stop_queue(dev->netdev);
+ 				iwevent_bss_disconnect(dev->netdev);
+-			} else UNLOCK_ISTATE()
++			}
+ 			del_timer_sync(&dev->mgmt_timer);
+-			NEW_STATE(dev,JOINING);
++			dev->istate = JOINING;
+ 			defer_kevent(dev,KEVENT_JOIN);
+ 		} else {
+ 			
+ 		/* ignore DisAssoc in states AUTH, ASSOC */
+ 			info("%s: DisAssoc in state %d ignored",
+ 			     dev->netdev->name, dev->istate);
+-			UNLOCK_ISTATE()
+ 		}
+ 	}
+ 	/* ignore DisAssoc to other STA or from other BSSID */
+@@ -2954,14 +2897,11 @@ static void rx_mgmt_auth(struct at76c503 *dev,
+ 		    hex2str(dev->obuf, resp->challenge,
+ 			    min((int)sizeof(dev->obuf)/3,18), ' '));
+ 	}
+-	LOCK_ISTATE()
+ 	if (dev->istate != AUTHENTICATING) {
+ 		info("%s: ignored AuthFrame in state %d",
+ 		     dev->netdev->name, dev->istate);
+-		UNLOCK_ISTATE()
+ 		return;
+ 	}
+-	UNLOCK_ISTATE()
+ 	if (dev->auth_mode != alg) {
+ 		info("%s: ignored AuthFrame for alg %d",
+ 		     dev->netdev->name, alg);
+@@ -2979,7 +2919,7 @@ static void rx_mgmt_auth(struct at76c503 *dev,
+ 		if (status != WLAN_STATUS_SUCCESS) {
+ 			del_timer_sync(&dev->mgmt_timer);
+ 			/* try to join next bss */
+-			NEW_STATE(dev,JOINING);
++			dev->istate = JOINING;
+ 			defer_kevent(dev,KEVENT_JOIN);
+ 			return;
+ 		}
+@@ -2987,7 +2927,7 @@ static void rx_mgmt_auth(struct at76c503 *dev,
+ 		if (dev->auth_mode == WLAN_AUTH_OPEN ||
+ 			seq_nr == 4) {
+ 			dev->retries = ASSOC_RETRIES;
+-			NEW_STATE(dev,ASSOCIATING);
++			dev->istate = ASSOCIATING;
+ 			assoc_req(dev, dev->curr_bss);
+ 			dbg(DBG_MGMT_TIMER, "%s:%d: starting mgmt_timer + HZ",
+ 			    __FUNCTION__, __LINE__);
+@@ -3018,13 +2958,11 @@ static void rx_mgmt_deauth(struct at76c503 *dev,
+ 	    le16_to_cpu(resp->reason),
+ 	    hex2str(dev->obuf, mgmt->addr1,
+ 		    min((int)sizeof(dev->obuf)/3,ETH_ALEN), ':'));
+-	LOCK_ISTATE()
+ 	if (dev->istate == DISASSOCIATING ||
+ 	    dev->istate == AUTHENTICATING ||
+ 	    dev->istate == ASSOCIATING ||
+ 	    dev->istate == REASSOCIATING  ||
+ 	    dev->istate == CONNECTED) {
+-		UNLOCK_ISTATE()
+ 		assert(dev->curr_bss != NULL);
+ 		if (dev->curr_bss == NULL)
+ 			return;
+@@ -3034,12 +2972,10 @@ static void rx_mgmt_deauth(struct at76c503 *dev,
+ 		     is_broadcast_ether_addr(mgmt->addr1))) {
+ 			/* this is a DeAuth from the BSS we are connected or
+ 			   trying to connect to, directed to us or broadcasted */
+-			LOCK_ISTATE()
+ 			if (dev->istate == CONNECTED) {
+-				UNLOCK_ISTATE()
+ 				iwevent_bss_disconnect(dev->netdev);
+-			} else UNLOCK_ISTATE()
+-			NEW_STATE(dev,JOINING);
++			}
++			dev->istate = JOINING;
+ 			defer_kevent(dev,KEVENT_JOIN);
+ 			del_timer_sync(&dev->mgmt_timer);
+ 		}
+@@ -3048,7 +2984,6 @@ static void rx_mgmt_deauth(struct at76c503 *dev,
+ 		/* ignore DeAuth in states SCANNING */
+ 		info("%s: DeAuth in state %d ignored",
+ 		     dev->netdev->name, dev->istate);
+-		UNLOCK_ISTATE()
+ 	}
+ } /* rx_mgmt_deauth */
+ 
+@@ -3084,9 +3019,7 @@ static void rx_mgmt_beacon(struct at76c503 *dev,
+ 	unsigned long flags;
+ 	
+ 	spin_lock_irqsave(&dev->bss_list_spinlock, flags);
+-	LOCK_ISTATE()	
+ 	if (dev->istate == CONNECTED) {
+-		UNLOCK_ISTATE()
+ 		/* in state CONNECTED we use the mgmt_timer to control
+ 		   the beacon of the BSS */
+ 		assert(dev->curr_bss != NULL);
+@@ -3098,8 +3031,7 @@ static void rx_mgmt_beacon(struct at76c503 *dev,
+ 			dev->beacons_received++;
+ 			goto rx_mgmt_beacon_end;
+ 		}
+-	} else 
+-	    UNLOCK_ISTATE()
++	}
+ 
+ 	/* look if we have this BSS already in the list */
+ 	match = NULL;
+@@ -3314,9 +3246,7 @@ static void rx_mgmt(struct at76c503 *dev, struct at76c503_rx_buffer *buf)
+ 	u16 subtype = le16_to_cpu(mgmt->frame_ctl) & IEEE80211_FCTL_STYPE;
+ 
+ 	/* update wstats */
+-	LOCK_ISTATE()
+ 	if (dev->istate != INIT && dev->istate != SCANNING) {
+-		UNLOCK_ISTATE()
+ 		/* jal: this is a dirty hack needed by Tim in ad-hoc mode */
+ 		if (dev->iw_mode == IW_MODE_ADHOC || (dev->curr_bss != NULL &&
+ 		     !compare_ether_addr(mgmt->addr3, dev->curr_bss->bssid))) {
+@@ -3326,7 +3256,7 @@ static void rx_mgmt(struct at76c503 *dev, struct at76c503_rx_buffer *buf)
+ 			   values, we just present the raw value at the moment - TJS */
+ 			update_wstats(dev, buf);
+ 		}
+-	} else UNLOCK_ISTATE()
++	}
+ 
+ 	if (at76_debug & DBG_RX_MGMT_CONTENT) {
+ 		dbg_uc("%s rx mgmt subtype x%x %s",
+@@ -4089,13 +4019,10 @@ static void rx_tasklet(unsigned long param)
+ 		    hex2str(dev->obuf,(u8 *)i802_11_hdr,
+ 			    min((int)(sizeof(dev->obuf)-1)/2,48),'\0'));
+ 	}
+-	LOCK_ISTATE()
+ 	if (dev->istate == MONITORING) {
+-		UNLOCK_ISTATE()
+ 		rx_monitor_mode(dev);
+ 		goto finish;
+ 	}
+-	UNLOCK_ISTATE()
+ 
+ 	/* there is a new bssid around, accept it: */
+ 	if (buf->newbss && dev->iw_mode == IW_MODE_ADHOC) {
+@@ -4516,7 +4443,7 @@ static int at76c503_stop(struct net_device *netdev)
+ 
+ 	netif_stop_queue(netdev);
+ 
+-  	NEW_STATE(dev,INIT);
++  	dev->istate = INIT;
+ 
+ 	if (!(dev->device_unplugged)) {
+ 		/* we are called by "ifconfig wlanX down", not because the
+@@ -4667,10 +4594,8 @@ static int at76c503_iw_handler_commit(struct net_device *netdev,
+ 		__FUNCTION__);
+ 	
+ 	/* TODO: stop any pending tx bulk urb */
+-	LOCK_ISTATE()
+ 	if (dev->istate != INIT) {
+-		UNLOCK_ISTATE()
+-		NEW_STATE(dev,INIT);
++		dev->istate = INIT;
+ 		/* stop pending management stuff */
+ 		del_timer_sync(&dev->mgmt_timer);
+ 
+@@ -4683,7 +4608,7 @@ static int at76c503_iw_handler_commit(struct net_device *netdev,
+ 
+ 		netif_carrier_off(dev->netdev);
+ 		netif_stop_queue(dev->netdev);
+-	} else UNLOCK_ISTATE()
++	}
+ 
+ 	/* do the restart after two seconds to catch
+ 	 * following ioctl's (from more params of iwconfig)
+@@ -5087,7 +5012,6 @@ static int at76c503_iw_handler_set_scan(struct net_device *netdev,
+ 			dev->scan_mode = SCAN_TYPE_ACTIVE;
+ 
+ 		/* Sanity check values? */
+-		LOCK_ISTATE()
+ 		if (req->min_channel_time > 0) {
+ 			if (dev->istate == MONITORING)
+ 				dev->monitor_scan_min_time = req->min_channel_time;
+@@ -5100,11 +5024,10 @@ static int at76c503_iw_handler_set_scan(struct net_device *netdev,
+ 			else
+ 				dev->scan_max_time = req->max_channel_time;
+ 		}
+-		UNLOCK_ISTATE()
+ 	} 
+ 	
+ 	/* change to scanning state */
+-	NEW_STATE(dev, SCANNING);
++	dev->istate =  SCANNING;
+ 	defer_kevent(dev, KEVENT_SCAN);
+ 	
+ 	return ret;
+@@ -5269,10 +5192,8 @@ static int at76c503_iw_handler_get_essid(struct net_device *netdev,
+ 		data->length += 1;
+ 	} else {
+ 		/* the ANY ssid was specified */
+-		LOCK_ISTATE()
+ 		if (dev->istate == CONNECTED &&
+ 		    dev->curr_bss != NULL) {
+-			UNLOCK_ISTATE()
+ 			/* report the SSID we have found */
+ 			data->flags = 1;
+ 			data->length = dev->curr_bss->ssid_len;
+@@ -5280,7 +5201,6 @@ static int at76c503_iw_handler_get_essid(struct net_device *netdev,
+ 			extra[dev->curr_bss->ssid_len] = '\0';
+ 			data->length += 1;
+ 		} else {
+-			UNLOCK_ISTATE()
+ 			/* report ANY back */
+ 			data->flags=0;
+ 			data->length=0;
+@@ -5788,7 +5708,6 @@ static int at76c503_iw_handler_PRIV_IOCTL_SET_SCAN_TIMES
+ 	if (mint <= 0 || maxt <= 0 || mint > maxt) {
+ 		ret = -EINVAL;
+ 	} else {
+-		LOCK_ISTATE()
+ 		if (dev->istate == MONITORING) {
+ 			dev->monitor_scan_min_time = mint;
+ 			dev->monitor_scan_max_time = maxt;
+@@ -5797,7 +5716,6 @@ static int at76c503_iw_handler_PRIV_IOCTL_SET_SCAN_TIMES
+ 			dev->scan_min_time = mint;
+ 			dev->scan_max_time = maxt;
+ 		}
+-		UNLOCK_ISTATE()
+ 	}
+ 	
+ 	return ret;
+@@ -6077,11 +5995,9 @@ static void at76c503_delete_device(struct at76c503 *dev)
+ 	free_bss_list(dev);
+ 	del_timer_sync(&dev->bss_list_timer);
+ 
+-	LOCK_ISTATE()
+ 	if (dev->istate == CONNECTED) {
+-		UNLOCK_ISTATE()
+ 		iwevent_bss_disconnect(dev->netdev); 
+-	} else UNLOCK_ISTATE()
++	}
+ 
+ 	for(i=0; i < NR_RX_DATA_BUF; i++)
+ 		if (dev->rx_data[i].skb != NULL) {
+@@ -6211,7 +6127,6 @@ static struct at76c503 *alloc_new_device(struct usb_device *udev,
+ 
+ 
+ 	spin_lock_init(&dev->mgmt_spinlock);
+-	spin_lock_init(&dev->istate_spinlock);
+ 	dev->next_mgmt_bulk = NULL;
+ 	dev->istate = INTFW_DOWNLOAD;
+ 
+@@ -6486,7 +6401,7 @@ static int at76c503_do_probe(struct usb_device *udev, u8 *fw_data, int fw_size,
+ 
+ 		/* download internal firmware part */
+ 		dbg(DBG_DEVSTART, "downloading internal firmware");
+-		NEW_STATE(dev,INTFW_DOWNLOAD);
++		dev->istate = INTFW_DOWNLOAD;
+ 		defer_kevent(dev,KEVENT_INTERNAL_FW);
+ 
+ 	} else {
+@@ -6540,10 +6455,10 @@ static int at76c503_do_probe(struct usb_device *udev, u8 *fw_data, int fw_size,
+ 				goto error;
+ 			}
+ 
+-			NEW_STATE(dev,EXTFW_DOWNLOAD);
++			dev->istate = EXTFW_DOWNLOAD;
+ 			defer_kevent(dev,KEVENT_EXTERNAL_FW);
+ 		} else {
+-			NEW_STATE(dev,INIT);
++			dev->istate = INIT;
+ 			if (init_new_device(dev) < 0) {
+ 				ret = -ENODEV;
+ 				goto error;
+diff --git a/at76_usb.h b/at76_usb.h
+index 2d69bdd..df0a529 100644
+--- a/at76_usb.h
++++ b/at76_usb.h
+@@ -539,9 +539,6 @@ struct at76c503 {
+ 	/* some data for infrastructure mode only */
+ 	spinlock_t mgmt_spinlock;  /* this spinlock protects access to
+ 				      next_mgmt_bulk */
+-	spinlock_t istate_spinlock;/* this spinlock protects access to
+-	                              istate */
+-
+ 	
+ 	struct at76c503_tx_buffer *next_mgmt_bulk; /* pending management msg to
+ 						      send via bulk out */
+
+
+
+
+From proski at gnu.org  Mon Mar  5 08:19:06 2007
+From: proski at gnu.org (Pavel Roskin)
+Date: Mon, 05 Mar 2007 02:19:06 -0500
+Subject: [at76c503a-develop] [PATCH] Fix divizion by zero in ad-hoc mode
+Message-ID: <20070305071906.5243.55134.stgit@dl.roinet.com>
+
+This would happen if the card gets more than one management packet in a
+jiffy.  Fix it by updating qual->qual at most once a second. 
+Measuremensts over a shorter period are meaningless anyway.
+Signed-off-by: Pavel Roskin <proski at gnu.org>
+---
+
+ at76_usb.c |   10 ++++++++--
+ 1 files changed, 8 insertions(+), 2 deletions(-)
+
+diff --git a/at76_usb.c b/at76_usb.c
+index 59a5ed5..b3ed6fb 100644
+--- a/at76_usb.c
++++ b/at76_usb.c
+@@ -3202,9 +3202,15 @@ static void calc_qual(struct at76c503 *dev, struct at76c503_rx_buffer *buf, stru
+ 	   (dev->board_type == BOARDTYPE_503_INTERSIL_3863)) {
+ 	    qual->qual=buf->link_quality;
+ 	} else {
++	    unsigned long msec;
++
++	    /* Update qual at most once a second */
++	    msec = jiffies_to_msecs(jiffies) - dev->beacons_last_qual;
++	    if (msec < 1000)
++		return;
++
+ 	    qual->qual = qual->level * dev->beacons_received *
+-	    		        dev->beacon_period /
+-	                        (jiffies_to_msecs(jiffies) - dev->beacons_last_qual);
++			 dev->beacon_period / msec;
+ 		
+ 	    dev->beacons_last_qual = jiffies_to_msecs(jiffies);
+ 	    dev->beacons_received = 0;
+
+
+
+
+From agx at sigxcpu.org  Mon Mar  5 11:24:42 2007
+From: agx at sigxcpu.org (Guido Guenther)
+Date: Mon, 5 Mar 2007 11:24:42 +0100
+Subject: [at76c503a-develop] [PATCH] Fix divizion by zero in ad-hoc mode
+In-Reply-To: <20070305071906.5243.55134.stgit@dl.roinet.com>
+References: <20070305071906.5243.55134.stgit@dl.roinet.com>
+Message-ID: <20070305102442.GA4735@bogon.ms20.nix>
+
+Hi Pavel
+On Mon, Mar 05, 2007 at 02:19:06AM -0500, Pavel Roskin wrote:
+> This would happen if the card gets more than one management packet in a
+> jiffy.  Fix it by updating qual->qual at most once a second. 
+> Measuremensts over a shorter period are meaningless anyway.
+I sent dragan a similar patch but he still reported the division by
+zero, that's why I #ifdef'ed out the whole function for testing  - I
+applied your patch anyway since it looks correct.
+Cheers,
+ -- Guido
+
+
+From agx at sigxcpu.org  Mon Mar  5 11:26:11 2007
+From: agx at sigxcpu.org (Guido Guenther)
+Date: Mon, 5 Mar 2007 11:26:11 +0100
+Subject: [at76c503a-develop] [PATCH 3/3] Remove all locking for istate
+In-Reply-To: <20070305035844.5752.31537.stgit@dl.roinet.com>
+References: <20070305035833.5752.96233.stgit@dl.roinet.com>
+	<20070305035844.5752.31537.stgit@dl.roinet.com>
+Message-ID: <20070305102611.GB4735@bogon.ms20.nix>
+
+Hi Pavel,
+On Sun, Mar 04, 2007 at 10:58:44PM -0500, Pavel Roskin wrote:
+> Access to integer variables is already atomic.  The istate locking
+> causes warnings from the lock checker.  If there are any specific
+> scenarios when locking is needed, they should be addressed individually.
+This one and the other ones applied - I always wondered what the locking
+was good for.
+Cheers,
+ -- Guido
+
+
+From proski at gnu.org  Mon Mar  5 23:42:51 2007
+From: proski at gnu.org (Pavel Roskin)
+Date: Mon, 05 Mar 2007 17:42:51 -0500
+Subject: [at76c503a-develop] [PATCH] Reuse more structures from Linux
+	ieee80211 headers
+Message-ID: <20070305224251.14934.89901.stgit@dl.roinet.com>
+
+Eliminate all local definitions for management frames.  Use Linux
+structures instead.  Use struct ieee80211_info_element for information
+elements in management frames.
+
+Use min_t() instead of min() in the affected code when casts are already
+present or would be needed.
+
+Signed-off-by: Pavel Roskin <proski at gnu.org>
+---
+
+ at76_usb.c |  230 +++++++++++++++++++++++++++++-------------------------------
+ at76_usb.h |   71 +------------------
+ 2 files changed, 116 insertions(+), 185 deletions(-)
+
+diff --git a/at76_usb.c b/at76_usb.c
+index 24c3cd1..b8442db 100644
+--- a/at76_usb.c
++++ b/at76_usb.c
+@@ -195,7 +195,7 @@ static void defer_kevent (struct at76c503 *dev, int flag);
+ static struct bss_info *find_matching_bss(struct at76c503 *dev,
+ 					  struct bss_info *curr);
+ static int auth_req(struct at76c503 *dev, struct bss_info *bss, int seq_nr,
+-		    u8 *challenge);
++		    struct ieee80211_info_element *challenge);
+ static int disassoc_req(struct at76c503 *dev, struct bss_info *bss);
+ static int assoc_req(struct at76c503 *dev, struct bss_info *bss);
+ static int reassoc_req(struct at76c503 *dev, struct bss_info *curr,
+@@ -1929,11 +1929,16 @@ static int send_mgmt_bulk(struct at76c503 *dev, struct at76c503_tx_buffer *txbuf
+ 
+ } /* send_mgmt_bulk */
+ 
++/* Go to the next information element */
++static inline void next_ie(struct ieee80211_info_element **ie) {
++	*ie = (struct ieee80211_info_element *)(&(*ie)->data[(*ie)->len]);
++}
++
+ static int disassoc_req(struct at76c503 *dev, struct bss_info *bss)
+ {
+ 	struct at76c503_tx_buffer *tx_buffer;
+ 	struct ieee80211_hdr_3addr *mgmt;
+-	struct ieee802_11_disassoc_frame *req;
++	struct ieee80211_disassoc *req;
+ 
+ 	assert(bss != NULL);
+ 	if (bss == NULL)
+@@ -1944,8 +1949,8 @@ static int disassoc_req(struct at76c503 *dev, struct bss_info *bss)
+ 	if (!tx_buffer)
+ 		return -ENOMEM;
+ 
+-	mgmt = (struct ieee80211_hdr_3addr *)&(tx_buffer->packet);
+-	req  = (struct ieee802_11_disassoc_frame *)&(mgmt->payload);
++	req = (struct ieee80211_disassoc *)(&tx_buffer->packet);
++	mgmt = &req->header;
+ 
+ 	/* make wireless header */
+ 	mgmt->frame_ctl = cpu_to_le16(IEEE80211_FTYPE_MGMT|IEEE80211_STYPE_AUTH);
+@@ -1974,14 +1979,15 @@ static int disassoc_req(struct at76c503 *dev, struct bss_info *bss)
+    we got with seq_nr 2 for shared secret authentication only and
+    send in seq_nr 3 WEP encrypted to prove we have the correct WEP key;
+    otherwise it is NULL */
+-static int auth_req(struct at76c503 *dev, struct bss_info *bss, int seq_nr, u8 *challenge)
++static int auth_req(struct at76c503 *dev, struct bss_info *bss, int seq_nr,
++		    struct ieee80211_info_element *challenge)
+ {
+ 	struct at76c503_tx_buffer *tx_buffer;
+ 	struct ieee80211_hdr_3addr *mgmt;
+-	struct ieee802_11_auth_frame *req;
++	struct ieee80211_auth *req;
+ 	
+ 	int buf_len = (seq_nr != 3 ? AUTH_FRAME_SIZE : 
+-		       AUTH_FRAME_SIZE + 1 + 1 + challenge[1]);
++		       AUTH_FRAME_SIZE + 1 + 1 + challenge->len);
+ 
+ 	assert(bss != NULL);
+ 	assert(seq_nr != 3 || challenge != NULL);
+@@ -1990,8 +1996,8 @@ static int auth_req(struct at76c503 *dev, struct bss_info *bss, int seq_nr, u8 *
+ 	if (!tx_buffer)
+ 		return -ENOMEM;
+ 
+-	mgmt = (struct ieee80211_hdr_3addr *)&(tx_buffer->packet);
+-	req  = (struct ieee802_11_auth_frame *)&(mgmt->payload);
++	req = (struct ieee80211_auth *)(&tx_buffer->packet);
++	mgmt = &req->header;
+ 
+ 	/* make wireless header */
+ 	/* first auth msg is not encrypted, only the second (seq_nr == 3) */
+@@ -2005,22 +2011,22 @@ static int auth_req(struct at76c503 *dev, struct bss_info *bss, int seq_nr, u8 *
+ 	mgmt->seq_ctl = cpu_to_le16(0);
+ 
+ 	req->algorithm = cpu_to_le16(dev->auth_mode);
+-	req->seq_nr = cpu_to_le16(seq_nr);
++	req->transaction = cpu_to_le16(seq_nr);
+ 	req->status = cpu_to_le16(0);
+ 
+ 	if (seq_nr == 3)
+-		memcpy(req->challenge, challenge, 1+1+challenge[1]);
++		memcpy(req->info_element, challenge, 1+1+challenge->len);
+ 
+ 	/* init. at76c503 tx header */
+ 	tx_buffer->wlength = cpu_to_le16(buf_len - AT76C503_TX_HDRLEN);
+ 	
+ 	dbg(DBG_TX_MGMT, "%s: AuthReq bssid %s alg %d seq_nr %d",
+ 	    dev->netdev->name, mac2str(mgmt->addr3),
+-	    le16_to_cpu(req->algorithm), le16_to_cpu(req->seq_nr));
++	    le16_to_cpu(req->algorithm), le16_to_cpu(req->transaction));
+ 	if (seq_nr == 3) {
+ 		dbg(DBG_TX_MGMT, "%s: AuthReq challenge: %s ...",
+ 		    dev->netdev->name,
+-		    hex2str(dev->obuf, req->challenge, 
++		    hex2str(dev->obuf, (u8 *)req->info_element,
+ 			    min((int)sizeof(dev->obuf)/3, 18),' '));
+ 	}
+ 
+@@ -2034,8 +2040,8 @@ static int assoc_req(struct at76c503 *dev, struct bss_info *bss)
+ {
+ 	struct at76c503_tx_buffer *tx_buffer;
+ 	struct ieee80211_hdr_3addr *mgmt;
+-	struct ieee802_11_assoc_req *req;
+-	u8 *tlv;
++	struct ieee80211_assoc_request *req;
++	struct ieee80211_info_element *tlv;
+ 
+ 	assert(bss != NULL);
+ 
+@@ -2044,9 +2050,9 @@ static int assoc_req(struct at76c503 *dev, struct bss_info *bss)
+ 	if (!tx_buffer)
+ 		return -ENOMEM;
+ 
+-	mgmt = (struct ieee80211_hdr_3addr *)&(tx_buffer->packet);
+-	req  = (struct ieee802_11_assoc_req *)&(mgmt->payload);
+-	tlv = req->data;
++	req = (struct ieee80211_assoc_request *)(&tx_buffer->packet);
++	mgmt = &req->header;
++	tlv = req->info_element;
+ 
+ 	/* make wireless header */
+ 	mgmt->frame_ctl = cpu_to_le16(IEEE80211_FTYPE_MGMT|IEEE80211_STYPE_ASSOC_REQ);
+@@ -2070,33 +2076,33 @@ static int assoc_req(struct at76c503 *dev, struct bss_info *bss)
+ 	
+ 	/* write TLV data elements */
+ 
+-	*tlv++ = MFIE_TYPE_SSID;
+-	*tlv++ = bss->ssid_len;
+-	memcpy(tlv, bss->ssid, bss->ssid_len);
+-	tlv += bss->ssid_len;
++	tlv->id = MFIE_TYPE_SSID;
++	tlv->len = bss->ssid_len;
++	memcpy(tlv->data, bss->ssid, bss->ssid_len);
++	next_ie(&tlv);
+ 
+-	*tlv++ = MFIE_TYPE_RATES;
+-	*tlv++ = sizeof(hw_rates);
+-	memcpy(tlv, hw_rates, sizeof(hw_rates));
+-	tlv += sizeof(hw_rates); /* tlv points behind the supp_rates field */
++	tlv->id = MFIE_TYPE_RATES;
++	tlv->len = sizeof(hw_rates);
++	memcpy(tlv->data, hw_rates, sizeof(hw_rates));
++	next_ie(&tlv); /* tlv points behind the supp_rates field */
+ 
+ 	/* init. at76c503 tx header */
+-	tx_buffer->wlength = cpu_to_le16(tlv-(u8 *)mgmt);
++	tx_buffer->wlength = cpu_to_le16((u8 *)tlv-(u8 *)mgmt);
+ 	
+ 	{
+ 		/* output buffer for ssid and rates */
+ 		char orates[4*2+1];
+ 		int len;
+ 
+-		tlv = req->data;
+-		len = min(IW_ESSID_MAX_SIZE, (int)*(tlv+1));
+-		memcpy(dev->obuf, tlv+2, len);
++		tlv = req->info_element;
++		len = min_t(int, IW_ESSID_MAX_SIZE, tlv->len);
++		memcpy(dev->obuf, tlv->data, len);
+ 		dev->obuf[len] = '\0';
+-		tlv += (1 + 1 + *(tlv+1)); /* points to IE of rates now */
++		next_ie(&tlv); /* points to IE of rates now */
+ 		dbg(DBG_TX_MGMT, "%s: AssocReq bssid %s capa x%04x ssid %s rates %s",
+ 		    dev->netdev->name, mac2str(mgmt->addr3),
+ 		    le16_to_cpu(req->capability), dev->obuf,
+-		    hex2str(orates,tlv+2,min((sizeof(orates)-1)/2,(size_t)*(tlv+1)),
++		    hex2str(orates,tlv->data,min((sizeof(orates)-1)/2,(size_t)tlv->len),
+ 			    '\0'));
+ 	}
+ 
+@@ -2113,9 +2119,8 @@ static int reassoc_req(struct at76c503 *dev, struct bss_info *curr_bss,
+ {
+ 	struct at76c503_tx_buffer *tx_buffer;
+ 	struct ieee80211_hdr_3addr *mgmt;
+-	struct ieee802_11_reassoc_req *req;
+-	
+-	u8 *tlv;
++	struct ieee80211_reassoc_request *req;
++	struct ieee80211_info_element *tlv;
+ 
+ 	assert(curr_bss != NULL);
+ 	assert(new_bss != NULL);
+@@ -2127,9 +2132,9 @@ static int reassoc_req(struct at76c503 *dev, struct bss_info *curr_bss,
+ 	if (!tx_buffer)
+ 		return -ENOMEM;
+ 
+-	mgmt = (struct ieee80211_hdr_3addr *)&(tx_buffer->packet);
+-	req  = (struct ieee802_11_reassoc_req *)&(mgmt->payload);
+-	tlv = req->data;
++	req = (struct ieee80211_reassoc_request *)(&tx_buffer->packet);
++	mgmt = &req->header;
++	tlv = req->info_element;
+ 
+ 	/* make wireless header */
+ 	/* jal: encrypt this packet if wep_enabled is TRUE ??? */
+@@ -2151,35 +2156,36 @@ static int reassoc_req(struct at76c503 *dev, struct bss_info *curr_bss,
+ 
+ 	req->listen_interval = cpu_to_le16(2 * new_bss->beacon_interval);
+ 	
+-	memcpy(req->curr_ap, curr_bss->bssid, ETH_ALEN);
++	memcpy(req->current_ap, curr_bss->bssid, ETH_ALEN);
+ 
+ 	/* write TLV data elements */
+-	*tlv++ = MFIE_TYPE_SSID;
+-	*tlv++ = new_bss->ssid_len;
+-	memcpy(tlv,new_bss->ssid, new_bss->ssid_len);
+-	tlv += new_bss->ssid_len;
++	tlv->id = MFIE_TYPE_SSID;
++	tlv->len = new_bss->ssid_len;
++	memcpy(tlv->data, new_bss->ssid, new_bss->ssid_len);
++	next_ie(&tlv);
+ 
+-	*tlv++ = MFIE_TYPE_RATES;
+-	*tlv++ = sizeof(hw_rates);
+-	memcpy(tlv, hw_rates, sizeof(hw_rates));
+-	tlv += sizeof(hw_rates); /* tlv points behind the supp_rates field */
++	tlv->id = MFIE_TYPE_RATES;
++	tlv->len = sizeof(hw_rates);
++	memcpy(tlv->data, hw_rates, sizeof(hw_rates));
++	/* tlv points behind the supp_rates field */
++	next_ie(&tlv);
+ 
+ 	/* init. at76c503 tx header */
+-	tx_buffer->wlength = cpu_to_le16(tlv-(u8 *)mgmt);
++	tx_buffer->wlength = cpu_to_le16((u8 *)tlv-(u8 *)mgmt);
+ 	
+ 	{
+ 		/* output buffer for rates and bssid */
+ 		char orates[4*2+1];
+ 		char ocurr[6*3+1];
+-		tlv = req->data;
+-		memcpy(dev->obuf, tlv+2, min(sizeof(dev->obuf),(size_t)*(tlv+1)));
++		tlv = req->info_element;
++		memcpy(dev->obuf, tlv->data, min(sizeof(dev->obuf),(size_t)tlv->len));
+ 		dev->obuf[IW_ESSID_MAX_SIZE] = '\0';
+-		tlv += (1 + 1 + *(tlv+1)); /* points to IE of rates now */
++		next_ie(&tlv); /* points to IE of rates now */
+ 		dbg(DBG_TX_MGMT, "%s: ReAssocReq curr %s new %s capa x%04x ssid %s rates %s",
+ 		    dev->netdev->name,
+-		    hex2str(ocurr, req->curr_ap, ETH_ALEN, ':'),
++		    hex2str(ocurr, req->current_ap, ETH_ALEN, ':'),
+ 		    mac2str(mgmt->addr3), le16_to_cpu(req->capability), dev->obuf,
+-		    hex2str(orates,tlv+2,min((sizeof(orates)-1)/2,(size_t)*(tlv+1)),
++		    hex2str(orates,tlv->data,min((sizeof(orates)-1)/2,(size_t)tlv->len),
+ 			    '\0'));
+ 	}
+ 
+@@ -2726,18 +2732,17 @@ static struct bss_info *find_matching_bss(struct at76c503 *dev,
+ static void rx_mgmt_assoc(struct at76c503 *dev,
+ 			   struct at76c503_rx_buffer *buf)
+ {
+-	struct ieee80211_hdr_3addr *mgmt =
+-		(struct ieee80211_hdr_3addr *)buf->packet;
+-	struct ieee802_11_assoc_resp *resp = 
+-		(struct ieee802_11_assoc_resp *)mgmt->payload;
+-	u16 assoc_id = le16_to_cpu(resp->assoc_id);
++	struct ieee80211_assoc_response *resp =
++		(struct ieee80211_assoc_response *)buf->packet;
++	struct ieee80211_hdr_3addr *mgmt = &resp->header;
++	u16 assoc_id = le16_to_cpu(resp->aid);
+ 	u16 status = le16_to_cpu(resp->status);
+ 	u16 capa = le16_to_cpu(resp->capability); 
+ 	dbg(DBG_RX_MGMT, "%s: rx AssocResp bssid %s capa x%04x status x%04x "
+ 	    "assoc_id x%04x rates %s",
+ 	    dev->netdev->name, mac2str(mgmt->addr3), capa, status, assoc_id,
+-	    hex2str(dev->obuf, resp->data+2,
+-		    min((size_t)*(resp->data+1),(sizeof(dev->obuf)-1)/2), '\0'));
++	    hex2str(dev->obuf, resp->info_element->data,
++		    min((size_t)resp->info_element->len, (sizeof(dev->obuf)-1)/2), '\0'));
+ 	if (dev->istate == ASSOCIATING) {
+ 		assert(dev->curr_bss != NULL);
+ 		if (dev->curr_bss == NULL)
+@@ -2766,20 +2771,19 @@ static void rx_mgmt_assoc(struct at76c503 *dev,
+ static void rx_mgmt_reassoc(struct at76c503 *dev,
+ 			   struct at76c503_rx_buffer *buf)
+ {
+-	struct ieee80211_hdr_3addr *mgmt =
+-		(struct ieee80211_hdr_3addr *)buf->packet;
+-	struct ieee802_11_assoc_resp *resp = 
+-		(struct ieee802_11_assoc_resp *)mgmt->payload;
++	struct ieee80211_assoc_response *resp =
++		(struct ieee80211_assoc_response *)buf->packet;
++	struct ieee80211_hdr_3addr *mgmt = &resp->header;
+ 	unsigned long flags;
+ 	u16 capa = le16_to_cpu(resp->capability);
+ 	u16 status = le16_to_cpu(resp->status);
+-	u16 assoc_id = le16_to_cpu(resp->assoc_id);
++	u16 assoc_id = le16_to_cpu(resp->aid);
+ 
+ 	dbg(DBG_RX_MGMT, "%s: rx ReAssocResp bssid %s capa x%04x status x%04x "
+ 	    "assoc_id x%04x rates %s",
+ 	    dev->netdev->name, mac2str(mgmt->addr3), capa, status, assoc_id,
+-	    hex2str(dev->obuf, resp->data+2,
+-		    min((size_t)*(resp->data+1),(sizeof(dev->obuf)-1)/2), '\0'));
++	    hex2str(dev->obuf, resp->info_element->data,
++		    min((size_t)resp->info_element->len, (sizeof(dev->obuf)-1)/2), '\0'));
+ 	if (dev->istate == REASSOCIATING) {
+ 		assert(dev->new_bss != NULL);
+ 		if (dev->new_bss == NULL)
+@@ -2819,10 +2823,9 @@ static void rx_mgmt_reassoc(struct at76c503 *dev,
+ static void rx_mgmt_disassoc(struct at76c503 *dev,
+ 			   struct at76c503_rx_buffer *buf)
+ {
+-	struct ieee80211_hdr_3addr *mgmt =
+-		(struct ieee80211_hdr_3addr *)buf->packet;
+-	struct ieee802_11_disassoc_frame *resp = 
+-		(struct ieee802_11_disassoc_frame *)mgmt->payload;
++	struct ieee80211_disassoc *resp =
++		(struct ieee80211_disassoc *)buf->packet;
++	struct ieee80211_hdr_3addr *mgmt = &resp->header;
+ 
+ 	dbg(DBG_RX_MGMT, "%s: rx DisAssoc bssid %s reason x%04x destination %s",
+ 	    dev->netdev->name, mac2str(mgmt->addr3),
+@@ -2874,11 +2877,10 @@ static void rx_mgmt_disassoc(struct at76c503 *dev,
+ static void rx_mgmt_auth(struct at76c503 *dev,
+ 			   struct at76c503_rx_buffer *buf)
+ {
+-	struct ieee80211_hdr_3addr *mgmt =
+-		(struct ieee80211_hdr_3addr *)buf->packet;
+-	struct ieee802_11_auth_frame *resp = 
+-		(struct ieee802_11_auth_frame *)mgmt->payload;
+-	int seq_nr = le16_to_cpu(resp->seq_nr);
++	struct ieee80211_auth *resp =
++		(struct ieee80211_auth *)buf->packet;
++	struct ieee80211_hdr_3addr *mgmt = &resp->header;
++	int seq_nr = le16_to_cpu(resp->transaction);
+ 	int alg = le16_to_cpu(resp->algorithm);
+ 	int status = le16_to_cpu(resp->status);
+ 
+@@ -2893,7 +2895,7 @@ static void rx_mgmt_auth(struct at76c503 *dev,
+ 	    seq_nr == 2) {
+ 		dbg(DBG_RX_MGMT, "%s: AuthFrame challenge %s ...",
+ 		    dev->netdev->name,
+-		    hex2str(dev->obuf, resp->challenge,
++		    hex2str(dev->obuf, (u8 *)resp->info_element,
+ 			    min((int)sizeof(dev->obuf)/3,18), ' '));
+ 	}
+ 	if (dev->istate != AUTHENTICATING) {
+@@ -2935,7 +2937,7 @@ static void rx_mgmt_auth(struct at76c503 *dev,
+ 		}
+ 
+ 		assert(seq_nr == 2);
+-		auth_req(dev, dev->curr_bss, seq_nr+1, resp->challenge);
++		auth_req(dev, dev->curr_bss, seq_nr+1, resp->info_element);
+ 		dbg(DBG_MGMT_TIMER, "%s:%d: starting mgmt_timer + HZ",
+ 		    __FUNCTION__, __LINE__);
+ 		mod_timer(&dev->mgmt_timer,jiffies+HZ);
+@@ -2946,10 +2948,9 @@ static void rx_mgmt_auth(struct at76c503 *dev,
+ static void rx_mgmt_deauth(struct at76c503 *dev,
+ 			   struct at76c503_rx_buffer *buf)
+ {
+-	struct ieee80211_hdr_3addr *mgmt =
+-		(struct ieee80211_hdr_3addr *)buf->packet;
+-	struct ieee802_11_deauth_frame *resp = 
+-		(struct ieee802_11_deauth_frame *)mgmt->payload;
++	struct ieee80211_disassoc *resp =
++		(struct ieee80211_disassoc *)buf->packet;
++	struct ieee80211_hdr_3addr *mgmt = &resp->header;
+ 
+ 	dbg(DBG_RX_MGMT|DBG_PROGRESS,
+ 	    "%s: rx DeAuth bssid %s reason x%04x destination %s",
+@@ -2989,28 +2990,21 @@ static void rx_mgmt_deauth(struct at76c503 *dev,
+ static void rx_mgmt_beacon(struct at76c503 *dev,
+ 			   struct at76c503_rx_buffer *buf)
+ {
+-	struct ieee80211_hdr_3addr *mgmt =
+-		(struct ieee80211_hdr_3addr *)buf->packet;
+-
+ 	/* beacon content */
+-	struct ieee802_11_beacon_data *bdata = 
+-		(struct ieee802_11_beacon_data *)mgmt->payload;
++	struct ieee80211_beacon *bdata = 
++		(struct ieee80211_beacon *)buf->packet;
++	struct ieee80211_hdr_3addr *mgmt = &bdata->header;
+ 
+ 	/* length of var length beacon parameters */
+-	int varpar_len = min(le16_to_cpu(buf->wlength) -
+-			     (int)(IEEE802_11_MGMT_HEADER_SIZE +
+-			      offsetof(struct ieee802_11_beacon_data, data)),
+-			     BEACON_MAX_DATA_LENGTH);
++	int varpar_len = min_t(int, le16_to_cpu(buf->wlength) -
++			       sizeof(struct ieee80211_beacon),
++			       BEACON_MAX_DATA_LENGTH);
+ 
+ 	struct list_head *lptr;
+ 	struct bss_info *match; /* entry matching addr3 with its bssid */
+ 	int new_entry = 0;
+ 	int len;
+-	struct data_element {
+-		u8 type;
+-		u8 length;
+-		u8 data_head;
+-	} *element;
++	struct ieee80211_info_element *tlv;
+ 	int have_ssid = 0;
+ 	int have_rates = 0;
+ 	int have_channel = 0;
+@@ -3062,7 +3056,7 @@ static void rx_mgmt_beacon(struct at76c503 *dev,
+ 	/* we either overwrite an existing entry or append a new one
+ 	   match points to the entry in both cases */
+ 	
+-	match->capa = le16_to_cpu(bdata->capability_information);
++	match->capa = le16_to_cpu(bdata->capability);
+ 	
+ 	/* while beacon_interval is not (!) */
+ 	match->beacon_interval = le16_to_cpu(bdata->beacon_interval);
+@@ -3076,9 +3070,7 @@ static void rx_mgmt_beacon(struct at76c503 *dev,
+ 	dbg(DBG_RX_BEACON, "%s: bssid %s", dev->netdev->name, 
+ 			mac2str(match->bssid));
+ 	
+-	element = (struct data_element*)bdata->data;
+-	
+-#define data_end(element) (&(element->data_head) + element->length)
++	tlv = bdata->info_element;
+ 	
+ 	/* This routine steps through the bdata->data array to try and get 
+ 	 * some useful information about the access point.
+@@ -3095,14 +3087,14 @@ static void rx_mgmt_beacon(struct at76c503 *dev,
+ 	 * bytes are useful, hence the have_ssid etc optimizations. */
+ 
+ 	while (keep_going &&
+-	       ((int)(data_end(element) - bdata->data) <= varpar_len)) {
++	       ((&tlv->data[tlv->len] - (u8 *)bdata->info_element) <= varpar_len)) {
+ 
+-		switch (element->type) {
++		switch (tlv->id) {
+ 		
+ 		case MFIE_TYPE_SSID:
+-			len = min(IW_ESSID_MAX_SIZE, (int)element->length);
++			len = min_t(int, IW_ESSID_MAX_SIZE, tlv->len);
+ 			if (!have_ssid && ((new_entry) || 
+-                                           !is_cloaked_ssid(&(element->data_head), len))) {
++                                           !is_cloaked_ssid(tlv->data, len))) {
+ 			/* we copy only if this is a new entry,
+ 			   or the incoming SSID is not a cloaked SSID. This 
+ 			   will protect us from overwriting a real SSID read 
+@@ -3110,7 +3102,7 @@ static void rx_mgmt_beacon(struct at76c503 *dev,
+ 			   following beacon. */
+ 			
+ 				match->ssid_len = len;
+-				memcpy(match->ssid, &(element->data_head), len);
++				memcpy(match->ssid, tlv->data, len);
+ 				match->ssid[len] = '\0'; /* terminate the 
+ 							    string for 
+ 							    printing */
+@@ -3123,23 +3115,23 @@ static void rx_mgmt_beacon(struct at76c503 *dev,
+ 		case MFIE_TYPE_RATES:
+ 			if (!have_rates) {
+ 				match->rates_len = 
+-					min((int)sizeof(match->rates), 
+-						(int)element->length);
+-				memcpy(match->rates, &(element->data_head), 
++					min_t(int, sizeof(match->rates),
++					      tlv->len);
++				memcpy(match->rates, tlv->data,
+ 					match->rates_len);
+ 				have_rates = 1;
+ 				dbg(DBG_RX_BEACON, 
+ 				    "%s: SUPPORTED RATES %s", 
+ 				    dev->netdev->name,
+-				    hex2str(dev->obuf, &(element->data_head),
+-					    min((sizeof(dev->obuf)-1)/2,
+-						(size_t)element->length), '\0'));
++				    hex2str(dev->obuf, tlv->data,
++					    min_t(int, (sizeof(dev->obuf)-1)/2,
++						  tlv->len), '\0'));
+ 			}
+ 			break;
+ 		
+ 		case MFIE_TYPE_DS_SET:
+ 			if (!have_channel) {
+-				match->channel = element->data_head;
++				match->channel = tlv->data[0];
+ 				have_channel = 1;
+ 				dbg(DBG_RX_BEACON, "%s: CHANNEL - %d", 
+ 					dev->netdev->name, match->channel);
+@@ -3152,17 +3144,17 @@ static void rx_mgmt_beacon(struct at76c503 *dev,
+ 		default:
+ 		{
+ 			dbg(DBG_RX_BEACON, "%s: beacon IE id %d len %d %s",
+-			    dev->netdev->name, element->type, element->length,
+-			    hex2str(dev->obuf,&(element->data_head),
+-				    min((sizeof(dev->obuf)-1)/2,
+-					(size_t)element->length),'\0'));
++			    dev->netdev->name, tlv->id, tlv->len,
++			    hex2str(dev->obuf, tlv->data,
++				    min_t(int, (sizeof(dev->obuf)-1)/2,
++					  tlv->len), '\0'));
+ 			break;
+ 		}
+ 
+-		} /* switch (element->type) */
++		} /* switch(tlv->id) */
+ 		
+-		/*  advance to the next 'element' of data */
+-		element = (struct data_element*)data_end(element);
++		/*  advance to the next informational element */
++		next_ie(&tlv);
+ 
+ 		/* Optimization: after all, the bdata->data array is  
+ 		 * varpar_len bytes long, whereas we get all of the useful 
+diff --git a/at76_usb.h b/at76_usb.h
+index 8398f26..02b0149 100644
+--- a/at76_usb.h
++++ b/at76_usb.h
+@@ -665,80 +665,22 @@ struct p80211msg
+ } __attribute__ ((packed));
+ 
+ #define BEACON_MAX_DATA_LENGTH 1500
+-/* beacon in ieee80211_hdr_3addr.payload */
+-struct ieee802_11_beacon_data {
+-	u8	timestamp[8];           /* TSFTIMER */
+-	__le16	beacon_interval;        /* Kms between TBTTs (Target Beacon Transmission Times) */
+-	__le16	capability_information;
+-	u8	data[BEACON_MAX_DATA_LENGTH]; /* contains: SSID (tag,length,value), 
+-						 Supported Rates (tlv), channel */
+-} __attribute__ ((packed));
+ 
+-/* disassoc frame in ieee80211_hdr_3addr.payload */
+-struct ieee802_11_disassoc_frame {
+-	__le16 reason;
+-} __attribute__ ((packed));
+ #define DISASSOC_FRAME_SIZE \
+-  (AT76C503_TX_HDRLEN + IEEE802_11_MGMT_HEADER_SIZE +\
+-   sizeof(struct ieee802_11_disassoc_frame))
+-
+-/* assoc request in ieee80211_hdr_3addr.payload */
+-struct ieee802_11_assoc_req {
+-	__le16	capability;
+-	__le16	listen_interval;
+-	u8	data[1]; /* variable number of bytes for SSID 
+-			 and supported rates (tlv coded) */
+-};
++  (AT76C503_TX_HDRLEN + sizeof(struct ieee80211_disassoc))
++
+ /* the maximum size of an AssocReq packet */
+ #define ASSOCREQ_MAX_SIZE \
+-  (AT76C503_TX_HDRLEN + IEEE802_11_MGMT_HEADER_SIZE +\
+-   offsetof(struct ieee802_11_assoc_req,data) +\
++  (AT76C503_TX_HDRLEN + sizeof(struct ieee80211_assoc_request) + \
+    1+1+IW_ESSID_MAX_SIZE + 1+1+4)
+ 
+-/* reassoc request in ieee80211_hdr_3addr.payload */
+-struct ieee802_11_reassoc_req {
+-	__le16	capability;
+-	__le16	listen_interval;
+-	u8	curr_ap[ETH_ALEN]; /* the bssid of the AP we are
+-				   currently associated to */
+-	u8	data[1]; /* variable number of bytes for SSID 
+-			 and supported rates (tlv coded) */
+-} __attribute__ ((packed));
+-
+ /* the maximum size of an AssocReq packet */
+ #define REASSOCREQ_MAX_SIZE \
+-  (AT76C503_TX_HDRLEN + IEEE802_11_MGMT_HEADER_SIZE +\
+-   offsetof(struct ieee802_11_reassoc_req,data) +\
++  (AT76C503_TX_HDRLEN + sizeof(struct ieee80211_reassoc_request) + \
+    1+1+IW_ESSID_MAX_SIZE + 1+1+4)
+ 
+-/* assoc/reassoc response */
+-struct ieee802_11_assoc_resp {
+-	__le16	capability;
+-	__le16	status;
+-	__le16	assoc_id;
+-	u8	data[1]; /* variable number of bytes for 
+-			 supported rates (tlv coded) */
+-} __attribute__ ((packed));
+-
+-/* auth. request/response in ieee80211_hdr_3addr.payload */
+-struct ieee802_11_auth_frame {
+-	__le16 algorithm;
+-	__le16 seq_nr;
+-	__le16 status;
+-	u8 challenge[0];
+-} __attribute__ ((packed));
+ /* for shared secret auth, add the challenge text size */
+-#define AUTH_FRAME_SIZE \
+-  (AT76C503_TX_HDRLEN + IEEE802_11_MGMT_HEADER_SIZE +\
+-   sizeof(struct ieee802_11_auth_frame))
+-
+-/* deauth frame in ieee80211_hdr_3addr.payload */
+-struct ieee802_11_deauth_frame {
+-	__le16 reason;
+-} __attribute__ ((packed));
+-#define DEAUTH_FRAME_SIZE \
+-  (AT76C503_TX_HDRLEN + IEEE802_11_MGMT_HEADER_SIZE +\
+-   sizeof(struct ieee802_11_disauth_frame))
++#define AUTH_FRAME_SIZE (AT76C503_TX_HDRLEN + sizeof(struct ieee80211_auth))
+ 
+ /* how often do we re-try these packets ? */
+ #define AUTH_RETRIES  3
+@@ -770,9 +712,6 @@ static const u8 hw_rates[4] = {0x82,0x84,0x0b,0x16};
+ /* the max padding size for tx in bytes (see calc_padding) */
+ #define MAX_PADDING_SIZE 53
+ 
+-/* the size of the ieee802.11 header (excl. the at76c503 tx header) */
+-#define IEEE802_11_MGMT_HEADER_SIZE offsetof(struct ieee80211_hdr_3addr, payload)
+-
+ /* at76_debug bits */
+ #define DBG_PROGRESS        0x00000001 /* progress of scan-join-(auth-assoc)-connected */
+ #define DBG_BSS_TABLE       0x00000002 /* show the bss table after scans */
+
+
+
+
+From erik at hovland.org  Mon Mar 12 19:38:29 2007
+From: erik at hovland.org (Erik Hovland)
+Date: Mon, 12 Mar 2007 11:38:29 -0700
+Subject: [at76c503a-develop] [patch] remove handheld macros and code
+Message-ID: <20070312183829.GD10780@hovland.org>
+
+We have advanced our linux 2.6 port of our handhelds to the point where
+we are removing the macros and GPIO fiddling that is in the current
+driver. So to make it easier on you, we are asking that they be removed.
+I want to thank you for carrying our highly specific modification for so
+long and it is helpful that the code involve stay in the 2.4 branch
+(which I still currently maintain).
+
+Please apply the attached patch to the driver's git tree.
+
+Thanks
+
+E
+
+-- 
+Erik Hovland
+mail: erik at hovland.org
+web: http://hovland.org/
+PGP/GPG public key available on request
+-------------- next part --------------
+Index: at76_usb/at76_usb.c
+===================================================================
+--- at76_usb.orig/at76_usb.c
++++ at76_usb/at76_usb.c
+@@ -6455,14 +6455,6 @@ static int __init mod_init(void)
+ 
+ 	info(DRIVER_DESC " " DRIVER_VERSION " loading");
+ 
+-#ifdef CONFIG_IPAQ_HANDHELD
+-	if (machine_is_h5400()) {
+-		/* turn WLAN power on,both needed? */
+-		SET_H5400_ASIC_GPIO(GPB, RF_POWER_ON, 1);
+-		SET_H5400_ASIC_GPIO(GPB, WLAN_POWER_ON, 1);
+-	}
+-#endif
+-
+ 	/* register this driver with the USB subsystem */
+ 	result = usb_register(&module_usb);
+ 	if (result < 0) {
+@@ -6485,14 +6477,6 @@ static void __exit mod_exit(void)
+ 			release_firmware(firmwares[i].fw);
+ 	}
+ 	led_trigger_unregister_simple(ledtrig_tx);
+-
+-#ifdef CONFIG_IPAQ_HANDHELD
+-	if (machine_is_h5400()) {
+-		/* turn WLAN power off */
+-		SET_H5400_ASIC_GPIO(GPB, RF_POWER_ON, 0);
+-		SET_H5400_ASIC_GPIO(GPB, WLAN_POWER_ON, 0);
+-	}
+-#endif
+ }
+ 
+ module_param_named(debug, at76_debug, int, 0600);
+
+From agx at sigxcpu.org  Mon Mar 12 20:17:07 2007
+From: agx at sigxcpu.org (Guido Guenther)
+Date: Mon, 12 Mar 2007 20:17:07 +0100
+Subject: [at76c503a-develop] [patch] remove handheld macros and code
+In-Reply-To: <20070312183829.GD10780@hovland.org>
+References: <20070312183829.GD10780@hovland.org>
+Message-ID: <20070312191707.GB4049@bogon.ms20.nix>
+
+Hi Erik,
+On Mon, Mar 12, 2007 at 11:38:29AM -0700, Erik Hovland wrote:
+> We have advanced our linux 2.6 port of our handhelds to the point where
+> we are removing the macros and GPIO fiddling that is in the current
+> driver. So to make it easier on you, we are asking that they be removed.
+> I want to thank you for carrying our highly specific modification for so
+> long and it is helpful that the code involve stay in the 2.4 branch
+> (which I still currently maintain).
+Great, I was about to ask what to do with this...
+
+> Please apply the attached patch to the driver's git tree.
+Done, Thank,
+ -- Guido
+
+

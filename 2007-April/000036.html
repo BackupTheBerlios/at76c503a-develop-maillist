@@ -1,0 +1,456 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [at76c503a-develop] [PATCH] Standardize on radiotap headers for	monitor mode
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/at76c503a-develop/2007-April/index.html" >
+   <LINK REL="made" HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%5D%20Standardize%20on%20radiotap%20headers%20for%0A%09monitor%20mode&In-Reply-To=%3C20070417044212.9105.84734.stgit%40dv.roinet.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000035.html">
+   <LINK REL="Next"  HREF="000037.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[at76c503a-develop] [PATCH] Standardize on radiotap headers for	monitor mode</H1>
+    <B>Pavel Roskin</B> 
+    <A HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%5D%20Standardize%20on%20radiotap%20headers%20for%0A%09monitor%20mode&In-Reply-To=%3C20070417044212.9105.84734.stgit%40dv.roinet.com%3E"
+       TITLE="[at76c503a-develop] [PATCH] Standardize on radiotap headers for	monitor mode">proski at gnu.org
+       </A><BR>
+    <I>Tue Apr 17 06:42:12 CEST 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000035.html">[at76c503a-develop] [at76_usb] kernel panic in update_wstats()
+</A></li>
+        <LI>Next message: <A HREF="000037.html">[at76c503a-develop] [PATCH] Standardize on radiotap headers for	monitor mode
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#36">[ date ]</a>
+              <a href="thread.html#36">[ thread ]</a>
+              <a href="subject.html#36">[ subject ]</a>
+              <a href="author.html#36">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Remove support for bare 802.11 and prism headers.  Remove private ioctl
+&quot;monitor&quot;, it's obsolete.  Only provide data available for the specific
+packet.  Don't pass any average stats.
+
+Signed-off-by: Pavel Roskin &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">proski at gnu.org</A>&gt;
+---
+
+ at76_usb.c |  192 +++++++++++++-----------------------------------------------
+ at76_usb.h |   66 +++++----------------
+ 2 files changed, 55 insertions(+), 203 deletions(-)
+
+diff --git a/at76_usb.c b/at76_usb.c
+index e39e31e..d507694 100644
+--- a/at76_usb.c
++++ b/at76_usb.c
+@@ -33,6 +33,7 @@
+ #include &lt;linux/ethtool.h&gt;
+ #include &lt;linux/wireless.h&gt;
+ #include &lt;net/iw_handler.h&gt;
++#include &lt;net/ieee80211_radiotap.h&gt;
+ #include &lt;linux/firmware.h&gt;
+ #include &lt;linux/leds.h&gt;
+ 
+@@ -202,7 +203,7 @@ static void at76_dump_bss_table(struct at76_priv *dev);
+ static int at76_submit_rx_urb(struct at76_priv *dev);
+ static int at76_startup_device(struct at76_priv *dev);
+ static int at76_set_iroaming(struct at76_priv *dev, int onoff);
+-static void at76_set_monitor_mode(struct at76_priv *dev, int use_prism);
++static void at76_set_monitor_mode(struct at76_priv *dev);
+ static int at76_init_new_device(struct at76_priv *dev);
+ 
+ /* Firmware download */
+@@ -2396,12 +2397,7 @@ end_join:
+ #endif
+ 		at76_startup_device(dev);
+ 
+-		/* call it here for default_iw_mode == IW_MODE_MONITOR and
+-		   no subsequent  &quot;iwconfig ethX mode monitor&quot; or
+-		   &quot;iwpriv ethX monitor 1|2 C&quot; to set dev-&gt;netdev-&gt;type 
+-		   correctly */
+-		at76_set_monitor_mode(dev, dev-&gt;monitor_prism_header);
+-
++		at76_set_monitor_mode(dev);
+ 
+ 		netif_carrier_off(dev-&gt;netdev);	/* disable running netdev watchdog */
+ 		netif_stop_queue(dev-&gt;netdev);	/* stop tx data packets */
+@@ -3798,105 +3794,54 @@ static void at76_read_bulk_callback(struct urb *urb)
+ 
+ static void at76_rx_monitor_mode(struct at76_priv *dev)
+ {
++	struct at76_rx_radiotap *rt;
++	u8 *payload;
++	int skblen;
+ 	struct net_device *netdev = (struct net_device *)dev-&gt;netdev;
+ 	struct at76_rx_buffer *buf =
+ 	    (struct at76_rx_buffer *)dev-&gt;rx_skb-&gt;data;
+-	/* length including the IEEE802.11 header, excl. the trailing FCS,
+-	   excl. the struct at76_rx_buffer */
+-	int length = le16_to_cpu(buf-&gt;wlength) - dev-&gt;rx_data_fcs_len;
++	/* length including the IEEE802.11 header and the trailing FCS,
++	   but not at76_rx_buffer */
++	int length = le16_to_cpu(buf-&gt;wlength);
+ 	struct sk_buff *skb = dev-&gt;rx_skb;
+ 	struct net_device_stats *stats = &amp;dev-&gt;stats;
+-	struct iw_statistics *wstats = &amp;dev-&gt;wstats;
+ 
+-	at76_update_wstats(dev, buf);
+-
+-	if (length &lt; 0) {
++	if (length &lt; dev-&gt;rx_data_fcs_len) {
+ 		/* buffer contains no data */
+ 		at76_dbg(DBG_MONITOR_MODE, &quot;%s: MONITOR MODE: rx skb without data&quot;,
+ 		         dev-&gt;netdev-&gt;name);
+ 		return;
+ 	}
+ 
+-	if (netdev-&gt;type == ARPHRD_IEEE80211_PRISM) {
+-		int skblen = sizeof(struct p80211msg) + length;
+-		struct p80211msg *prism;
+-		u8 *payload;
++	skblen = sizeof(struct at76_rx_radiotap) + length;
+ 
+-		if ((skb = dev_alloc_skb(skblen)) == NULL) {
+-			err(&quot;%s: MONITOR MODE: dev_alloc_skb for Prism header &quot;
+-			    &quot;returned NULL&quot;, dev-&gt;netdev-&gt;name);
+-			return;
+-		}
+-
+-		skb_put(skb, skblen);
+-
+-		prism = (struct p80211msg *)skb-&gt;data;
+-		payload = skb-&gt;data + sizeof(struct p80211msg);
+-
+-		prism-&gt;msgcode = DIDmsg_lnxind_wlansniffrm;
+-		prism-&gt;msglen = sizeof(struct p80211msg);
+-		strcpy(prism-&gt;devname, netdev-&gt;name);
+-
+-		prism-&gt;hosttime.did = DIDmsg_lnxind_wlansniffrm_hosttime;
+-		prism-&gt;hosttime.status = 0;
+-		prism-&gt;hosttime.len = 4;
+-		prism-&gt;hosttime.data = jiffies;
+-
+-		prism-&gt;mactime.did = DIDmsg_lnxind_wlansniffrm_mactime;
+-		prism-&gt;mactime.status = 0;
+-		prism-&gt;mactime.len = 4;
+-		memcpy(&amp;prism-&gt;mactime.data, buf-&gt;rx_time, 4);
+-
+-		prism-&gt;channel.did = DIDmsg_lnxind_wlansniffrm_channel;
+-		prism-&gt;channel.status = P80211ENUM_msgitem_status_no_value;
+-		prism-&gt;channel.len = 4;
+-		/* INFO: The channel is encoded in the beacon info. 
+-		   (Kismet can figure it out, so less processing here) */
+-		prism-&gt;channel.data = 0;
+-
+-		prism-&gt;rssi.did = DIDmsg_lnxind_wlansniffrm_rssi;
+-		prism-&gt;rssi.status = 0;
+-		prism-&gt;rssi.len = 4;
+-		prism-&gt;rssi.data = buf-&gt;rssi;
+-
+-		prism-&gt;sq.did = DIDmsg_lnxind_wlansniffrm_sq;
+-		prism-&gt;sq.status = 0;
+-		prism-&gt;sq.len = 4;
+-		prism-&gt;sq.data = wstats-&gt;qual.qual;
+-
+-		prism-&gt;signal.did = DIDmsg_lnxind_wlansniffrm_signal;
+-		prism-&gt;signal.status = 0;
+-		prism-&gt;signal.len = 4;
+-		prism-&gt;signal.data = wstats-&gt;qual.level;
+-
+-		prism-&gt;noise.did = DIDmsg_lnxind_wlansniffrm_noise;
+-		prism-&gt;noise.status = 0;
+-		prism-&gt;noise.len = 4;
+-		prism-&gt;noise.data = wstats-&gt;qual.noise;
+-
+-		prism-&gt;rate.did = DIDmsg_lnxind_wlansniffrm_rate;
+-		prism-&gt;rate.status = 0;
+-		prism-&gt;rate.len = 4;
+-		prism-&gt;rate.data = hw_rates[buf-&gt;rx_rate] &amp; (~0x80);
+-
+-		prism-&gt;istx.did = DIDmsg_lnxind_wlansniffrm_istx;
+-		prism-&gt;istx.status = 0;
+-		prism-&gt;istx.len = 4;
+-		prism-&gt;istx.data = P80211ENUM_truth_false;
+-
+-		prism-&gt;frmlen.did = DIDmsg_lnxind_wlansniffrm_frmlen;
+-		prism-&gt;frmlen.status = 0;
+-		prism-&gt;frmlen.len = 4;
+-		prism-&gt;frmlen.data = length;
+-
+-		memcpy(payload, buf-&gt;packet, length);
+-	} else {
+-		/* netdev-&gt;type != ARPHRD_IEEE80211_PRISM */
+-		skb_pull(skb, AT76_RX_HDRLEN);
+-		skb_trim(skb, length);
+-		dev-&gt;rx_skb = NULL;
++	if ((skb = dev_alloc_skb(skblen)) == NULL) {
++		err(&quot;%s: MONITOR MODE: dev_alloc_skb for radiotap header &quot;
++		    &quot;returned NULL&quot;, dev-&gt;netdev-&gt;name);
++		return;
+ 	}
+ 
++	skb_put(skb, skblen);
++
++	rt = (struct at76_rx_radiotap *)skb-&gt;data;
++	payload = skb-&gt;data + sizeof(struct at76_rx_radiotap);
++
++	rt-&gt;rt_hdr.it_version = 0;
++	rt-&gt;rt_hdr.it_pad = 0;
++	rt-&gt;rt_hdr.it_len = cpu_to_le16(sizeof(struct at76_rx_radiotap));
++	rt-&gt;rt_hdr.it_present = cpu_to_le32(AT76_RX_RADIOTAP_PRESENT);
++
++	rt-&gt;rt_tsft = cpu_to_le64(le32_to_cpu(buf-&gt;rx_time));
++	rt-&gt;rt_rate = hw_rates[buf-&gt;rx_rate] &amp; (~0x80);
++	rt-&gt;rt_signal = buf-&gt;rssi;
++	rt-&gt;rt_noise = buf-&gt;noise_level;
++	rt-&gt;rt_flags = 0;
++	if (buf-&gt;fragmentation)
++		rt-&gt;rt_flags |= IEEE80211_RADIOTAP_F_FRAG;
++	if (dev-&gt;rx_data_fcs_len)
++		rt-&gt;rt_flags |= IEEE80211_RADIOTAP_F_FCS;
++
++	memcpy(payload, buf-&gt;packet, length);
+ 	skb-&gt;dev = netdev;
+ 	skb-&gt;ip_summed = CHECKSUM_NONE;
+ 	skb-&gt;mac.raw = skb-&gt;data;
+@@ -4515,13 +4460,6 @@ static const struct iw_priv_args at76_priv_args[] = {
+ 	{AT76_SET_INTL_ROAMING,
+ 	 IW_PRIV_TYPE_INT | IW_PRIV_SIZE_FIXED | 1, 0,
+ 	 &quot;intl_roaming&quot;},
+-
+-	/* needed for Kismet, orinoco mode */
+-	{AT76_SET_MONITOR_MODE,
+-	 IW_PRIV_TYPE_INT | IW_PRIV_SIZE_FIXED | 2, 0,
+-	 &quot;monitor&quot;},		/* param1: monitor mode: 0 (off), 1 (on,Prism header), 
+-				   2 (on, no Prism header)
+-				   param2: channel (to start scan at) */
+ };
+ 
+ /*******************************************************************************
+@@ -5652,18 +5590,12 @@ static int at76_iw_set_intl_roaming(struct net_device *netdev,
+ /** 
+  * set_monitor_mode - sets dev-&gt;netdev-&gt;type
+  */
+-static void at76_set_monitor_mode(struct at76_priv *dev, int use_prism)
++static void at76_set_monitor_mode(struct at76_priv *dev)
+ {
+ 	if (dev-&gt;iw_mode == IW_MODE_MONITOR) {
+-		if (use_prism) {
+-			at76_dbg(DBG_MONITOR_MODE, &quot;%s: MONITOR MODE ON: &quot;
+-			         &quot;Prism headers ARE used&quot;, dev-&gt;netdev-&gt;name);
+-			dev-&gt;netdev-&gt;type = ARPHRD_IEEE80211_PRISM;
+-		} else {
+-			at76_dbg(DBG_MONITOR_MODE, &quot;%s: MONITOR MODE ON: &quot;
+-			         &quot;Prism headers NOT used&quot;, dev-&gt;netdev-&gt;name);
+-			dev-&gt;netdev-&gt;type = ARPHRD_IEEE80211;
+-		}
++		at76_dbg(DBG_MONITOR_MODE, &quot;%s: MONITOR MODE ON&quot;,
++			 dev-&gt;netdev-&gt;name);
++		dev-&gt;netdev-&gt;type = ARPHRD_IEEE80211_RADIOTAP;
+ 	} else {
+ 		at76_dbg(DBG_MONITOR_MODE, &quot;%s: MONITOR MODE OFF&quot;,
+ 		         dev-&gt;netdev-&gt;name);
+@@ -5671,48 +5603,6 @@ static void at76_set_monitor_mode(struct at76_priv *dev, int use_prism)
+ 	}
+ } /* at76_set_monitor_mode */
+ 
+-static int at76_iw_set_monitor_mode(struct net_device *netdev,
+-				    struct iw_request_info *info, char *name,
+-				    char *extra)
+-{
+-	struct at76_priv *dev = netdev_priv(netdev);
+-	int *params = ((int *)name);
+-	int mode = params[0];
+-	int channel = params[1];
+-	int ret = 0;
+-
+-	at76_dbg(DBG_IOCTL, &quot;%s: AT76_SET_MONITOR_MODE - mode %d ch %d&quot;,
+-	    netdev-&gt;name, mode, channel);
+-
+-	if (mode != MM_OFF &amp;&amp; mode != MM_ON &amp;&amp; mode != MM_ON_NO_PRISM)
+-		ret = -EINVAL;
+-	else {
+-		if (mode != MM_OFF) {
+-			if ((channel &gt;= 1) &amp;&amp;
+-			    (channel &lt;= (sizeof(channel_frequency) /
+-					 sizeof(channel_frequency[0]))))
+-				/* INFO: This doesn't actually affect the scan */
+-				dev-&gt;channel = channel;
+-
+-			dev-&gt;monitor_prism_header = (mode == MM_ON);
+-
+-			if (dev-&gt;iw_mode != IW_MODE_MONITOR) {
+-				ret = -EIWCOMMIT;
+-				dev-&gt;iw_mode = IW_MODE_MONITOR;
+-			}
+-		} else {
+-			/* mode == MM_OFF */
+-			if (dev-&gt;iw_mode == IW_MODE_MONITOR) {
+-				ret = -EIWCOMMIT;
+-				dev-&gt;iw_mode = IW_MODE_INFRA;
+-			}
+-		}
+-		at76_set_monitor_mode(dev, dev-&gt;monitor_prism_header);
+-	}
+-
+-	return ret;
+-}
+-
+ /*******************************************************************************
+  * structure that advertises the iw handlers of this driver
+  */
+@@ -5760,7 +5650,6 @@ static const iw_handler at76_priv_handlers[] = {
+ 	AT76_SET_PRIV(AT76_SET_SCAN_TIMES, at76_iw_set_scan_times),
+ 	AT76_SET_PRIV(AT76_SET_SCAN_MODE, at76_iw_set_scan_mode),
+ 	AT76_SET_PRIV(AT76_SET_INTL_ROAMING, at76_iw_set_intl_roaming),
+-	AT76_SET_PRIV(AT76_SET_MONITOR_MODE, at76_iw_set_monitor_mode),
+ };
+ 
+ static const struct iw_handler_def at76_handler_def =
+@@ -6072,7 +5961,6 @@ static int at76_init_new_device(struct at76_priv *dev)
+ 	dev-&gt;international_roaming = international_roaming;
+ 	dev-&gt;channel = DEF_CHANNEL;
+ 	dev-&gt;iw_mode = default_iw_mode;
+-	dev-&gt;monitor_prism_header = 1;
+ 	memset(dev-&gt;essid, 0, IW_ESSID_MAX_SIZE);
+ 	dev-&gt;rts_threshold = DEF_RTS_THRESHOLD;
+ 	dev-&gt;frag_threshold = DEF_FRAG_THRESHOLD;
+diff --git a/at76_usb.h b/at76_usb.h
+index 493fc12..9b4dbb7 100644
+--- a/at76_usb.h
++++ b/at76_usb.h
+@@ -40,8 +40,6 @@
+ #define AT76_SET_SCAN_MODE       (SIOCIWFIRSTPRIV + 0x8)
+ /* set international roaming */
+ #define AT76_SET_INTL_ROAMING    (SIOCIWFIRSTPRIV + 0x10)
+-/* set monitor mode */
+-#define AT76_SET_MONITOR_MODE    (SIOCIWFIRSTPRIV + 0x12)
+ 
+ #define DEVICE_VENDOR_REQUEST_OUT    0x40
+ #define DEVICE_VENDOR_REQUEST_IN     0xc0
+@@ -108,11 +106,6 @@
+ #define IR_OFF        0
+ #define IR_ON         1
+ 
+-/* monitor mode - param of private ioctl */
+-#define MM_OFF 0
+-#define MM_ON  1
+-#define MM_ON_NO_PRISM 2
+-
+ 
+ /* offsets into the MIBs we use to configure the device */
+ #define TX_AUTORATE_FALLBACK_OFFSET offsetof(struct mib_local,txautorate_fallback)
+@@ -210,7 +203,7 @@ struct at76_rx_buffer {
+ 	u8 rssi;
+ 	u8 link_quality;
+ 	u8 noise_level;
+-	u8 rx_time[4];
++	__le32 rx_time;
+ 	u8 packet[IEEE80211_FRAME_LEN + IEEE80211_FCS_LEN];
+ } __attribute__ ((packed));
+ 
+@@ -595,8 +588,6 @@ struct at76_priv {
+ 
+ 	/* new whiz-bang feature flags */
+ 	int international_roaming;
+-	int monitor_prism_header;	/* if iw_mode == IW_MODE_MONITOR, 
+-					   use Prism header */
+ 	int monitor_scan_min_time;
+ 	int monitor_scan_max_time;
+ 
+@@ -605,48 +596,21 @@ struct at76_priv {
+ 	unsigned long beacons_last_qual;	/* last time we reset beacons_received = 0 */
+ };
+ 
+-/* Quasi-monitor mode defs (copied from &lt;kernel&gt;/drivers/net/wireless/orinoco.h) */
+-
+-/* message data item for INT, BOUNDEDINT, ENUMINT */
+-struct p80211item_u32 {
+-	uint32_t did;
+-	uint16_t status;
+-	uint16_t len;
+-	uint32_t data;
+-} __attribute__ ((packed));
++struct at76_rx_radiotap {
++	struct ieee80211_radiotap_header rt_hdr;
++	__le64 rt_tsft;
++	u8 rt_flags;
++	u8 rt_rate;
++	s8 rt_signal;
++	s8 rt_noise;
++};
+ 
+-#define P80211ENUM_msgitem_status_data_ok	0
+-#define P80211ENUM_msgitem_status_no_value	1
+-#define P80211ENUM_truth_false			0
+-#define P80211ENUM_truth_true			1
+-
+-#define DIDmsg_lnxind_wlansniffrm 0x0041
+-#define DIDmsg_lnxind_wlansniffrm_hosttime 0x1041
+-#define DIDmsg_lnxind_wlansniffrm_mactime 0x2041
+-#define DIDmsg_lnxind_wlansniffrm_channel 0x3041
+-#define DIDmsg_lnxind_wlansniffrm_rssi 0x4041
+-#define DIDmsg_lnxind_wlansniffrm_sq 0x5041
+-#define DIDmsg_lnxind_wlansniffrm_signal 0x6041
+-#define DIDmsg_lnxind_wlansniffrm_noise 0x7041
+-#define DIDmsg_lnxind_wlansniffrm_rate 0x8041
+-#define DIDmsg_lnxind_wlansniffrm_istx 0x9041
+-#define DIDmsg_lnxind_wlansniffrm_frmlen 0xA041
+-
+-struct p80211msg {
+-	uint32_t msgcode;
+-	uint32_t msglen;
+-	uint8_t devname[IFNAMSIZ];
+-	struct p80211item_u32 hosttime;
+-	struct p80211item_u32 mactime;
+-	struct p80211item_u32 channel;
+-	struct p80211item_u32 rssi;
+-	struct p80211item_u32 sq;
+-	struct p80211item_u32 signal;
+-	struct p80211item_u32 noise;
+-	struct p80211item_u32 rate;
+-	struct p80211item_u32 istx;
+-	struct p80211item_u32 frmlen;
+-} __attribute__ ((packed));
++#define AT76_RX_RADIOTAP_PRESENT (		  \
++	(1 &lt;&lt; IEEE80211_RADIOTAP_TSFT)		| \
++	(1 &lt;&lt; IEEE80211_RADIOTAP_FLAGS))	| \
++	(1 &lt;&lt; IEEE80211_RADIOTAP_RATE)		| \
++	(1 &lt;&lt; IEEE80211_RADIOTAP_DB_ANTSIGNAL)	| \
++	(1 &lt;&lt; IEEE80211_RADIOTAP_DB_ANTNOISE)
+ 
+ #define BEACON_MAX_DATA_LENGTH 1500
+ 
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000035.html">[at76c503a-develop] [at76_usb] kernel panic in update_wstats()
+</A></li>
+	<LI>Next message: <A HREF="000037.html">[at76c503a-develop] [PATCH] Standardize on radiotap headers for	monitor mode
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#36">[ date ]</a>
+              <a href="thread.html#36">[ thread ]</a>
+              <a href="subject.html#36">[ subject ]</a>
+              <a href="author.html#36">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">More information about the at76c503a-develop
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,295 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [at76c503a-develop] [PATCH 01/10] Merge at76_handle_mgmt_timeout()	and	at76_work_mgmt_timeout()
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/at76c503a-develop/2007-June/index.html" >
+   <LINK REL="made" HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%2001/10%5D%20Merge%20at76_handle_mgmt_timeout%28%29%0A%09and%09at76_work_mgmt_timeout%28%29&In-Reply-To=%3C20070605010347.32602.23942.stgit%40dv.roinet.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000087.html">
+   <LINK REL="Next"  HREF="000090.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[at76c503a-develop] [PATCH 01/10] Merge at76_handle_mgmt_timeout()	and	at76_work_mgmt_timeout()</H1>
+    <B>Pavel Roskin</B> 
+    <A HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%2001/10%5D%20Merge%20at76_handle_mgmt_timeout%28%29%0A%09and%09at76_work_mgmt_timeout%28%29&In-Reply-To=%3C20070605010347.32602.23942.stgit%40dv.roinet.com%3E"
+       TITLE="[at76c503a-develop] [PATCH 01/10] Merge at76_handle_mgmt_timeout()	and	at76_work_mgmt_timeout()">proski at gnu.org
+       </A><BR>
+    <I>Tue Jun  5 03:03:47 CEST 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000087.html">[at76c503a-develop] [PATCH 01/11] Rename tasklet to rx_tasklet,	the former is too generic
+</A></li>
+        <LI>Next message: <A HREF="000090.html">[at76c503a-develop] [PATCH 02/10] Rename request structures to make	them distinct from	functions
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#88">[ date ]</a>
+              <a href="thread.html#88">[ thread ]</a>
+              <a href="subject.html#88">[ subject ]</a>
+              <a href="author.html#88">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>The later was just a trivial wrapper.
+
+Signed-off-by: Pavel Roskin &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">proski at gnu.org</A>&gt;
+---
+
+ at76_usb.c |  200 +++++++++++++++++++++++++++++-------------------------------
+ 1 files changed, 97 insertions(+), 103 deletions(-)
+
+diff --git a/at76_usb.c b/at76_usb.c
+index 607c947..8a13e1e 100644
+--- a/at76_usb.c
++++ b/at76_usb.c
+@@ -2169,108 +2169,6 @@ static void at76_handle_mgmt_timeout_scan(struct at76_priv *priv)
+ }
+ 
+ 
+-/* the deferred procedure called from at76_devent() */
+-static void at76_handle_mgmt_timeout(struct at76_priv *priv)
+-{
+-	if ((priv-&gt;istate != SCANNING &amp;&amp; priv-&gt;istate != MONITORING) ||
+-	    (at76_debug &amp; DBG_MGMT_TIMER))
+-		/* this is normal behavior in states MONITORING, SCANNING ... */
+-		at76_dbg(DBG_PROGRESS, &quot;%s: timeout, state %d&quot;, priv-&gt;netdev-&gt;name,
+-		         priv-&gt;istate);
+-
+-	switch (priv-&gt;istate) {
+-
+-	case MONITORING:
+-	case SCANNING:
+-		at76_handle_mgmt_timeout_scan(priv);
+-		break;
+-
+-	case JOINING:
+-		at76_assert(0);
+-		break;
+-
+-	case CONNECTED:	/* we haven't received the beacon of this BSS for
+-				   BEACON_TIMEOUT seconds */
+-		info(&quot;%s: lost beacon bssid %s&quot;,
+-		     priv-&gt;netdev-&gt;name, mac2str(priv-&gt;curr_bss-&gt;bssid));
+-		/* jal: starting mgmt_timer in ad-hoc mode is questionable,
+-		   but I'll leave it here to track down another lockup problem */
+-		if (priv-&gt;iw_mode != IW_MODE_ADHOC) {
+-			netif_carrier_off(priv-&gt;netdev);
+-			netif_stop_queue(priv-&gt;netdev);
+-			at76_iwevent_bss_disconnect(priv-&gt;netdev);
+-			priv-&gt;istate = SCANNING;
+-			schedule_work(&amp;priv-&gt;work_scan);
+-		}
+-		break;
+-
+-	case AUTHENTICATING:
+-		if (priv-&gt;retries-- &gt;= 0) {
+-			at76_auth_req(priv, priv-&gt;curr_bss, 1, NULL);
+-			at76_dbg(DBG_MGMT_TIMER, &quot;%s:%d: starting mgmt_timer + HZ&quot;,
+-			         __FUNCTION__, __LINE__);
+-			mod_timer(&amp;priv-&gt;mgmt_timer, jiffies + HZ);
+-		} else {
+-			/* try to get next matching BSS */
+-			priv-&gt;istate = JOINING;
+-			schedule_work(&amp;priv-&gt;work_join);
+-		}
+-		break;
+-
+-	case ASSOCIATING:
+-		if (priv-&gt;retries-- &gt;= 0) {
+-			at76_assoc_req(priv, priv-&gt;curr_bss);
+-			at76_dbg(DBG_MGMT_TIMER, &quot;%s:%d: starting mgmt_timer + HZ&quot;,
+-			         __FUNCTION__, __LINE__);
+-			mod_timer(&amp;priv-&gt;mgmt_timer, jiffies + HZ);
+-		} else {
+-			/* jal: TODO: we may be authenticated to several
+-			   BSS and may try to associate to the next of them here
+-			   in the future ... */
+-
+-			/* try to get next matching BSS */
+-			priv-&gt;istate = JOINING;
+-			schedule_work(&amp;priv-&gt;work_join);
+-		}
+-		break;
+-
+-	case REASSOCIATING:
+-		if (priv-&gt;retries-- &gt;= 0)
+-			at76_reassoc_req(priv, priv-&gt;curr_bss, priv-&gt;new_bss);
+-		else {
+-			/* we disassociate from the curr_bss and
+-			   scan again ... */
+-			priv-&gt;istate = DISASSOCIATING;
+-			priv-&gt;retries = DISASSOC_RETRIES;
+-			at76_disassoc_req(priv, priv-&gt;curr_bss);
+-		}
+-		at76_dbg(DBG_MGMT_TIMER, &quot;%s:%d: starting mgmt_timer + HZ&quot;,
+-		         __FUNCTION__, __LINE__);
+-		mod_timer(&amp;priv-&gt;mgmt_timer, jiffies + HZ);
+-		break;
+-
+-	case DISASSOCIATING:
+-		if (priv-&gt;retries-- &gt;= 0) {
+-			at76_disassoc_req(priv, priv-&gt;curr_bss);
+-			at76_dbg(DBG_MGMT_TIMER, &quot;%s:%d: starting mgmt_timer + HZ&quot;,
+-		     	         __FUNCTION__, __LINE__);
+-			mod_timer(&amp;priv-&gt;mgmt_timer, jiffies + HZ);
+-		} else {
+-			/* we scan again ... */
+-			priv-&gt;istate = SCANNING;
+-			schedule_work(&amp;priv-&gt;work_scan);
+-		}
+-		break;
+-
+-	case INIT:
+-		break;
+-
+-	default:
+-		at76_assert(0);
+-	}
+-}
+-
+-
+ /* Called after successful association */
+ static void at76_work_assoc_done(struct work_struct *work)
+ {
+@@ -4542,13 +4440,109 @@ static void at76_work_join(struct work_struct *work)
+ }
+ 
+ 
++/* Process scheduled events */
+ static void at76_work_mgmt_timeout(struct work_struct *work)
+ {
+ 	struct at76_priv *priv = container_of(work, struct at76_priv,
+ 					     work_mgmt_timeout);
+ 
+ 	mutex_lock(&amp;priv-&gt;mtx);
+-	at76_handle_mgmt_timeout(priv);
++	if ((priv-&gt;istate != SCANNING &amp;&amp; priv-&gt;istate != MONITORING) ||
++	    (at76_debug &amp; DBG_MGMT_TIMER))
++		/* this is normal behavior in states MONITORING, SCANNING ... */
++		at76_dbg(DBG_PROGRESS, &quot;%s: timeout, state %d&quot;, priv-&gt;netdev-&gt;name,
++		         priv-&gt;istate);
++
++	switch (priv-&gt;istate) {
++
++	case MONITORING:
++	case SCANNING:
++		at76_handle_mgmt_timeout_scan(priv);
++		break;
++
++	case JOINING:
++		at76_assert(0);
++		break;
++
++	case CONNECTED:	/* we haven't received the beacon of this BSS for
++				   BEACON_TIMEOUT seconds */
++		info(&quot;%s: lost beacon bssid %s&quot;,
++		     priv-&gt;netdev-&gt;name, mac2str(priv-&gt;curr_bss-&gt;bssid));
++		/* jal: starting mgmt_timer in ad-hoc mode is questionable,
++		   but I'll leave it here to track down another lockup problem */
++		if (priv-&gt;iw_mode != IW_MODE_ADHOC) {
++			netif_carrier_off(priv-&gt;netdev);
++			netif_stop_queue(priv-&gt;netdev);
++			at76_iwevent_bss_disconnect(priv-&gt;netdev);
++			priv-&gt;istate = SCANNING;
++			schedule_work(&amp;priv-&gt;work_scan);
++		}
++		break;
++
++	case AUTHENTICATING:
++		if (priv-&gt;retries-- &gt;= 0) {
++			at76_auth_req(priv, priv-&gt;curr_bss, 1, NULL);
++			at76_dbg(DBG_MGMT_TIMER, &quot;%s:%d: starting mgmt_timer + HZ&quot;,
++			         __FUNCTION__, __LINE__);
++			mod_timer(&amp;priv-&gt;mgmt_timer, jiffies + HZ);
++		} else {
++			/* try to get next matching BSS */
++			priv-&gt;istate = JOINING;
++			schedule_work(&amp;priv-&gt;work_join);
++		}
++		break;
++
++	case ASSOCIATING:
++		if (priv-&gt;retries-- &gt;= 0) {
++			at76_assoc_req(priv, priv-&gt;curr_bss);
++			at76_dbg(DBG_MGMT_TIMER, &quot;%s:%d: starting mgmt_timer + HZ&quot;,
++			         __FUNCTION__, __LINE__);
++			mod_timer(&amp;priv-&gt;mgmt_timer, jiffies + HZ);
++		} else {
++			/* jal: TODO: we may be authenticated to several
++			   BSS and may try to associate to the next of them here
++			   in the future ... */
++
++			/* try to get next matching BSS */
++			priv-&gt;istate = JOINING;
++			schedule_work(&amp;priv-&gt;work_join);
++		}
++		break;
++
++	case REASSOCIATING:
++		if (priv-&gt;retries-- &gt;= 0)
++			at76_reassoc_req(priv, priv-&gt;curr_bss, priv-&gt;new_bss);
++		else {
++			/* we disassociate from the curr_bss and
++			   scan again ... */
++			priv-&gt;istate = DISASSOCIATING;
++			priv-&gt;retries = DISASSOC_RETRIES;
++			at76_disassoc_req(priv, priv-&gt;curr_bss);
++		}
++		at76_dbg(DBG_MGMT_TIMER, &quot;%s:%d: starting mgmt_timer + HZ&quot;,
++		         __FUNCTION__, __LINE__);
++		mod_timer(&amp;priv-&gt;mgmt_timer, jiffies + HZ);
++		break;
++
++	case DISASSOCIATING:
++		if (priv-&gt;retries-- &gt;= 0) {
++			at76_disassoc_req(priv, priv-&gt;curr_bss);
++			at76_dbg(DBG_MGMT_TIMER, &quot;%s:%d: starting mgmt_timer + HZ&quot;,
++		     	         __FUNCTION__, __LINE__);
++			mod_timer(&amp;priv-&gt;mgmt_timer, jiffies + HZ);
++		} else {
++			/* we scan again ... */
++			priv-&gt;istate = SCANNING;
++			schedule_work(&amp;priv-&gt;work_scan);
++		}
++		break;
++
++	case INIT:
++		break;
++
++	default:
++		at76_assert(0);
++	}
+ 	mutex_unlock(&amp;priv-&gt;mtx);
+ }
+ 
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000087.html">[at76c503a-develop] [PATCH 01/11] Rename tasklet to rx_tasklet,	the former is too generic
+</A></li>
+	<LI>Next message: <A HREF="000090.html">[at76c503a-develop] [PATCH 02/10] Rename request structures to make	them distinct from	functions
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#88">[ date ]</a>
+              <a href="thread.html#88">[ thread ]</a>
+              <a href="subject.html#88">[ subject ]</a>
+              <a href="author.html#88">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">More information about the at76c503a-develop
+mailing list</a><br>
+</body></html>

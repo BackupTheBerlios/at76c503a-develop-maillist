@@ -1,0 +1,156 @@
+From proski at gnu.org  Sat Aug  2 01:50:38 2008
+From: proski at gnu.org (Pavel Roskin)
+Date: Fri, 01 Aug 2008 19:50:38 -0400
+Subject: [at76c503a-develop] [PATCH 3/4] Remove usage of data which	were
+	already skb_pull-ed.
+In-Reply-To: <20080501202802.7338.84826.stgit@localhost>
+References: <20080501202603.7338.7111.stgit@localhost>
+	<20080501202802.7338.84826.stgit@localhost>
+Message-ID: <1217634638.2731.15.camel@dv>
+
+On Thu, 2008-05-01 at 22:28 +0200, Milan Plzik wrote:
+> at76_rx_tasklet makes use of data referenced by 'buf' despite of the fact
+> they were already marked as free by skb_pull. This patch delays skb_pull, so
+> data will remain valid.
+> 
+> Signed-off-by: Milan Plzik <milan.plzik at gmail.com>
+
+I'm sorry, it have been months since I was supposed to review your
+patches.  I still could not find time for that.  Therefore, I resign
+from the maintenance of the driver.  Please send the patches directly to
+linux-wireless at vger.kernel.org
+
+-- 
+Regards,
+Pavel Roskin
+
+
+From milan.plzik at gmail.com  Sat Aug  2 10:46:26 2008
+From: milan.plzik at gmail.com (Milan Plzik)
+Date: Sat, 02 Aug 2008 10:46:26 +0200
+Subject: [at76c503a-develop] [PATCH 3/4] Remove usage of data which	were
+	already skb_pull-ed.
+In-Reply-To: <1217634638.2731.15.camel@dv>
+References: <20080501202603.7338.7111.stgit@localhost>
+	<20080501202802.7338.84826.stgit@localhost>
+	<1217634638.2731.15.camel@dv>
+Message-ID: <1217666786.4199.167.camel@localhost>
+
+On Pi, 2008-08-01 at 19:50 -0400, Pavel Roskin wrote:
+> On Thu, 2008-05-01 at 22:28 +0200, Milan Plzik wrote:
+> > at76_rx_tasklet makes use of data referenced by 'buf' despite of the fact
+> > they were already marked as free by skb_pull. This patch delays skb_pull, so
+> > data will remain valid.
+> > 
+> > Signed-off-by: Milan Plzik <milan.plzik at gmail.com>
+> 
+> I'm sorry, it have been months since I was supposed to review your
+> patches.  I still could not find time for that.  Therefore, I resign
+> from the maintenance of the driver.  Please send the patches directly to
+> linux-wireless at vger.kernel.org
+> 
+
+  No problem :). In the meanwhile, I already sent the patches to
+linux-wireless. On the other hand, there was no response, so I'm not
+sure whether the driver was at least noticed by maintainers. I hope it
+will find its way to wireless-testing.
+
+	Milan
+
+
+
+From Kalle.Valo at iki.fi  Sat Aug  2 11:18:01 2008
+From: Kalle.Valo at iki.fi (Kalle Valo)
+Date: Sat, 02 Aug 2008 12:18:01 +0300
+Subject: [at76c503a-develop] [PATCH 3/4] Remove usage of data which	were
+	already skb_pull-ed.
+In-Reply-To: <1217666786.4199.167.camel@localhost> (Milan Plzik's message of
+	"Sat\, 02 Aug 2008 10\:46\:26 +0200")
+References: <20080501202603.7338.7111.stgit@localhost>
+	<20080501202802.7338.84826.stgit@localhost>
+	<1217634638.2731.15.camel@dv> <1217666786.4199.167.camel@localhost>
+Message-ID: <87r697lqra.fsf@litku.valot.fi>
+
+Milan Plzik <milan.plzik at gmail.com> writes:
+
+> On Pi, 2008-08-01 at 19:50 -0400, Pavel Roskin wrote:
+>> On Thu, 2008-05-01 at 22:28 +0200, Milan Plzik wrote:
+>> > at76_rx_tasklet makes use of data referenced by 'buf' despite of the fact
+>> > they were already marked as free by skb_pull. This patch delays skb_pull, so
+>> > data will remain valid.
+>> > 
+>> > Signed-off-by: Milan Plzik <milan.plzik at gmail.com>
+>> 
+>> I'm sorry, it have been months since I was supposed to review your
+>> patches.  I still could not find time for that.  Therefore, I resign
+>> from the maintenance of the driver.  Please send the patches directly to
+>> linux-wireless at vger.kernel.org
+>> 
+>
+>   No problem :). In the meanwhile, I already sent the patches to
+> linux-wireless. On the other hand, there was no response, so I'm not
+> sure whether the driver was at least noticed by maintainers. I hope it
+> will find its way to wireless-testing.
+
+Your patches are already on wireless-testing:
+
+http://git.kernel.org/?p=linux/kernel/git/linville/wireless-testing.git;a=commit;h=3f02e851562f93ab3df28d9b6c6e92488a1d08cb
+
+-- 
+Kalle Valo
+
+
+From milan.plzik at gmail.com  Sat Aug  2 15:18:14 2008
+From: milan.plzik at gmail.com (Milan Plzik)
+Date: Sat, 2 Aug 2008 15:18:14 +0200
+Subject: [at76c503a-develop] [PATCH 3/4] Remove usage of data which were
+	already skb_pull-ed.
+In-Reply-To: <87r697lqra.fsf@litku.valot.fi>
+References: <20080501202603.7338.7111.stgit@localhost>
+	<20080501202802.7338.84826.stgit@localhost>
+	<1217634638.2731.15.camel@dv> <1217666786.4199.167.camel@localhost>
+	<87r697lqra.fsf@litku.valot.fi>
+Message-ID: <2f8780200808020618q33ba16d7va72ae127357b3771@mail.gmail.com>
+
+On Sat, Aug 2, 2008 at 11:18 AM, Kalle Valo <Kalle.Valo at iki.fi> wrote:
+> Milan Plzik <milan.plzik at gmail.com> writes:
+>
+>> On Pi, 2008-08-01 at 19:50 -0400, Pavel Roskin wrote:
+>>> On Thu, 2008-05-01 at 22:28 +0200, Milan Plzik wrote:
+>>> > at76_rx_tasklet makes use of data referenced by 'buf' despite of the fact
+>>> > they were already marked as free by skb_pull. This patch delays skb_pull, so
+>>> > data will remain valid.
+>>> >
+>>> > Signed-off-by: Milan Plzik <milan.plzik at gmail.com>
+>>>
+>>> I'm sorry, it have been months since I was supposed to review your
+>>> patches.  I still could not find time for that.  Therefore, I resign
+>>> from the maintenance of the driver.  Please send the patches directly to
+>>> linux-wireless at vger.kernel.org
+>>>
+>>
+>>   No problem :). In the meanwhile, I already sent the patches to
+>> linux-wireless. On the other hand, there was no response, so I'm not
+>> sure whether the driver was at least noticed by maintainers. I hope it
+>> will find its way to wireless-testing.
+>
+> Your patches are already on wireless-testing:
+>
+> http://git.kernel.org/?p=linux/kernel/git/linville/wireless-testing.git;a=commit;h=3f02e851562f93ab3df28d9b6c6e92488a1d08cb
+
+  Err, you're right, I just did 'git pull' and found the patch in
+wireless-testing:) Thank you for noting that.
+
+>
+> --
+> Kalle Valo
+
+  Milan
+
+> _______________________________________________
+> at76c503a-develop mailing list
+> at76c503a-develop at lists.berlios.de
+> https://lists.berlios.de/mailman/listinfo/at76c503a-develop
+>
+
+

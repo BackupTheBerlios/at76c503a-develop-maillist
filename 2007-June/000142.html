@@ -1,0 +1,138 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [at76c503a-develop] [PATCH 09/12] Rename functions ending with	&quot;matched&quot; to start with	&quot;at76_match&quot;
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/at76c503a-develop/2007-June/index.html" >
+   <LINK REL="made" HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%2009/12%5D%20Rename%20functions%20ending%20with%0A%09%22matched%22%20to%20start%20with%09%22at76_match%22&In-Reply-To=%3C20070621035640.18384.57895.stgit%40dv.roinet.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000141.html">
+   <LINK REL="Next"  HREF="000143.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[at76c503a-develop] [PATCH 09/12] Rename functions ending with	&quot;matched&quot; to start with	&quot;at76_match&quot;</H1>
+    <B>Pavel Roskin</B> 
+    <A HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%2009/12%5D%20Rename%20functions%20ending%20with%0A%09%22matched%22%20to%20start%20with%09%22at76_match%22&In-Reply-To=%3C20070621035640.18384.57895.stgit%40dv.roinet.com%3E"
+       TITLE="[at76c503a-develop] [PATCH 09/12] Rename functions ending with	&quot;matched&quot; to start with	&quot;at76_match&quot;">proski at gnu.org
+       </A><BR>
+    <I>Thu Jun 21 05:56:40 CEST 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000141.html">[at76c503a-develop] [PATCH 08/12] Don't print hex numbers starting	with &quot;x&quot;, use more common &quot;0x&quot;
+</A></li>
+        <LI>Next message: <A HREF="000143.html">[at76c503a-develop] [PATCH 10/12] Rename set_group_address to	at76_set_group_address, clean it up
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#142">[ date ]</a>
+              <a href="thread.html#142">[ thread ]</a>
+              <a href="subject.html#142">[ subject ]</a>
+              <a href="author.html#142">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>It's more natural to use a common prefix, not suffix, for similar
+functions.
+
+Signed-off-by: Pavel Roskin &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">proski at gnu.org</A>&gt;
+---
+
+ at76_usb.c |   20 ++++++++------------
+ 1 files changed, 8 insertions(+), 12 deletions(-)
+
+diff --git a/at76_usb.c b/at76_usb.c
+index ffc517e..c8ce70b 100644
+--- a/at76_usb.c
++++ b/at76_usb.c
+@@ -4153,7 +4153,7 @@ static int at76_load_internal_fw(struct usb_device *udev, struct fwentry *fwe)
+ 	return ret;
+ }
+ 
+-static int at76_essid_matched(struct at76_priv *priv, struct bss_info *ptr)
++static int at76_match_essid(struct at76_priv *priv, struct bss_info *ptr)
+ {
+ 	/* common criteria for both modi */
+ 
+@@ -4167,8 +4167,7 @@ static int at76_essid_matched(struct at76_priv *priv, struct bss_info *ptr)
+ 	return ret;
+ }
+ 
+-static inline int at76_mode_matched(struct at76_priv *priv,
+-				    struct bss_info *ptr)
++static inline int at76_match_mode(struct at76_priv *priv, struct bss_info *ptr)
+ {
+ 	int ret;
+ 
+@@ -4183,7 +4182,7 @@ static inline int at76_mode_matched(struct at76_priv *priv,
+ 	return ret;
+ }
+ 
+-static int at76_rates_matched(struct at76_priv *priv, struct bss_info *ptr)
++static int at76_match_rates(struct at76_priv *priv, struct bss_info *ptr)
+ {
+ 	int i;
+ 	u8 *rate;
+@@ -4213,7 +4212,7 @@ static int at76_rates_matched(struct at76_priv *priv, struct bss_info *ptr)
+ 		return 1;
+ }
+ 
+-static inline int at76_wep_matched(struct at76_priv *priv, struct bss_info *ptr)
++static inline int at76_match_wep(struct at76_priv *priv, struct bss_info *ptr)
+ {
+ 	if (!priv-&gt;wep_enabled &amp;&amp; ptr-&gt;capa &amp; WLAN_CAPABILITY_PRIVACY) {
+ 		/* we have disabled WEP, but the BSS signals privacy */
+@@ -4227,8 +4226,7 @@ static inline int at76_wep_matched(struct at76_priv *priv, struct bss_info *ptr)
+ 	return 1;
+ }
+ 
+-static inline int at76_bssid_matched(struct at76_priv *priv,
+-				     struct bss_info *ptr)
++static inline int at76_match_bssid(struct at76_priv *priv, struct bss_info *ptr)
+ {
+ 	if (!priv-&gt;wanted_bssid_valid ||
+ 	    !compare_ether_addr(ptr-&gt;bssid, priv-&gt;wanted_bssid)) {
+@@ -4262,11 +4260,9 @@ static struct bss_info *at76_match_bss(struct at76_priv *priv,
+ 	curr = last != NULL ? last-&gt;list.next : priv-&gt;bss_list.next;
+ 	while (curr != &amp;priv-&gt;bss_list) {
+ 		ptr = list_entry(curr, struct bss_info, list);
+-		if (at76_essid_matched(priv, ptr) &amp;&amp;
+-		    at76_mode_matched(priv, ptr) &amp;&amp;
+-		    at76_wep_matched(priv, ptr) &amp;&amp;
+-		    at76_rates_matched(priv, ptr) &amp;&amp;
+-		    at76_bssid_matched(priv, ptr))
++		if (at76_match_essid(priv, ptr) &amp;&amp; at76_match_mode(priv, ptr)
++		    &amp;&amp; at76_match_wep(priv, ptr) &amp;&amp; at76_match_rates(priv, ptr)
++		    &amp;&amp; at76_match_bssid(priv, ptr))
+ 			break;
+ 		curr = curr-&gt;next;
+ 	}
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000141.html">[at76c503a-develop] [PATCH 08/12] Don't print hex numbers starting	with &quot;x&quot;, use more common &quot;0x&quot;
+</A></li>
+	<LI>Next message: <A HREF="000143.html">[at76c503a-develop] [PATCH 10/12] Rename set_group_address to	at76_set_group_address, clean it up
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#142">[ date ]</a>
+              <a href="thread.html#142">[ thread ]</a>
+              <a href="subject.html#142">[ subject ]</a>
+              <a href="author.html#142">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">More information about the at76c503a-develop
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,95 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [at76c503a-develop] mac80211-enabled at76_usb is in	wireless-testing
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/at76c503a-develop/2008-March/index.html" >
+   <LINK REL="made" HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20mac80211-enabled%20at76_usb%20is%20in%0A%09wireless-testing&In-Reply-To=%3C87myp7yh0f.fsf%40litku.valot.fi%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   
+   <LINK REL="Next"  HREF="000225.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[at76c503a-develop] mac80211-enabled at76_usb is in	wireless-testing</H1>
+    <B>Kalle Valo</B> 
+    <A HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20mac80211-enabled%20at76_usb%20is%20in%0A%09wireless-testing&In-Reply-To=%3C87myp7yh0f.fsf%40litku.valot.fi%3E"
+       TITLE="[at76c503a-develop] mac80211-enabled at76_usb is in	wireless-testing">Kalle.Valo at iki.fi
+       </A><BR>
+    <I>Sun Mar  9 17:54:56 CET 2008</I>
+    <P><UL>
+        
+        <LI>Next message: <A HREF="000225.html">[at76c503a-develop] mac80211-enabled at76_usb is	in	wireless-testing
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#224">[ date ]</a>
+              <a href="thread.html#224">[ thread ]</a>
+              <a href="subject.html#224">[ subject ]</a>
+              <a href="author.html#224">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Pavel Roskin &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">proski at gnu.org</A>&gt; writes:
+
+&gt;<i> Quoting Milan Plzik &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">milan.plzik at gmail.com</A>&gt;:
+</I>&gt;<i>
+</I>&gt;&gt;<i>   Uhh, isn't there any possibility to create snapshot of only portion of
+</I>&gt;&gt;<i> the repository -- not only for developers, but also if any user would
+</I>&gt;&gt;<i> like to test GIT snapshot, it would be quite convenient to download just
+</I>&gt;&gt;<i> required files.
+</I>&gt;<i>
+</I>&gt;<i> That's precisely the purpose of compat-wireless.
+</I>&gt;<i>
+</I>&gt;<i> But the current driver is just not ready for prime time.  I tried it  
+</I>&gt;<i> with WEP, and it was slow to associate
+</I>
+For me it associates as fast as iwl3945. mac80211 has serious problems
+with associating (at least with iwl3945) and I'll consider that as a
+mac80211 issue. Can you pinpoint if the problem you are seeing is
+because of at76_usb or mac80211?
+
+But I would like to get more information about your problem, if
+possible. Especially monitor mode dump would be really helpful.
+
+&gt;<i> and the ping turnaround was 2-4 seconds. It's like there is a sleep
+</I>&gt;<i> somewhere, of the device is reset for every packet.
+</I>
+Yeah, I see this too. Sometime ping latency is normal 3-10 ms and
+sometimes it can be high as 5 seconds. I'll try to fix this first.
+
+&gt;<i> Also, the ad-hoc mode is missing.
+</I>
+Is that really so important feature that it would block inclusion to
+the mainline? For me, Ad-Hoc mode is a low priority issue and I was
+thinking to implement only after the stability issues are fixed.
+
+-- 
+Kalle Valo
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	
+	<LI>Next message: <A HREF="000225.html">[at76c503a-develop] mac80211-enabled at76_usb is	in	wireless-testing
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#224">[ date ]</a>
+              <a href="thread.html#224">[ thread ]</a>
+              <a href="subject.html#224">[ subject ]</a>
+              <a href="author.html#224">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">More information about the at76c503a-develop
+mailing list</a><br>
+</body></html>

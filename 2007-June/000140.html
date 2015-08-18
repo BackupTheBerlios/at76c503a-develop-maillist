@@ -1,0 +1,318 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [at76c503a-develop] [PATCH 07/12] Re-examine and simplify code	where &quot;return&quot; is followed	by &quot;else&quot;
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/at76c503a-develop/2007-June/index.html" >
+   <LINK REL="made" HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%2007/12%5D%20Re-examine%20and%20simplify%20code%0A%09where%20%22return%22%20is%20followed%09by%20%22else%22&In-Reply-To=%3C20070621035630.18384.71112.stgit%40dv.roinet.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000139.html">
+   <LINK REL="Next"  HREF="000141.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[at76c503a-develop] [PATCH 07/12] Re-examine and simplify code	where &quot;return&quot; is followed	by &quot;else&quot;</H1>
+    <B>Pavel Roskin</B> 
+    <A HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%2007/12%5D%20Re-examine%20and%20simplify%20code%0A%09where%20%22return%22%20is%20followed%09by%20%22else%22&In-Reply-To=%3C20070621035630.18384.71112.stgit%40dv.roinet.com%3E"
+       TITLE="[at76c503a-develop] [PATCH 07/12] Re-examine and simplify code	where &quot;return&quot; is followed	by &quot;else&quot;">proski at gnu.org
+       </A><BR>
+    <I>Thu Jun 21 05:56:30 CEST 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000139.html">[at76c503a-develop] [PATCH 06/12] Avoid assignments inside	conditions, they are hard to read
+</A></li>
+        <LI>Next message: <A HREF="000141.html">[at76c503a-develop] [PATCH 08/12] Don't print hex numbers starting	with &quot;x&quot;, use more common &quot;0x&quot;
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#140">[ date ]</a>
+              <a href="thread.html#140">[ thread ]</a>
+              <a href="subject.html#140">[ subject ]</a>
+              <a href="author.html#140">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Try to make the code flow more linear.  Handle easy cases early.  This
+avoids unnecessary identation and a complex tree structure of the code.
+
+In at76_iw_handler_get_power(), an at76_dbg() call was supposed to cover
+the &quot;disabled&quot; case but would not actually be called.  Fix it.
+
+Signed-off-by: Pavel Roskin &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">proski at gnu.org</A>&gt;
+---
+
+ at76_usb.c |  199 +++++++++++++++++++++++++++++-------------------------------
+ 1 files changed, 96 insertions(+), 103 deletions(-)
+
+diff --git a/at76_usb.c b/at76_usb.c
+index 3e84c7b..d6572f7 100644
+--- a/at76_usb.c
++++ b/at76_usb.c
+@@ -396,10 +396,10 @@ static int at76_usbdfu_download(struct usb_device *udev, u8 *dfu_buffer,
+ 
+       exit:
+ 	kfree(dmabuf);
+-	if (ret &lt; 0)
+-		return ret;
+-	else
+-		return 0;
++	if (ret &gt;= 0)
++		ret = 0;
++
++	return ret;
+ }
+ 
+ /* Report that the scan results are ready */
+@@ -3247,17 +3247,14 @@ static int at76_iw_handler_get_power(struct net_device *netdev,
+ {
+ 	struct at76_priv *priv = netdev_priv(netdev);
+ 
+-	if ((power-&gt;disabled = (priv-&gt;pm_mode == AT76_PM_OFF)))
+-		return 0;
+-	else {
+-		power-&gt;flags = IW_POWER_PERIOD;
++	power-&gt;disabled = (priv-&gt;pm_mode == AT76_PM_OFF);
++	if (!power-&gt;disabled) {
++		power-&gt;flags = IW_POWER_PERIOD | IW_POWER_ALL_R;
+ 		power-&gt;value = priv-&gt;pm_period;
+ 	}
+-	power-&gt;flags |= IW_POWER_ALL_R;
+ 
+-	at76_dbg(DBG_IOCTL,
+-		 &quot;%s: SIOCGIWPOWER - disabled %s flags x%x value x%x&quot;,
+-		 netdev-&gt;name, (power-&gt;disabled) ? &quot;true&quot; : &quot;false&quot;,
++	at76_dbg(DBG_IOCTL, &quot;%s: SIOCGIWPOWER - %s flags x%x value x%x&quot;,
++		 netdev-&gt;name, power-&gt;disabled ? &quot;disabled&quot; : &quot;enabled&quot;,
+ 		 power-&gt;flags, power-&gt;value);
+ 
+ 	return 0;
+@@ -5501,113 +5498,109 @@ static struct sk_buff *at76_check_for_rx_frags(struct at76_priv *priv)
+ 		if (bptr-&gt;seqnr == seqnr) {
+ 			int left;
+ 			/* the fragment has the current sequence number */
+-			if (((bptr-&gt;fragnr + 1) &amp; 0xf) == fragnr) {
+-				bptr-&gt;last_rx = jiffies;
+-				/* the next following fragment number -&gt;
+-				   add the data at the end */
+-				/* is &amp; 0xf necessary above ??? */
+-
+-				/* for test only ??? */
+-				left = skb_tailroom(bptr-&gt;skb);
+-				if (left &lt; data_len) {
+-					printk(KERN_INFO
+-					       &quot;%s: only %d byte free (need %d)\n&quot;,
+-					       priv-&gt;netdev-&gt;name, left,
+-					       data_len);
+-				} else
+-					memcpy(skb_put(bptr-&gt;skb, data_len),
+-					       data, data_len);
+-				bptr-&gt;fragnr = fragnr;
+-				if (!(frame_ctl &amp; IEEE80211_FCTL_MOREFRAGS)) {
+-					/* this was the last fragment - send it */
+-					skb = bptr-&gt;skb;
+-					bptr-&gt;skb = NULL;	/* free the entry */
+-					at76_dbg(DBG_RX_FRAGS,
+-						 &quot;%s: last frag of seq %d&quot;,
+-						 priv-&gt;netdev-&gt;name, seqnr);
+-					return skb;
+-				} else
+-					return NULL;
+-			} else {
++			if (((bptr-&gt;fragnr + 1) &amp; 0xf) != fragnr) {
+ 				/* wrong fragment number -&gt; ignore it */
++				/* is &amp; 0xf necessary above ??? */
+ 				at76_dbg(DBG_RX_FRAGS,
+ 					 &quot;%s: frag nr does not match: %d+1 != %d&quot;,
+ 					 priv-&gt;netdev-&gt;name, bptr-&gt;fragnr,
+ 					 fragnr);
+ 				return NULL;
+ 			}
+-		} else {
+-			/* got another sequence number */
+-			if (fragnr == 0) {
+-				/* it's the start of a new chain - replace the
+-				   old one by this */
+-				/* bptr-&gt;sender has the correct value already */
+-				at76_dbg(DBG_RX_FRAGS,
+-					 &quot;%s: start of new seq %d, &quot;
+-					 &quot;removing old seq %d&quot;,
+-					 priv-&gt;netdev-&gt;name, seqnr,
+-					 bptr-&gt;seqnr);
+-				bptr-&gt;seqnr = seqnr;
+-				bptr-&gt;fragnr = 0;
+-				bptr-&gt;last_rx = jiffies;
+-				/* swap bptr-&gt;skb and priv-&gt;rx_skb */
+-				skb = bptr-&gt;skb;
+-				bptr-&gt;skb = priv-&gt;rx_skb;
+-				priv-&gt;rx_skb = skb;
+-			} else {
+-				/* it from the middle of a new chain -&gt;
+-				   delete the old entry and skip the new one */
+-				at76_dbg(DBG_RX_FRAGS,
+-					 &quot;%s: middle of new seq %d (%d) &quot;
+-					 &quot;removing old seq %d&quot;,
+-					 priv-&gt;netdev-&gt;name, seqnr, fragnr,
+-					 bptr-&gt;seqnr);
+-				dev_kfree_skb(bptr-&gt;skb);
+-				bptr-&gt;skb = NULL;
+-			}
+-			return NULL;
+-		}
+-	} else {
+-		/* if we didn't find a chain for the sender address optr
+-		   points either to the first free or the oldest entry */
++			bptr-&gt;last_rx = jiffies;
++			/* the next following fragment number -&gt;
++			   add the data at the end */
+ 
+-		if (fragnr != 0) {
+-			/* this is not the begin of a fragment chain ... */
+-			at76_dbg(DBG_RX_FRAGS,
+-				 &quot;%s: no chain for non-first fragment (%d)&quot;,
+-				 priv-&gt;netdev-&gt;name, fragnr);
+-			return NULL;
++			/* for test only ??? */
++			left = skb_tailroom(bptr-&gt;skb);
++			if (left &lt; data_len) {
++				printk(KERN_INFO
++				       &quot;%s: only %d byte free (need %d)\n&quot;,
++				       priv-&gt;netdev-&gt;name, left, data_len);
++			} else
++				memcpy(skb_put(bptr-&gt;skb, data_len), data,
++				       data_len);
++			bptr-&gt;fragnr = fragnr;
++			if (frame_ctl &amp; IEEE80211_FCTL_MOREFRAGS)
++				return NULL;
++
++			/* this was the last fragment - send it */
++			skb = bptr-&gt;skb;
++			bptr-&gt;skb = NULL;	/* free the entry */
++			at76_dbg(DBG_RX_FRAGS, &quot;%s: last frag of seq %d&quot;,
++				 priv-&gt;netdev-&gt;name, seqnr);
++			return skb;
+ 		}
+-		at76_assert(optr != NULL);
+-		if (optr == NULL)
+-			return NULL;
+-
+-		if (optr-&gt;skb != NULL) {
+-			/* swap the skb's */
+-			skb = optr-&gt;skb;
+-			optr-&gt;skb = priv-&gt;rx_skb;
+-			priv-&gt;rx_skb = skb;
+ 
++		/* got another sequence number */
++		if (fragnr == 0) {
++			/* it's the start of a new chain - replace the
++			   old one by this */
++			/* bptr-&gt;sender has the correct value already */
+ 			at76_dbg(DBG_RX_FRAGS,
+-				 &quot;%s: free old contents: sender %s seq/frag %d/%d&quot;,
+-				 priv-&gt;netdev-&gt;name, mac2str(optr-&gt;sender),
+-				 optr-&gt;seqnr, optr-&gt;fragnr);
+-
++				 &quot;%s: start of new seq %d, removing old seq %d&quot;,
++				 priv-&gt;netdev-&gt;name, seqnr, bptr-&gt;seqnr);
++			bptr-&gt;seqnr = seqnr;
++			bptr-&gt;fragnr = 0;
++			bptr-&gt;last_rx = jiffies;
++			/* swap bptr-&gt;skb and priv-&gt;rx_skb */
++			skb = bptr-&gt;skb;
++			bptr-&gt;skb = priv-&gt;rx_skb;
++			priv-&gt;rx_skb = skb;
+ 		} else {
+-			/* take the skb from priv-&gt;rx_skb */
+-			optr-&gt;skb = priv-&gt;rx_skb;
+-			priv-&gt;rx_skb = NULL;	/* let at76_submit_rx_urb() allocate a new skb */
+-
+-			at76_dbg(DBG_RX_FRAGS, &quot;%s: use a free entry&quot;,
+-				 priv-&gt;netdev-&gt;name);
++			/* it from the middle of a new chain -&gt;
++			   delete the old entry and skip the new one */
++			at76_dbg(DBG_RX_FRAGS,
++				 &quot;%s: middle of new seq %d (%d) &quot;
++				 &quot;removing old seq %d&quot;,
++				 priv-&gt;netdev-&gt;name, seqnr, fragnr,
++				 bptr-&gt;seqnr);
++			dev_kfree_skb(bptr-&gt;skb);
++			bptr-&gt;skb = NULL;
+ 		}
+-		memcpy(optr-&gt;sender, i802_11_hdr-&gt;addr2, ETH_ALEN);
+-		optr-&gt;seqnr = seqnr;
+-		optr-&gt;fragnr = 0;
+-		optr-&gt;last_rx = jiffies;
++		return NULL;
++	}
+ 
++	/* if we didn't find a chain for the sender address, optr
++	   points either to the first free or the oldest entry */
++
++	if (fragnr != 0) {
++		/* this is not the begin of a fragment chain ... */
++		at76_dbg(DBG_RX_FRAGS,
++			 &quot;%s: no chain for non-first fragment (%d)&quot;,
++			 priv-&gt;netdev-&gt;name, fragnr);
+ 		return NULL;
+ 	}
++	at76_assert(optr != NULL);
++	if (optr == NULL)
++		return NULL;
++
++	if (optr-&gt;skb != NULL) {
++		/* swap the skb's */
++		skb = optr-&gt;skb;
++		optr-&gt;skb = priv-&gt;rx_skb;
++		priv-&gt;rx_skb = skb;
++
++		at76_dbg(DBG_RX_FRAGS,
++			 &quot;%s: free old contents: sender %s seq/frag %d/%d&quot;,
++			 priv-&gt;netdev-&gt;name, mac2str(optr-&gt;sender),
++			 optr-&gt;seqnr, optr-&gt;fragnr);
++
++	} else {
++		/* take the skb from priv-&gt;rx_skb */
++		optr-&gt;skb = priv-&gt;rx_skb;
++		/* let at76_submit_rx_urb() allocate a new skb */
++		priv-&gt;rx_skb = NULL;
++
++		at76_dbg(DBG_RX_FRAGS, &quot;%s: use a free entry&quot;,
++			 priv-&gt;netdev-&gt;name);
++	}
++	memcpy(optr-&gt;sender, i802_11_hdr-&gt;addr2, ETH_ALEN);
++	optr-&gt;seqnr = seqnr;
++	optr-&gt;fragnr = 0;
++	optr-&gt;last_rx = jiffies;
++
++	return NULL;
+ }
+ 
+ /* Rx interrupt: we expect the complete data buffer in priv-&gt;rx_skb */
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000139.html">[at76c503a-develop] [PATCH 06/12] Avoid assignments inside	conditions, they are hard to read
+</A></li>
+	<LI>Next message: <A HREF="000141.html">[at76c503a-develop] [PATCH 08/12] Don't print hex numbers starting	with &quot;x&quot;, use more common &quot;0x&quot;
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#140">[ date ]</a>
+              <a href="thread.html#140">[ thread ]</a>
+              <a href="subject.html#140">[ subject ]</a>
+              <a href="author.html#140">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">More information about the at76c503a-develop
+mailing list</a><br>
+</body></html>

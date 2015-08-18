@@ -1,0 +1,94 @@
+From proski at gnu.org  Thu Aug  2 08:23:39 2007
+From: proski at gnu.org (Pavel Roskin)
+Date: Thu, 02 Aug 2007 02:23:39 -0400
+Subject: [at76c503a-develop] [ANNOUNCE] at76_usb 0.16 released
+Message-ID: <1186035819.6967.30.camel@dv>
+
+Hello!
+
+Version 0.16 of the at76_usb driver has been released.
+
+The most important changes in this version may not be visible to the
+ordinary users.  The code have been cleaned up, so that the driver can
+be submitted for the Linux kernel inclusion.
+
+This driver compiles for Linux 2.6.20 and newer, but it's impossible to
+guarantee that it will compile for the future kernels.  Only submitting
+the driver to the kernel would ensure that the driver stays up to date
+with the kernel API.
+
+Please don't complain that older versions are not supported.  A driver
+to be submitted to Linux may not have any backward compatibility code.
+It's already good that a way was found to support several kernels
+without modifying the sources.
+
+Two major bugs have been fixed.  Reloading the driver without unplugging
+the device could cause kernel panic in older versions of the driver.
+Running scan while the driver was in process of association could cause
+kernel panic as well.
+
+The driver now respects the channel in monitor mode.  While it can
+capture beacons from neighboring channels, it won't capture packets from
+all channels indiscriminately, as it was before.  Unfortunately, only
+beacons are captured in monitor mode.  This appears to be a limitation
+of the chipset.
+
+It's now possible to read back all private parameters using the iwpriv
+command.
+
+The common event loop has been split into individual functions, which
+may improve responsiveness of the system.  However, more work is needed
+in this area.
+
+
+If you want to reply to this announcement, please pick one list to podt
+to, don't cross-post!
+
+-- 
+Regards,
+Pavel Roskin
+
+
+
+From proski at gnu.org  Fri Aug  3 04:29:06 2007
+From: proski at gnu.org (Pavel Roskin)
+Date: Thu, 02 Aug 2007 22:29:06 -0400
+Subject: [at76c503a-develop] Homepage
+Message-ID: <1186108146.19586.20.camel@dv>
+
+Hello!
+
+I have found how to update the homepage at http://at76c503a.berlios.de/
+
+All the files are accessible over scp at
+shell.berlios.de:/home/groups/at76c503a/htdocs for all members of the
+project.
+
+I ran all files through "tidy", updated the download links and the
+latest released version.  I also made all files use the same style as
+the rest of berlios.de.
+
+But the biggest problem is that most of the information is obsolete.
+Even things that are still correct are often unnecessary, such as
+specific description of the debug mechanism of the driver, or list of
+bugs in version 0.11.
+
+Some pages show traces of editing with a narrow field of view.  For
+instance, support for Linux 2.6.x is listed under limitations.
+
+Most importantly, if a driver needs so much user-level documentation,
+there is a problem with the driver.  Users are not supposed to read the
+documentation for all drivers in the system!
+
+One possible solution would be to preserve the current site for history
+and write a short new homepage, essentially based on README, but with
+the download location, links to the mailing lists and so on.
+
+If anybody can help with the updating the site, please let me know.
+
+-- 
+Regards,
+Pavel Roskin
+
+
+

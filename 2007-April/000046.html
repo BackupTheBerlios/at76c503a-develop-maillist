@@ -1,0 +1,139 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [at76c503a-develop] [PATCH 2/6] Remove last remains of LED support,	it shouldn't be here
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/at76c503a-develop/2007-April/index.html" >
+   <LINK REL="made" HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%202/6%5D%20Remove%20last%20remains%20of%20LED%20support%2C%0A%09it%20shouldn%27t%20be%20here&In-Reply-To=%3C20070428060313.22208.48847.stgit%40dv.roinet.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000045.html">
+   <LINK REL="Next"  HREF="000051.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[at76c503a-develop] [PATCH 2/6] Remove last remains of LED support,	it shouldn't be here</H1>
+    <B>Pavel Roskin</B> 
+    <A HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%202/6%5D%20Remove%20last%20remains%20of%20LED%20support%2C%0A%09it%20shouldn%27t%20be%20here&In-Reply-To=%3C20070428060313.22208.48847.stgit%40dv.roinet.com%3E"
+       TITLE="[at76c503a-develop] [PATCH 2/6] Remove last remains of LED support,	it shouldn't be here">proski at gnu.org
+       </A><BR>
+    <I>Sat Apr 28 08:03:13 CEST 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000045.html">[at76c503a-develop] [PATCH 1/6] Remove unnecessary casts
+</A></li>
+        <LI>Next message: <A HREF="000051.html">[at76c503a-develop] [PATCH 2/6] Remove last remains of LED	support, it shouldn't be here
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#46">[ date ]</a>
+              <a href="thread.html#46">[ thread ]</a>
+              <a href="subject.html#46">[ subject ]</a>
+              <a href="author.html#46">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Signed-off-by: Pavel Roskin &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">proski at gnu.org</A>&gt;
+---
+
+ at76_usb.c |   31 -------------------------------
+ 1 files changed, 0 insertions(+), 31 deletions(-)
+
+diff --git a/at76_usb.c b/at76_usb.c
+index 9750e2f..0beea1c 100644
+--- a/at76_usb.c
++++ b/at76_usb.c
+@@ -35,7 +35,6 @@
+ #include &lt;net/iw_handler.h&gt;
+ #include &lt;net/ieee80211_radiotap.h&gt;
+ #include &lt;linux/firmware.h&gt;
+-#include &lt;linux/leds.h&gt;
+ 
+ #include &quot;at76_usb.h&quot;
+ #include &quot;at76_usb_ids.h&quot;
+@@ -568,32 +567,6 @@ static inline char *mac2str(u8 *mac)
+ 	return str;
+ }
+ 
+-/* led trigger */
+-static void at76_ledtrig_tx_timerfunc(unsigned long data);
+-DEFINE_LED_TRIGGER(ledtrig_tx);
+-static DEFINE_TIMER(ledtrig_tx_timer, at76_ledtrig_tx_timerfunc, 0, 0);
+-static int tx_activity;
+-static int tx_lastactivity;
+-
+-static void at76_ledtrig_tx_activity(void)
+-{
+-	tx_activity++;
+-	if (!timer_pending(&amp;ledtrig_tx_timer))
+-		mod_timer(&amp;ledtrig_tx_timer, jiffies + msecs_to_jiffies(250));
+-}
+-
+-static void at76_ledtrig_tx_timerfunc(unsigned long data)
+-{
+-	if (tx_lastactivity != tx_activity) {
+-		tx_lastactivity = tx_activity;
+-		led_trigger_event(ledtrig_tx, LED_FULL);
+-		mod_timer(&amp;ledtrig_tx_timer, jiffies + msecs_to_jiffies(250));
+-	} else {
+-		led_trigger_event(ledtrig_tx, LED_OFF);
+-	}
+-}
+-
+-
+ static int at76_remap(struct usb_device *udev)
+ {
+ 	int ret;
+@@ -4038,8 +4011,6 @@ static int at76_tx(struct sk_buff *skb, struct net_device *netdev)
+ 		return 0;
+ 	}
+ 
+-	at76_ledtrig_tx_activity(); /* tell the ledtrigger we send a packet */
+-
+ 	/* we can get rid of memcpy, if we set netdev-&gt;hard_header_len
+ 	   to 8 + sizeof(struct ieee80211_hdr_3addr), because then we have
+ 	   enough space 
+@@ -6292,7 +6263,6 @@ static int __init at76_mod_init(void)
+ 		err(&quot;usb_register failed (status %d)&quot;, result);
+ 	}
+ 
+-	led_trigger_register_simple(&quot;at76_usb-tx&quot;, &amp;ledtrig_tx);
+ 	return result;
+ }
+ 
+@@ -6306,7 +6276,6 @@ static void __exit at76_mod_exit(void)
+ 		if (firmwares[i].fw)
+ 			release_firmware(firmwares[i].fw);
+ 	}
+-	led_trigger_unregister_simple(ledtrig_tx);
+ }
+ 
+ module_param_named(debug, at76_debug, int, 0600);
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000045.html">[at76c503a-develop] [PATCH 1/6] Remove unnecessary casts
+</A></li>
+	<LI>Next message: <A HREF="000051.html">[at76c503a-develop] [PATCH 2/6] Remove last remains of LED	support, it shouldn't be here
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#46">[ date ]</a>
+              <a href="thread.html#46">[ thread ]</a>
+              <a href="subject.html#46">[ subject ]</a>
+              <a href="author.html#46">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">More information about the at76c503a-develop
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,679 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [at76c503a-develop] [PATCH] Reuse more structures from Linux	ieee80211 headers
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/at76c503a-develop/2007-March/index.html" >
+   <LINK REL="made" HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%5D%20Reuse%20more%20structures%20from%20Linux%0A%09ieee80211%20headers&In-Reply-To=%3C20070305224251.14934.89901.stgit%40dl.roinet.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000023.html">
+   <LINK REL="Next"  HREF="000026.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[at76c503a-develop] [PATCH] Reuse more structures from Linux	ieee80211 headers</H1>
+    <B>Pavel Roskin</B> 
+    <A HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%5D%20Reuse%20more%20structures%20from%20Linux%0A%09ieee80211%20headers&In-Reply-To=%3C20070305224251.14934.89901.stgit%40dl.roinet.com%3E"
+       TITLE="[at76c503a-develop] [PATCH] Reuse more structures from Linux	ieee80211 headers">proski at gnu.org
+       </A><BR>
+    <I>Mon Mar  5 23:42:51 CET 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000023.html">[at76c503a-develop] [PATCH] Fix divizion by zero in ad-hoc mode
+</A></li>
+        <LI>Next message: <A HREF="000026.html">[at76c503a-develop] [patch] remove handheld macros and code
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#25">[ date ]</a>
+              <a href="thread.html#25">[ thread ]</a>
+              <a href="subject.html#25">[ subject ]</a>
+              <a href="author.html#25">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Eliminate all local definitions for management frames.  Use Linux
+structures instead.  Use struct ieee80211_info_element for information
+elements in management frames.
+
+Use min_t() instead of min() in the affected code when casts are already
+present or would be needed.
+
+Signed-off-by: Pavel Roskin &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">proski at gnu.org</A>&gt;
+---
+
+ at76_usb.c |  230 +++++++++++++++++++++++++++++-------------------------------
+ at76_usb.h |   71 +------------------
+ 2 files changed, 116 insertions(+), 185 deletions(-)
+
+diff --git a/at76_usb.c b/at76_usb.c
+index 24c3cd1..b8442db 100644
+--- a/at76_usb.c
++++ b/at76_usb.c
+@@ -195,7 +195,7 @@ static void defer_kevent (struct at76c503 *dev, int flag);
+ static struct bss_info *find_matching_bss(struct at76c503 *dev,
+ 					  struct bss_info *curr);
+ static int auth_req(struct at76c503 *dev, struct bss_info *bss, int seq_nr,
+-		    u8 *challenge);
++		    struct ieee80211_info_element *challenge);
+ static int disassoc_req(struct at76c503 *dev, struct bss_info *bss);
+ static int assoc_req(struct at76c503 *dev, struct bss_info *bss);
+ static int reassoc_req(struct at76c503 *dev, struct bss_info *curr,
+@@ -1929,11 +1929,16 @@ static int send_mgmt_bulk(struct at76c503 *dev, struct at76c503_tx_buffer *txbuf
+ 
+ } /* send_mgmt_bulk */
+ 
++/* Go to the next information element */
++static inline void next_ie(struct ieee80211_info_element **ie) {
++	*ie = (struct ieee80211_info_element *)(&amp;(*ie)-&gt;data[(*ie)-&gt;len]);
++}
++
+ static int disassoc_req(struct at76c503 *dev, struct bss_info *bss)
+ {
+ 	struct at76c503_tx_buffer *tx_buffer;
+ 	struct ieee80211_hdr_3addr *mgmt;
+-	struct ieee802_11_disassoc_frame *req;
++	struct ieee80211_disassoc *req;
+ 
+ 	assert(bss != NULL);
+ 	if (bss == NULL)
+@@ -1944,8 +1949,8 @@ static int disassoc_req(struct at76c503 *dev, struct bss_info *bss)
+ 	if (!tx_buffer)
+ 		return -ENOMEM;
+ 
+-	mgmt = (struct ieee80211_hdr_3addr *)&amp;(tx_buffer-&gt;packet);
+-	req  = (struct ieee802_11_disassoc_frame *)&amp;(mgmt-&gt;payload);
++	req = (struct ieee80211_disassoc *)(&amp;tx_buffer-&gt;packet);
++	mgmt = &amp;req-&gt;header;
+ 
+ 	/* make wireless header */
+ 	mgmt-&gt;frame_ctl = cpu_to_le16(IEEE80211_FTYPE_MGMT|IEEE80211_STYPE_AUTH);
+@@ -1974,14 +1979,15 @@ static int disassoc_req(struct at76c503 *dev, struct bss_info *bss)
+    we got with seq_nr 2 for shared secret authentication only and
+    send in seq_nr 3 WEP encrypted to prove we have the correct WEP key;
+    otherwise it is NULL */
+-static int auth_req(struct at76c503 *dev, struct bss_info *bss, int seq_nr, u8 *challenge)
++static int auth_req(struct at76c503 *dev, struct bss_info *bss, int seq_nr,
++		    struct ieee80211_info_element *challenge)
+ {
+ 	struct at76c503_tx_buffer *tx_buffer;
+ 	struct ieee80211_hdr_3addr *mgmt;
+-	struct ieee802_11_auth_frame *req;
++	struct ieee80211_auth *req;
+ 	
+ 	int buf_len = (seq_nr != 3 ? AUTH_FRAME_SIZE : 
+-		       AUTH_FRAME_SIZE + 1 + 1 + challenge[1]);
++		       AUTH_FRAME_SIZE + 1 + 1 + challenge-&gt;len);
+ 
+ 	assert(bss != NULL);
+ 	assert(seq_nr != 3 || challenge != NULL);
+@@ -1990,8 +1996,8 @@ static int auth_req(struct at76c503 *dev, struct bss_info *bss, int seq_nr, u8 *
+ 	if (!tx_buffer)
+ 		return -ENOMEM;
+ 
+-	mgmt = (struct ieee80211_hdr_3addr *)&amp;(tx_buffer-&gt;packet);
+-	req  = (struct ieee802_11_auth_frame *)&amp;(mgmt-&gt;payload);
++	req = (struct ieee80211_auth *)(&amp;tx_buffer-&gt;packet);
++	mgmt = &amp;req-&gt;header;
+ 
+ 	/* make wireless header */
+ 	/* first auth msg is not encrypted, only the second (seq_nr == 3) */
+@@ -2005,22 +2011,22 @@ static int auth_req(struct at76c503 *dev, struct bss_info *bss, int seq_nr, u8 *
+ 	mgmt-&gt;seq_ctl = cpu_to_le16(0);
+ 
+ 	req-&gt;algorithm = cpu_to_le16(dev-&gt;auth_mode);
+-	req-&gt;seq_nr = cpu_to_le16(seq_nr);
++	req-&gt;transaction = cpu_to_le16(seq_nr);
+ 	req-&gt;status = cpu_to_le16(0);
+ 
+ 	if (seq_nr == 3)
+-		memcpy(req-&gt;challenge, challenge, 1+1+challenge[1]);
++		memcpy(req-&gt;info_element, challenge, 1+1+challenge-&gt;len);
+ 
+ 	/* init. at76c503 tx header */
+ 	tx_buffer-&gt;wlength = cpu_to_le16(buf_len - AT76C503_TX_HDRLEN);
+ 	
+ 	dbg(DBG_TX_MGMT, &quot;%s: AuthReq bssid %s alg %d seq_nr %d&quot;,
+ 	    dev-&gt;netdev-&gt;name, mac2str(mgmt-&gt;addr3),
+-	    le16_to_cpu(req-&gt;algorithm), le16_to_cpu(req-&gt;seq_nr));
++	    le16_to_cpu(req-&gt;algorithm), le16_to_cpu(req-&gt;transaction));
+ 	if (seq_nr == 3) {
+ 		dbg(DBG_TX_MGMT, &quot;%s: AuthReq challenge: %s ...&quot;,
+ 		    dev-&gt;netdev-&gt;name,
+-		    hex2str(dev-&gt;obuf, req-&gt;challenge, 
++		    hex2str(dev-&gt;obuf, (u8 *)req-&gt;info_element,
+ 			    min((int)sizeof(dev-&gt;obuf)/3, 18),' '));
+ 	}
+ 
+@@ -2034,8 +2040,8 @@ static int assoc_req(struct at76c503 *dev, struct bss_info *bss)
+ {
+ 	struct at76c503_tx_buffer *tx_buffer;
+ 	struct ieee80211_hdr_3addr *mgmt;
+-	struct ieee802_11_assoc_req *req;
+-	u8 *tlv;
++	struct ieee80211_assoc_request *req;
++	struct ieee80211_info_element *tlv;
+ 
+ 	assert(bss != NULL);
+ 
+@@ -2044,9 +2050,9 @@ static int assoc_req(struct at76c503 *dev, struct bss_info *bss)
+ 	if (!tx_buffer)
+ 		return -ENOMEM;
+ 
+-	mgmt = (struct ieee80211_hdr_3addr *)&amp;(tx_buffer-&gt;packet);
+-	req  = (struct ieee802_11_assoc_req *)&amp;(mgmt-&gt;payload);
+-	tlv = req-&gt;data;
++	req = (struct ieee80211_assoc_request *)(&amp;tx_buffer-&gt;packet);
++	mgmt = &amp;req-&gt;header;
++	tlv = req-&gt;info_element;
+ 
+ 	/* make wireless header */
+ 	mgmt-&gt;frame_ctl = cpu_to_le16(IEEE80211_FTYPE_MGMT|IEEE80211_STYPE_ASSOC_REQ);
+@@ -2070,33 +2076,33 @@ static int assoc_req(struct at76c503 *dev, struct bss_info *bss)
+ 	
+ 	/* write TLV data elements */
+ 
+-	*tlv++ = MFIE_TYPE_SSID;
+-	*tlv++ = bss-&gt;ssid_len;
+-	memcpy(tlv, bss-&gt;ssid, bss-&gt;ssid_len);
+-	tlv += bss-&gt;ssid_len;
++	tlv-&gt;id = MFIE_TYPE_SSID;
++	tlv-&gt;len = bss-&gt;ssid_len;
++	memcpy(tlv-&gt;data, bss-&gt;ssid, bss-&gt;ssid_len);
++	next_ie(&amp;tlv);
+ 
+-	*tlv++ = MFIE_TYPE_RATES;
+-	*tlv++ = sizeof(hw_rates);
+-	memcpy(tlv, hw_rates, sizeof(hw_rates));
+-	tlv += sizeof(hw_rates); /* tlv points behind the supp_rates field */
++	tlv-&gt;id = MFIE_TYPE_RATES;
++	tlv-&gt;len = sizeof(hw_rates);
++	memcpy(tlv-&gt;data, hw_rates, sizeof(hw_rates));
++	next_ie(&amp;tlv); /* tlv points behind the supp_rates field */
+ 
+ 	/* init. at76c503 tx header */
+-	tx_buffer-&gt;wlength = cpu_to_le16(tlv-(u8 *)mgmt);
++	tx_buffer-&gt;wlength = cpu_to_le16((u8 *)tlv-(u8 *)mgmt);
+ 	
+ 	{
+ 		/* output buffer for ssid and rates */
+ 		char orates[4*2+1];
+ 		int len;
+ 
+-		tlv = req-&gt;data;
+-		len = min(IW_ESSID_MAX_SIZE, (int)*(tlv+1));
+-		memcpy(dev-&gt;obuf, tlv+2, len);
++		tlv = req-&gt;info_element;
++		len = min_t(int, IW_ESSID_MAX_SIZE, tlv-&gt;len);
++		memcpy(dev-&gt;obuf, tlv-&gt;data, len);
+ 		dev-&gt;obuf[len] = '\0';
+-		tlv += (1 + 1 + *(tlv+1)); /* points to IE of rates now */
++		next_ie(&amp;tlv); /* points to IE of rates now */
+ 		dbg(DBG_TX_MGMT, &quot;%s: AssocReq bssid %s capa x%04x ssid %s rates %s&quot;,
+ 		    dev-&gt;netdev-&gt;name, mac2str(mgmt-&gt;addr3),
+ 		    le16_to_cpu(req-&gt;capability), dev-&gt;obuf,
+-		    hex2str(orates,tlv+2,min((sizeof(orates)-1)/2,(size_t)*(tlv+1)),
++		    hex2str(orates,tlv-&gt;data,min((sizeof(orates)-1)/2,(size_t)tlv-&gt;len),
+ 			    '\0'));
+ 	}
+ 
+@@ -2113,9 +2119,8 @@ static int reassoc_req(struct at76c503 *dev, struct bss_info *curr_bss,
+ {
+ 	struct at76c503_tx_buffer *tx_buffer;
+ 	struct ieee80211_hdr_3addr *mgmt;
+-	struct ieee802_11_reassoc_req *req;
+-	
+-	u8 *tlv;
++	struct ieee80211_reassoc_request *req;
++	struct ieee80211_info_element *tlv;
+ 
+ 	assert(curr_bss != NULL);
+ 	assert(new_bss != NULL);
+@@ -2127,9 +2132,9 @@ static int reassoc_req(struct at76c503 *dev, struct bss_info *curr_bss,
+ 	if (!tx_buffer)
+ 		return -ENOMEM;
+ 
+-	mgmt = (struct ieee80211_hdr_3addr *)&amp;(tx_buffer-&gt;packet);
+-	req  = (struct ieee802_11_reassoc_req *)&amp;(mgmt-&gt;payload);
+-	tlv = req-&gt;data;
++	req = (struct ieee80211_reassoc_request *)(&amp;tx_buffer-&gt;packet);
++	mgmt = &amp;req-&gt;header;
++	tlv = req-&gt;info_element;
+ 
+ 	/* make wireless header */
+ 	/* jal: encrypt this packet if wep_enabled is TRUE ??? */
+@@ -2151,35 +2156,36 @@ static int reassoc_req(struct at76c503 *dev, struct bss_info *curr_bss,
+ 
+ 	req-&gt;listen_interval = cpu_to_le16(2 * new_bss-&gt;beacon_interval);
+ 	
+-	memcpy(req-&gt;curr_ap, curr_bss-&gt;bssid, ETH_ALEN);
++	memcpy(req-&gt;current_ap, curr_bss-&gt;bssid, ETH_ALEN);
+ 
+ 	/* write TLV data elements */
+-	*tlv++ = MFIE_TYPE_SSID;
+-	*tlv++ = new_bss-&gt;ssid_len;
+-	memcpy(tlv,new_bss-&gt;ssid, new_bss-&gt;ssid_len);
+-	tlv += new_bss-&gt;ssid_len;
++	tlv-&gt;id = MFIE_TYPE_SSID;
++	tlv-&gt;len = new_bss-&gt;ssid_len;
++	memcpy(tlv-&gt;data, new_bss-&gt;ssid, new_bss-&gt;ssid_len);
++	next_ie(&amp;tlv);
+ 
+-	*tlv++ = MFIE_TYPE_RATES;
+-	*tlv++ = sizeof(hw_rates);
+-	memcpy(tlv, hw_rates, sizeof(hw_rates));
+-	tlv += sizeof(hw_rates); /* tlv points behind the supp_rates field */
++	tlv-&gt;id = MFIE_TYPE_RATES;
++	tlv-&gt;len = sizeof(hw_rates);
++	memcpy(tlv-&gt;data, hw_rates, sizeof(hw_rates));
++	/* tlv points behind the supp_rates field */
++	next_ie(&amp;tlv);
+ 
+ 	/* init. at76c503 tx header */
+-	tx_buffer-&gt;wlength = cpu_to_le16(tlv-(u8 *)mgmt);
++	tx_buffer-&gt;wlength = cpu_to_le16((u8 *)tlv-(u8 *)mgmt);
+ 	
+ 	{
+ 		/* output buffer for rates and bssid */
+ 		char orates[4*2+1];
+ 		char ocurr[6*3+1];
+-		tlv = req-&gt;data;
+-		memcpy(dev-&gt;obuf, tlv+2, min(sizeof(dev-&gt;obuf),(size_t)*(tlv+1)));
++		tlv = req-&gt;info_element;
++		memcpy(dev-&gt;obuf, tlv-&gt;data, min(sizeof(dev-&gt;obuf),(size_t)tlv-&gt;len));
+ 		dev-&gt;obuf[IW_ESSID_MAX_SIZE] = '\0';
+-		tlv += (1 + 1 + *(tlv+1)); /* points to IE of rates now */
++		next_ie(&amp;tlv); /* points to IE of rates now */
+ 		dbg(DBG_TX_MGMT, &quot;%s: ReAssocReq curr %s new %s capa x%04x ssid %s rates %s&quot;,
+ 		    dev-&gt;netdev-&gt;name,
+-		    hex2str(ocurr, req-&gt;curr_ap, ETH_ALEN, ':'),
++		    hex2str(ocurr, req-&gt;current_ap, ETH_ALEN, ':'),
+ 		    mac2str(mgmt-&gt;addr3), le16_to_cpu(req-&gt;capability), dev-&gt;obuf,
+-		    hex2str(orates,tlv+2,min((sizeof(orates)-1)/2,(size_t)*(tlv+1)),
++		    hex2str(orates,tlv-&gt;data,min((sizeof(orates)-1)/2,(size_t)tlv-&gt;len),
+ 			    '\0'));
+ 	}
+ 
+@@ -2726,18 +2732,17 @@ static struct bss_info *find_matching_bss(struct at76c503 *dev,
+ static void rx_mgmt_assoc(struct at76c503 *dev,
+ 			   struct at76c503_rx_buffer *buf)
+ {
+-	struct ieee80211_hdr_3addr *mgmt =
+-		(struct ieee80211_hdr_3addr *)buf-&gt;packet;
+-	struct ieee802_11_assoc_resp *resp = 
+-		(struct ieee802_11_assoc_resp *)mgmt-&gt;payload;
+-	u16 assoc_id = le16_to_cpu(resp-&gt;assoc_id);
++	struct ieee80211_assoc_response *resp =
++		(struct ieee80211_assoc_response *)buf-&gt;packet;
++	struct ieee80211_hdr_3addr *mgmt = &amp;resp-&gt;header;
++	u16 assoc_id = le16_to_cpu(resp-&gt;aid);
+ 	u16 status = le16_to_cpu(resp-&gt;status);
+ 	u16 capa = le16_to_cpu(resp-&gt;capability); 
+ 	dbg(DBG_RX_MGMT, &quot;%s: rx AssocResp bssid %s capa x%04x status x%04x &quot;
+ 	    &quot;assoc_id x%04x rates %s&quot;,
+ 	    dev-&gt;netdev-&gt;name, mac2str(mgmt-&gt;addr3), capa, status, assoc_id,
+-	    hex2str(dev-&gt;obuf, resp-&gt;data+2,
+-		    min((size_t)*(resp-&gt;data+1),(sizeof(dev-&gt;obuf)-1)/2), '\0'));
++	    hex2str(dev-&gt;obuf, resp-&gt;info_element-&gt;data,
++		    min((size_t)resp-&gt;info_element-&gt;len, (sizeof(dev-&gt;obuf)-1)/2), '\0'));
+ 	if (dev-&gt;istate == ASSOCIATING) {
+ 		assert(dev-&gt;curr_bss != NULL);
+ 		if (dev-&gt;curr_bss == NULL)
+@@ -2766,20 +2771,19 @@ static void rx_mgmt_assoc(struct at76c503 *dev,
+ static void rx_mgmt_reassoc(struct at76c503 *dev,
+ 			   struct at76c503_rx_buffer *buf)
+ {
+-	struct ieee80211_hdr_3addr *mgmt =
+-		(struct ieee80211_hdr_3addr *)buf-&gt;packet;
+-	struct ieee802_11_assoc_resp *resp = 
+-		(struct ieee802_11_assoc_resp *)mgmt-&gt;payload;
++	struct ieee80211_assoc_response *resp =
++		(struct ieee80211_assoc_response *)buf-&gt;packet;
++	struct ieee80211_hdr_3addr *mgmt = &amp;resp-&gt;header;
+ 	unsigned long flags;
+ 	u16 capa = le16_to_cpu(resp-&gt;capability);
+ 	u16 status = le16_to_cpu(resp-&gt;status);
+-	u16 assoc_id = le16_to_cpu(resp-&gt;assoc_id);
++	u16 assoc_id = le16_to_cpu(resp-&gt;aid);
+ 
+ 	dbg(DBG_RX_MGMT, &quot;%s: rx ReAssocResp bssid %s capa x%04x status x%04x &quot;
+ 	    &quot;assoc_id x%04x rates %s&quot;,
+ 	    dev-&gt;netdev-&gt;name, mac2str(mgmt-&gt;addr3), capa, status, assoc_id,
+-	    hex2str(dev-&gt;obuf, resp-&gt;data+2,
+-		    min((size_t)*(resp-&gt;data+1),(sizeof(dev-&gt;obuf)-1)/2), '\0'));
++	    hex2str(dev-&gt;obuf, resp-&gt;info_element-&gt;data,
++		    min((size_t)resp-&gt;info_element-&gt;len, (sizeof(dev-&gt;obuf)-1)/2), '\0'));
+ 	if (dev-&gt;istate == REASSOCIATING) {
+ 		assert(dev-&gt;new_bss != NULL);
+ 		if (dev-&gt;new_bss == NULL)
+@@ -2819,10 +2823,9 @@ static void rx_mgmt_reassoc(struct at76c503 *dev,
+ static void rx_mgmt_disassoc(struct at76c503 *dev,
+ 			   struct at76c503_rx_buffer *buf)
+ {
+-	struct ieee80211_hdr_3addr *mgmt =
+-		(struct ieee80211_hdr_3addr *)buf-&gt;packet;
+-	struct ieee802_11_disassoc_frame *resp = 
+-		(struct ieee802_11_disassoc_frame *)mgmt-&gt;payload;
++	struct ieee80211_disassoc *resp =
++		(struct ieee80211_disassoc *)buf-&gt;packet;
++	struct ieee80211_hdr_3addr *mgmt = &amp;resp-&gt;header;
+ 
+ 	dbg(DBG_RX_MGMT, &quot;%s: rx DisAssoc bssid %s reason x%04x destination %s&quot;,
+ 	    dev-&gt;netdev-&gt;name, mac2str(mgmt-&gt;addr3),
+@@ -2874,11 +2877,10 @@ static void rx_mgmt_disassoc(struct at76c503 *dev,
+ static void rx_mgmt_auth(struct at76c503 *dev,
+ 			   struct at76c503_rx_buffer *buf)
+ {
+-	struct ieee80211_hdr_3addr *mgmt =
+-		(struct ieee80211_hdr_3addr *)buf-&gt;packet;
+-	struct ieee802_11_auth_frame *resp = 
+-		(struct ieee802_11_auth_frame *)mgmt-&gt;payload;
+-	int seq_nr = le16_to_cpu(resp-&gt;seq_nr);
++	struct ieee80211_auth *resp =
++		(struct ieee80211_auth *)buf-&gt;packet;
++	struct ieee80211_hdr_3addr *mgmt = &amp;resp-&gt;header;
++	int seq_nr = le16_to_cpu(resp-&gt;transaction);
+ 	int alg = le16_to_cpu(resp-&gt;algorithm);
+ 	int status = le16_to_cpu(resp-&gt;status);
+ 
+@@ -2893,7 +2895,7 @@ static void rx_mgmt_auth(struct at76c503 *dev,
+ 	    seq_nr == 2) {
+ 		dbg(DBG_RX_MGMT, &quot;%s: AuthFrame challenge %s ...&quot;,
+ 		    dev-&gt;netdev-&gt;name,
+-		    hex2str(dev-&gt;obuf, resp-&gt;challenge,
++		    hex2str(dev-&gt;obuf, (u8 *)resp-&gt;info_element,
+ 			    min((int)sizeof(dev-&gt;obuf)/3,18), ' '));
+ 	}
+ 	if (dev-&gt;istate != AUTHENTICATING) {
+@@ -2935,7 +2937,7 @@ static void rx_mgmt_auth(struct at76c503 *dev,
+ 		}
+ 
+ 		assert(seq_nr == 2);
+-		auth_req(dev, dev-&gt;curr_bss, seq_nr+1, resp-&gt;challenge);
++		auth_req(dev, dev-&gt;curr_bss, seq_nr+1, resp-&gt;info_element);
+ 		dbg(DBG_MGMT_TIMER, &quot;%s:%d: starting mgmt_timer + HZ&quot;,
+ 		    __FUNCTION__, __LINE__);
+ 		mod_timer(&amp;dev-&gt;mgmt_timer,jiffies+HZ);
+@@ -2946,10 +2948,9 @@ static void rx_mgmt_auth(struct at76c503 *dev,
+ static void rx_mgmt_deauth(struct at76c503 *dev,
+ 			   struct at76c503_rx_buffer *buf)
+ {
+-	struct ieee80211_hdr_3addr *mgmt =
+-		(struct ieee80211_hdr_3addr *)buf-&gt;packet;
+-	struct ieee802_11_deauth_frame *resp = 
+-		(struct ieee802_11_deauth_frame *)mgmt-&gt;payload;
++	struct ieee80211_disassoc *resp =
++		(struct ieee80211_disassoc *)buf-&gt;packet;
++	struct ieee80211_hdr_3addr *mgmt = &amp;resp-&gt;header;
+ 
+ 	dbg(DBG_RX_MGMT|DBG_PROGRESS,
+ 	    &quot;%s: rx DeAuth bssid %s reason x%04x destination %s&quot;,
+@@ -2989,28 +2990,21 @@ static void rx_mgmt_deauth(struct at76c503 *dev,
+ static void rx_mgmt_beacon(struct at76c503 *dev,
+ 			   struct at76c503_rx_buffer *buf)
+ {
+-	struct ieee80211_hdr_3addr *mgmt =
+-		(struct ieee80211_hdr_3addr *)buf-&gt;packet;
+-
+ 	/* beacon content */
+-	struct ieee802_11_beacon_data *bdata = 
+-		(struct ieee802_11_beacon_data *)mgmt-&gt;payload;
++	struct ieee80211_beacon *bdata = 
++		(struct ieee80211_beacon *)buf-&gt;packet;
++	struct ieee80211_hdr_3addr *mgmt = &amp;bdata-&gt;header;
+ 
+ 	/* length of var length beacon parameters */
+-	int varpar_len = min(le16_to_cpu(buf-&gt;wlength) -
+-			     (int)(IEEE802_11_MGMT_HEADER_SIZE +
+-			      offsetof(struct ieee802_11_beacon_data, data)),
+-			     BEACON_MAX_DATA_LENGTH);
++	int varpar_len = min_t(int, le16_to_cpu(buf-&gt;wlength) -
++			       sizeof(struct ieee80211_beacon),
++			       BEACON_MAX_DATA_LENGTH);
+ 
+ 	struct list_head *lptr;
+ 	struct bss_info *match; /* entry matching addr3 with its bssid */
+ 	int new_entry = 0;
+ 	int len;
+-	struct data_element {
+-		u8 type;
+-		u8 length;
+-		u8 data_head;
+-	} *element;
++	struct ieee80211_info_element *tlv;
+ 	int have_ssid = 0;
+ 	int have_rates = 0;
+ 	int have_channel = 0;
+@@ -3062,7 +3056,7 @@ static void rx_mgmt_beacon(struct at76c503 *dev,
+ 	/* we either overwrite an existing entry or append a new one
+ 	   match points to the entry in both cases */
+ 	
+-	match-&gt;capa = le16_to_cpu(bdata-&gt;capability_information);
++	match-&gt;capa = le16_to_cpu(bdata-&gt;capability);
+ 	
+ 	/* while beacon_interval is not (!) */
+ 	match-&gt;beacon_interval = le16_to_cpu(bdata-&gt;beacon_interval);
+@@ -3076,9 +3070,7 @@ static void rx_mgmt_beacon(struct at76c503 *dev,
+ 	dbg(DBG_RX_BEACON, &quot;%s: bssid %s&quot;, dev-&gt;netdev-&gt;name, 
+ 			mac2str(match-&gt;bssid));
+ 	
+-	element = (struct data_element*)bdata-&gt;data;
+-	
+-#define data_end(element) (&amp;(element-&gt;data_head) + element-&gt;length)
++	tlv = bdata-&gt;info_element;
+ 	
+ 	/* This routine steps through the bdata-&gt;data array to try and get 
+ 	 * some useful information about the access point.
+@@ -3095,14 +3087,14 @@ static void rx_mgmt_beacon(struct at76c503 *dev,
+ 	 * bytes are useful, hence the have_ssid etc optimizations. */
+ 
+ 	while (keep_going &amp;&amp;
+-	       ((int)(data_end(element) - bdata-&gt;data) &lt;= varpar_len)) {
++	       ((&amp;tlv-&gt;data[tlv-&gt;len] - (u8 *)bdata-&gt;info_element) &lt;= varpar_len)) {
+ 
+-		switch (element-&gt;type) {
++		switch (tlv-&gt;id) {
+ 		
+ 		case MFIE_TYPE_SSID:
+-			len = min(IW_ESSID_MAX_SIZE, (int)element-&gt;length);
++			len = min_t(int, IW_ESSID_MAX_SIZE, tlv-&gt;len);
+ 			if (!have_ssid &amp;&amp; ((new_entry) || 
+-                                           !is_cloaked_ssid(&amp;(element-&gt;data_head), len))) {
++                                           !is_cloaked_ssid(tlv-&gt;data, len))) {
+ 			/* we copy only if this is a new entry,
+ 			   or the incoming SSID is not a cloaked SSID. This 
+ 			   will protect us from overwriting a real SSID read 
+@@ -3110,7 +3102,7 @@ static void rx_mgmt_beacon(struct at76c503 *dev,
+ 			   following beacon. */
+ 			
+ 				match-&gt;ssid_len = len;
+-				memcpy(match-&gt;ssid, &amp;(element-&gt;data_head), len);
++				memcpy(match-&gt;ssid, tlv-&gt;data, len);
+ 				match-&gt;ssid[len] = '\0'; /* terminate the 
+ 							    string for 
+ 							    printing */
+@@ -3123,23 +3115,23 @@ static void rx_mgmt_beacon(struct at76c503 *dev,
+ 		case MFIE_TYPE_RATES:
+ 			if (!have_rates) {
+ 				match-&gt;rates_len = 
+-					min((int)sizeof(match-&gt;rates), 
+-						(int)element-&gt;length);
+-				memcpy(match-&gt;rates, &amp;(element-&gt;data_head), 
++					min_t(int, sizeof(match-&gt;rates),
++					      tlv-&gt;len);
++				memcpy(match-&gt;rates, tlv-&gt;data,
+ 					match-&gt;rates_len);
+ 				have_rates = 1;
+ 				dbg(DBG_RX_BEACON, 
+ 				    &quot;%s: SUPPORTED RATES %s&quot;, 
+ 				    dev-&gt;netdev-&gt;name,
+-				    hex2str(dev-&gt;obuf, &amp;(element-&gt;data_head),
+-					    min((sizeof(dev-&gt;obuf)-1)/2,
+-						(size_t)element-&gt;length), '\0'));
++				    hex2str(dev-&gt;obuf, tlv-&gt;data,
++					    min_t(int, (sizeof(dev-&gt;obuf)-1)/2,
++						  tlv-&gt;len), '\0'));
+ 			}
+ 			break;
+ 		
+ 		case MFIE_TYPE_DS_SET:
+ 			if (!have_channel) {
+-				match-&gt;channel = element-&gt;data_head;
++				match-&gt;channel = tlv-&gt;data[0];
+ 				have_channel = 1;
+ 				dbg(DBG_RX_BEACON, &quot;%s: CHANNEL - %d&quot;, 
+ 					dev-&gt;netdev-&gt;name, match-&gt;channel);
+@@ -3152,17 +3144,17 @@ static void rx_mgmt_beacon(struct at76c503 *dev,
+ 		default:
+ 		{
+ 			dbg(DBG_RX_BEACON, &quot;%s: beacon IE id %d len %d %s&quot;,
+-			    dev-&gt;netdev-&gt;name, element-&gt;type, element-&gt;length,
+-			    hex2str(dev-&gt;obuf,&amp;(element-&gt;data_head),
+-				    min((sizeof(dev-&gt;obuf)-1)/2,
+-					(size_t)element-&gt;length),'\0'));
++			    dev-&gt;netdev-&gt;name, tlv-&gt;id, tlv-&gt;len,
++			    hex2str(dev-&gt;obuf, tlv-&gt;data,
++				    min_t(int, (sizeof(dev-&gt;obuf)-1)/2,
++					  tlv-&gt;len), '\0'));
+ 			break;
+ 		}
+ 
+-		} /* switch (element-&gt;type) */
++		} /* switch(tlv-&gt;id) */
+ 		
+-		/*  advance to the next 'element' of data */
+-		element = (struct data_element*)data_end(element);
++		/*  advance to the next informational element */
++		next_ie(&amp;tlv);
+ 
+ 		/* Optimization: after all, the bdata-&gt;data array is  
+ 		 * varpar_len bytes long, whereas we get all of the useful 
+diff --git a/at76_usb.h b/at76_usb.h
+index 8398f26..02b0149 100644
+--- a/at76_usb.h
++++ b/at76_usb.h
+@@ -665,80 +665,22 @@ struct p80211msg
+ } __attribute__ ((packed));
+ 
+ #define BEACON_MAX_DATA_LENGTH 1500
+-/* beacon in ieee80211_hdr_3addr.payload */
+-struct ieee802_11_beacon_data {
+-	u8	timestamp[8];           /* TSFTIMER */
+-	__le16	beacon_interval;        /* Kms between TBTTs (Target Beacon Transmission Times) */
+-	__le16	capability_information;
+-	u8	data[BEACON_MAX_DATA_LENGTH]; /* contains: SSID (tag,length,value), 
+-						 Supported Rates (tlv), channel */
+-} __attribute__ ((packed));
+ 
+-/* disassoc frame in ieee80211_hdr_3addr.payload */
+-struct ieee802_11_disassoc_frame {
+-	__le16 reason;
+-} __attribute__ ((packed));
+ #define DISASSOC_FRAME_SIZE \
+-  (AT76C503_TX_HDRLEN + IEEE802_11_MGMT_HEADER_SIZE +\
+-   sizeof(struct ieee802_11_disassoc_frame))
+-
+-/* assoc request in ieee80211_hdr_3addr.payload */
+-struct ieee802_11_assoc_req {
+-	__le16	capability;
+-	__le16	listen_interval;
+-	u8	data[1]; /* variable number of bytes for SSID 
+-			 and supported rates (tlv coded) */
+-};
++  (AT76C503_TX_HDRLEN + sizeof(struct ieee80211_disassoc))
++
+ /* the maximum size of an AssocReq packet */
+ #define ASSOCREQ_MAX_SIZE \
+-  (AT76C503_TX_HDRLEN + IEEE802_11_MGMT_HEADER_SIZE +\
+-   offsetof(struct ieee802_11_assoc_req,data) +\
++  (AT76C503_TX_HDRLEN + sizeof(struct ieee80211_assoc_request) + \
+    1+1+IW_ESSID_MAX_SIZE + 1+1+4)
+ 
+-/* reassoc request in ieee80211_hdr_3addr.payload */
+-struct ieee802_11_reassoc_req {
+-	__le16	capability;
+-	__le16	listen_interval;
+-	u8	curr_ap[ETH_ALEN]; /* the bssid of the AP we are
+-				   currently associated to */
+-	u8	data[1]; /* variable number of bytes for SSID 
+-			 and supported rates (tlv coded) */
+-} __attribute__ ((packed));
+-
+ /* the maximum size of an AssocReq packet */
+ #define REASSOCREQ_MAX_SIZE \
+-  (AT76C503_TX_HDRLEN + IEEE802_11_MGMT_HEADER_SIZE +\
+-   offsetof(struct ieee802_11_reassoc_req,data) +\
++  (AT76C503_TX_HDRLEN + sizeof(struct ieee80211_reassoc_request) + \
+    1+1+IW_ESSID_MAX_SIZE + 1+1+4)
+ 
+-/* assoc/reassoc response */
+-struct ieee802_11_assoc_resp {
+-	__le16	capability;
+-	__le16	status;
+-	__le16	assoc_id;
+-	u8	data[1]; /* variable number of bytes for 
+-			 supported rates (tlv coded) */
+-} __attribute__ ((packed));
+-
+-/* auth. request/response in ieee80211_hdr_3addr.payload */
+-struct ieee802_11_auth_frame {
+-	__le16 algorithm;
+-	__le16 seq_nr;
+-	__le16 status;
+-	u8 challenge[0];
+-} __attribute__ ((packed));
+ /* for shared secret auth, add the challenge text size */
+-#define AUTH_FRAME_SIZE \
+-  (AT76C503_TX_HDRLEN + IEEE802_11_MGMT_HEADER_SIZE +\
+-   sizeof(struct ieee802_11_auth_frame))
+-
+-/* deauth frame in ieee80211_hdr_3addr.payload */
+-struct ieee802_11_deauth_frame {
+-	__le16 reason;
+-} __attribute__ ((packed));
+-#define DEAUTH_FRAME_SIZE \
+-  (AT76C503_TX_HDRLEN + IEEE802_11_MGMT_HEADER_SIZE +\
+-   sizeof(struct ieee802_11_disauth_frame))
++#define AUTH_FRAME_SIZE (AT76C503_TX_HDRLEN + sizeof(struct ieee80211_auth))
+ 
+ /* how often do we re-try these packets ? */
+ #define AUTH_RETRIES  3
+@@ -770,9 +712,6 @@ static const u8 hw_rates[4] = {0x82,0x84,0x0b,0x16};
+ /* the max padding size for tx in bytes (see calc_padding) */
+ #define MAX_PADDING_SIZE 53
+ 
+-/* the size of the ieee802.11 header (excl. the at76c503 tx header) */
+-#define IEEE802_11_MGMT_HEADER_SIZE offsetof(struct ieee80211_hdr_3addr, payload)
+-
+ /* at76_debug bits */
+ #define DBG_PROGRESS        0x00000001 /* progress of scan-join-(auth-assoc)-connected */
+ #define DBG_BSS_TABLE       0x00000002 /* show the bss table after scans */
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000023.html">[at76c503a-develop] [PATCH] Fix divizion by zero in ad-hoc mode
+</A></li>
+	<LI>Next message: <A HREF="000026.html">[at76c503a-develop] [patch] remove handheld macros and code
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#25">[ date ]</a>
+              <a href="thread.html#25">[ thread ]</a>
+              <a href="subject.html#25">[ subject ]</a>
+              <a href="author.html#25">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">More information about the at76c503a-develop
+mailing list</a><br>
+</body></html>

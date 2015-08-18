@@ -1,0 +1,102 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [at76c503a-develop] [PATCH 10/12] Rename set_group_address to	at76_set_group_address, clean it up
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/at76c503a-develop/2007-June/index.html" >
+   <LINK REL="made" HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%2010/12%5D%20Rename%20set_group_address%20to%0A%09at76_set_group_address%2C%20clean%20it%20up&In-Reply-To=%3C20070621035645.18384.28304.stgit%40dv.roinet.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000142.html">
+   <LINK REL="Next"  HREF="000144.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[at76c503a-develop] [PATCH 10/12] Rename set_group_address to	at76_set_group_address, clean it up</H1>
+    <B>Pavel Roskin</B> 
+    <A HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%2010/12%5D%20Rename%20set_group_address%20to%0A%09at76_set_group_address%2C%20clean%20it%20up&In-Reply-To=%3C20070621035645.18384.28304.stgit%40dv.roinet.com%3E"
+       TITLE="[at76c503a-develop] [PATCH 10/12] Rename set_group_address to	at76_set_group_address, clean it up">proski at gnu.org
+       </A><BR>
+    <I>Thu Jun 21 05:56:45 CEST 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000142.html">[at76c503a-develop] [PATCH 09/12] Rename functions ending with	&quot;matched&quot; to start with	&quot;at76_match&quot;
+</A></li>
+        <LI>Next message: <A HREF="000144.html">[at76c503a-develop] [PATCH 11/12] Rename get_hw_cfg_intersil()	to	at76_get_hw_cfg_intersil()
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#143">[ date ]</a>
+              <a href="thread.html#143">[ thread ]</a>
+              <a href="subject.html#143">[ subject ]</a>
+              <a href="author.html#143">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Although that function is commented out, it would be better to make it
+look like other functions.  Remove &quot;#if 1&quot;, it's confusing.
+
+Signed-off-by: Pavel Roskin &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">proski at gnu.org</A>&gt;
+---
+
+ at76_usb.c |    5 ++---
+ 1 files changed, 2 insertions(+), 3 deletions(-)
+
+diff --git a/at76_usb.c b/at76_usb.c
+index c8ce70b..0368f5a 100644
+--- a/at76_usb.c
++++ b/at76_usb.c
+@@ -1018,7 +1018,7 @@ static int at76_add_mac_address(struct at76_priv *priv, void *addr)
+ #if 0
+ /* Implemented to get promisc. mode working, but does not help.
+    May still be useful for multicast eventually. */
+-static int set_group_address(struct at76_priv *priv, u8 *addr, int n)
++static int at76_set_group_address(struct at76_priv *priv, u8 *addr, int n)
+ {
+ 	int ret = 0;
+ 
+@@ -1033,7 +1033,7 @@ static int set_group_address(struct at76_priv *priv, u8 *addr, int n)
+ 		err(&quot;%s: set_mib (MIB_MAC_ADD, group_addr) failed: %d&quot;,
+ 		    priv-&gt;netdev-&gt;name, ret);
+ 	}
+-#if 1
++
+ 	/* I do not know anything about the group_addr_status field... (oku) */
+ 	memset(&amp;priv-&gt;mib_buf, 0, sizeof(struct set_mib_buffer));
+ 	priv-&gt;mib_buf.type = MIB_MAC_ADD;
+@@ -1046,7 +1046,6 @@ static int set_group_address(struct at76_priv *priv, u8 *addr, int n)
+ 		err(&quot;%s: set_mib (MIB_MAC_ADD, group_addr_status) failed: %d&quot;,
+ 		    priv-&gt;netdev-&gt;name, ret);
+ 	}
+-#endif
+ 	return ret;
+ }
+ #endif
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000142.html">[at76c503a-develop] [PATCH 09/12] Rename functions ending with	&quot;matched&quot; to start with	&quot;at76_match&quot;
+</A></li>
+	<LI>Next message: <A HREF="000144.html">[at76c503a-develop] [PATCH 11/12] Rename get_hw_cfg_intersil()	to	at76_get_hw_cfg_intersil()
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#143">[ date ]</a>
+              <a href="thread.html#143">[ thread ]</a>
+              <a href="subject.html#143">[ subject ]</a>
+              <a href="author.html#143">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">More information about the at76c503a-develop
+mailing list</a><br>
+</body></html>

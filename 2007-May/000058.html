@@ -1,0 +1,97 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [at76c503a-develop] [PATCH 3/3] Fix crash when no firmware needs to	be loaded
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/at76c503a-develop/2007-May/index.html" >
+   <LINK REL="made" HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%203/3%5D%20Fix%20crash%20when%20no%20firmware%20needs%20to%0A%09be%20loaded&In-Reply-To=%3C20070501030937.8538.38634.stgit%40dv.roinet.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000057.html">
+   <LINK REL="Next"  HREF="000061.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[at76c503a-develop] [PATCH 3/3] Fix crash when no firmware needs to	be loaded</H1>
+    <B>Pavel Roskin</B> 
+    <A HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%203/3%5D%20Fix%20crash%20when%20no%20firmware%20needs%20to%0A%09be%20loaded&In-Reply-To=%3C20070501030937.8538.38634.stgit%40dv.roinet.com%3E"
+       TITLE="[at76c503a-develop] [PATCH 3/3] Fix crash when no firmware needs to	be loaded">proski at gnu.org
+       </A><BR>
+    <I>Tue May  1 05:09:37 CEST 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000057.html">[at76c503a-develop] [PATCH 2/3] Typo fixes, minor comment changes
+</A></li>
+        <LI>Next message: <A HREF="000061.html">[at76c503a-develop] [PATCH 1/3] Protect at76_usb_ids.h against	double inclusion
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#58">[ date ]</a>
+              <a href="thread.html#58">[ thread ]</a>
+              <a href="subject.html#58">[ subject ]</a>
+              <a href="author.html#58">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>If the firmware download is not needed (typically after the driver has
+been loaded and unloaded), SET_NETDEV_DEV would be called after
+register_netdev().  This would create some inconsistency in the network
+device, which can cause kernel oops when it's unregistered on disconnect
+or module unload.
+
+Call SET_NETDEV_DEV immediately after the network device is allocated.
+
+Signed-off-by: Pavel Roskin &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">proski at gnu.org</A>&gt;
+---
+
+ at76_usb.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/at76_usb.c b/at76_usb.c
+index c36985c..a1f9131 100644
+--- a/at76_usb.c
++++ b/at76_usb.c
+@@ -5833,6 +5833,7 @@ static struct at76_priv *at76_alloc_new_device(struct usb_device *udev,
+ 		return NULL;
+ 	}
+ 
++	SET_NETDEV_DEV(netdev, &amp;udev-&gt;dev);
+ 	dev = netdev_priv(netdev);
+ 	memset(dev, 0, sizeof(*dev));
+ 
+@@ -6208,7 +6209,6 @@ static int at76_do_probe(struct usb_device *udev, u8 *fw_data, int fw_size,
+ 		}
+ 	}
+ 
+-	SET_NETDEV_DEV(dev-&gt;netdev, &amp;intf-&gt;dev);
+ 	return 0;
+ 
+ error:
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000057.html">[at76c503a-develop] [PATCH 2/3] Typo fixes, minor comment changes
+</A></li>
+	<LI>Next message: <A HREF="000061.html">[at76c503a-develop] [PATCH 1/3] Protect at76_usb_ids.h against	double inclusion
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#58">[ date ]</a>
+              <a href="thread.html#58">[ thread ]</a>
+              <a href="subject.html#58">[ subject ]</a>
+              <a href="author.html#58">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">More information about the at76c503a-develop
+mailing list</a><br>
+</body></html>

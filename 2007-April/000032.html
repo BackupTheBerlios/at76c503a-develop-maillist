@@ -1,0 +1,143 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [at76c503a-develop] [PATCH 5/6] Remove nickname support
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/at76c503a-develop/2007-April/index.html" >
+   <LINK REL="made" HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%205/6%5D%20Remove%20nickname%20support&In-Reply-To=%3C20070413065747.1380.30719.stgit%40dv.roinet.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000031.html">
+   <LINK REL="Next"  HREF="000033.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[at76c503a-develop] [PATCH 5/6] Remove nickname support</H1>
+    <B>Pavel Roskin</B> 
+    <A HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%205/6%5D%20Remove%20nickname%20support&In-Reply-To=%3C20070413065747.1380.30719.stgit%40dv.roinet.com%3E"
+       TITLE="[at76c503a-develop] [PATCH 5/6] Remove nickname support">proski at gnu.org
+       </A><BR>
+    <I>Fri Apr 13 08:57:47 CEST 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000031.html">[at76c503a-develop] [PATCH 4/6] Use safer declaration for	at76_priv_handlers
+</A></li>
+        <LI>Next message: <A HREF="000033.html">[at76c503a-develop] [PATCH 6/6] Don't report data frames with 0	bytes, they are valid
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#32">[ date ]</a>
+              <a href="thread.html#32">[ thread ]</a>
+              <a href="subject.html#32">[ subject ]</a>
+              <a href="author.html#32">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>It's not supported in the hardware, so it shouldn't be in the software. 
+It's not a feature required for Linux inclusion.
+
+Signed-off-by: Pavel Roskin &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">proski at gnu.org</A>&gt;
+---
+
+ at76_usb.c |   33 ---------------------------------
+ at76_usb.h |    1 -
+ 2 files changed, 0 insertions(+), 34 deletions(-)
+
+diff --git a/at76_usb.c b/at76_usb.c
+index bad8768..bb4a5af 100644
+--- a/at76_usb.c
++++ b/at76_usb.c
+@@ -5129,36 +5129,6 @@ static int at76_iw_handler_get_essid(struct net_device *netdev,
+ 	return 0;
+ }
+ 
+-static int at76_iw_handler_set_nickname(struct net_device *netdev,
+-					    struct iw_request_info *info,
+-					    struct iw_point *data, char *extra)
+-{
+-	struct at76_priv *dev = netdev_priv(netdev);
+-
+-	at76_dbg(DBG_IOCTL, &quot;%s: SIOCSIWNICKN - %s&quot;, netdev-&gt;name, extra);
+-
+-	/* iwconfig gives length including 0 byte like in the case of essid */
+-	memcpy(dev-&gt;nickn, extra, data-&gt;length);
+-
+-	return 0;
+-}
+-
+-static int at76_iw_handler_get_nickname(struct net_device *netdev,
+-					    struct iw_request_info *info,
+-					    struct iw_point *data, char *extra)
+-{
+-	struct at76_priv *dev = netdev_priv(netdev);
+-
+-	data-&gt;length = strlen(dev-&gt;nickn);
+-	memcpy(extra, dev-&gt;nickn, data-&gt;length);
+-	extra[data-&gt;length] = '\0';
+-	data-&gt;length += 1;
+-
+-	at76_dbg(DBG_IOCTL, &quot;%s: SIOCGIWNICKN - %s&quot;, netdev-&gt;name, extra);
+-
+-	return 0;
+-}
+-
+ static int at76_iw_handler_set_rate(struct net_device *netdev,
+ 					struct iw_request_info *info,
+ 					struct iw_param *bitrate, char *extra)
+@@ -5765,8 +5735,6 @@ static const iw_handler	at76_handlers[] =
+         [SIOCGIWSCAN  -SIOCIWFIRST] = (iw_handler) at76_iw_handler_get_scan,
+         [SIOCSIWESSID -SIOCIWFIRST] = (iw_handler) at76_iw_handler_set_essid,
+         [SIOCGIWESSID -SIOCIWFIRST] = (iw_handler) at76_iw_handler_get_essid,
+-        [SIOCSIWNICKN -SIOCIWFIRST] = (iw_handler) at76_iw_handler_set_nickname,
+-        [SIOCGIWNICKN -SIOCIWFIRST] = (iw_handler) at76_iw_handler_get_nickname,
+         [SIOCSIWRATE  -SIOCIWFIRST] = (iw_handler) at76_iw_handler_set_rate,
+         [SIOCGIWRATE  -SIOCIWFIRST] = (iw_handler) at76_iw_handler_get_rate,
+         [SIOCSIWRTS   -SIOCIWFIRST] = (iw_handler) at76_iw_handler_set_rts,
+@@ -6106,7 +6074,6 @@ static int at76_init_new_device(struct at76_priv *dev)
+ 	dev-&gt;iw_mode = default_iw_mode;
+ 	dev-&gt;monitor_prism_header = 1;
+ 	memset(dev-&gt;essid, 0, IW_ESSID_MAX_SIZE);
+-	memset(dev-&gt;nickn, 0, sizeof(dev-&gt;nickn));
+ 	dev-&gt;rts_threshold = DEF_RTS_THRESHOLD;
+ 	dev-&gt;frag_threshold = DEF_FRAG_THRESHOLD;
+ 	dev-&gt;short_retry_limit = DEF_SHORT_RETRY_LIMIT;
+diff --git a/at76_usb.h b/at76_usb.h
+index 47a7771..493fc12 100644
+--- a/at76_usb.h
++++ b/at76_usb.h
+@@ -503,7 +503,6 @@ struct at76_priv {
+ 	int iw_mode;
+ 	u8 bssid[ETH_ALEN];
+ 	u8 essid[IW_ESSID_MAX_SIZE];
+-	char nickn[IW_ESSID_MAX_SIZE + 1];	/* nickname, only used in the iwconfig i/f */
+ 	int essid_size;
+ 	int radio_on;
+ 	int promisc;
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000031.html">[at76c503a-develop] [PATCH 4/6] Use safer declaration for	at76_priv_handlers
+</A></li>
+	<LI>Next message: <A HREF="000033.html">[at76c503a-develop] [PATCH 6/6] Don't report data frames with 0	bytes, they are valid
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#32">[ date ]</a>
+              <a href="thread.html#32">[ thread ]</a>
+              <a href="subject.html#32">[ subject ]</a>
+              <a href="author.html#32">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">More information about the at76c503a-develop
+mailing list</a><br>
+</body></html>

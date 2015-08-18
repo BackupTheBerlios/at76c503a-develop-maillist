@@ -1,0 +1,492 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [at76c503a-develop] [PATCH 10/19] Use __func__ in debug messages
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/at76c503a-develop/2007-July/index.html" >
+   <LINK REL="made" HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%2010/19%5D%20Use%20__func__%20in%20debug%20messages&In-Reply-To=%3C20070710062115.29117.15486.stgit%40dv.roinet.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000163.html">
+   <LINK REL="Next"  HREF="000164.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[at76c503a-develop] [PATCH 10/19] Use __func__ in debug messages</H1>
+    <B>Pavel Roskin</B> 
+    <A HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%2010/19%5D%20Use%20__func__%20in%20debug%20messages&In-Reply-To=%3C20070710062115.29117.15486.stgit%40dv.roinet.com%3E"
+       TITLE="[at76c503a-develop] [PATCH 10/19] Use __func__ in debug messages">proski at gnu.org
+       </A><BR>
+    <I>Tue Jul 10 08:21:15 CEST 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000163.html">[at76c503a-develop] [PATCH 09/19] Comment changes for	at76_init_new_device() and	at76_init_new_device()
+</A></li>
+        <LI>Next message: <A HREF="000164.html">[at76c503a-develop] [PATCH 11/19] Use more definitions from	net/ieee80211.h and	linux/if_ether.h
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#159">[ date ]</a>
+              <a href="thread.html#159">[ thread ]</a>
+              <a href="subject.html#159">[ subject ]</a>
+              <a href="author.html#159">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>It's more standard than __FUNCTION__.  Also fix some cases when the
+function name is hardcoded in the debug messages.
+
+Signed-off-by: Pavel Roskin &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">proski at gnu.org</A>&gt;
+---
+
+ at76_usb.c |   99 ++++++++++++++++++++++++++++++------------------------------
+ 1 files changed, 49 insertions(+), 50 deletions(-)
+
+diff --git a/at76_usb.c b/at76_usb.c
+index 2cc781f..98d3ebb 100644
+--- a/at76_usb.c
++++ b/at76_usb.c
+@@ -226,7 +226,7 @@ static int at76_load_int_fw_block(struct usb_device *udev, int blockno,
+ {
+ 	int ret;
+ 
+-	at76_dbg(DBG_DFU, &quot;dfu_download_block(): block=%p, size=%d, blockno=%d&quot;,
++	at76_dbg(DBG_DFU, &quot;%s(): block=%p, size=%d, blockno=%d&quot;, __func__,
+ 		 block, size, blockno);
+ 
+ 	ret = usb_control_msg(udev, usb_sndctrlpipe(udev, 0), DFU_DNLOAD,
+@@ -283,7 +283,7 @@ static int at76_usbdfu_download(struct usb_device *udev, u8 *dfu_buffer,
+ 	int dfu_buffer_offset = 0;
+ 	int dfu_block_cnt = 0;
+ 
+-	at76_dbg(DBG_DFU, &quot;%s( %p, %u, %d)&quot;, __FUNCTION__, dfu_buffer,
++	at76_dbg(DBG_DFU, &quot;%s( %p, %u, %d)&quot;, __func__, dfu_buffer,
+ 		 dfu_len, manifest_sync_timeout);
+ 
+ 	if (dfu_len == 0) {
+@@ -422,7 +422,7 @@ static inline void at76_iwevent_bss_connect(struct net_device *netdev,
+ 	wrqu.ap_addr.sa_family = ARPHRD_ETHER;
+ 	wireless_send_event(netdev, SIOCGIWAP, &amp;wrqu, NULL);
+ 	at76_dbg(DBG_WE_EVENTS, &quot;%s: %s: SIOCGIWAP sent&quot;, netdev-&gt;name,
+-		 __FUNCTION__);
++		 __func__);
+ }
+ 
+ static inline void at76_iwevent_bss_disconnect(struct net_device *netdev)
+@@ -434,7 +434,7 @@ static inline void at76_iwevent_bss_disconnect(struct net_device *netdev)
+ 	wrqu.ap_addr.sa_family = ARPHRD_ETHER;
+ 	wireless_send_event(netdev, SIOCGIWAP, &amp;wrqu, NULL);
+ 	at76_dbg(DBG_WE_EVENTS, &quot;%s: %s: SIOCGIWAP sent&quot;, netdev-&gt;name,
+-		 __FUNCTION__);
++		 __func__);
+ }
+ 
+ #define HEX2STR_BUFFERS 4
+@@ -1324,7 +1324,7 @@ static void at76_dump_mib_mdomain(struct at76_priv *priv)
+ 
+ 	ret = at76_get_mib_mdomain(priv, &amp;mdomain);
+ 	if (ret &lt; 0) {
+-		err(&quot;%s: at76_get_mib_mdomain returned %d&quot;, __FUNCTION__, ret);
++		err(&quot;%s: at76_get_mib_mdomain returned %d&quot;, __func__, ret);
+ 		return;
+ 	}
+ 
+@@ -1584,7 +1584,7 @@ static void at76_write_bulk_callback(struct urb *urb)
+ 		if ((urb-&gt;status != -ENOENT) &amp;&amp; (urb-&gt;status != -ECONNRESET)) {
+ 			at76_dbg(DBG_URB,
+ 				 &quot;%s - nonzero write bulk status received: %d&quot;,
+-				 __FUNCTION__, urb-&gt;status);
++				 __func__, urb-&gt;status);
+ 		} else
+ 			return;	/* urb has been unlinked */
+ 		stats-&gt;tx_errors++;
+@@ -1609,7 +1609,7 @@ static void at76_write_bulk_callback(struct urb *urb)
+ 		ret = usb_submit_urb(priv-&gt;write_urb, GFP_ATOMIC);
+ 		if (ret) {
+ 			err(&quot;%s: %s error in tx submit urb: %d&quot;,
+-			    priv-&gt;netdev-&gt;name, __FUNCTION__, ret);
++			    priv-&gt;netdev-&gt;name, __func__, ret);
+ 		}
+ 		kfree(mgmt_buf);
+ 	} else
+@@ -1644,7 +1644,7 @@ static int at76_send_mgmt_bulk(struct at76_priv *priv,
+ 		   if this is no error in some situations we must
+ 		   implement a queue or silently modify the old msg */
+ 		err(&quot;%s: %s removed pending mgmt buffer %s&quot;,
+-		    priv-&gt;netdev-&gt;name, __FUNCTION__,
++		    priv-&gt;netdev-&gt;name, __func__,
+ 		    hex2str(priv-&gt;next_mgmt_bulk, 64));
+ 		kfree(priv-&gt;next_mgmt_bulk);
+ 	}
+@@ -1656,7 +1656,7 @@ static int at76_send_mgmt_bulk(struct at76_priv *priv,
+ 
+ 		if (priv-&gt;next_mgmt_bulk) {
+ 			err(&quot;%s: %s URB status %d, but mgmt is pending&quot;,
+-			    priv-&gt;netdev-&gt;name, __FUNCTION__, urb_status);
++			    priv-&gt;netdev-&gt;name, __func__, urb_status);
+ 		}
+ 
+ 		at76_dbg(DBG_TX_MGMT,
+@@ -1676,7 +1676,7 @@ static int at76_send_mgmt_bulk(struct at76_priv *priv,
+ 		ret = usb_submit_urb(priv-&gt;write_urb, GFP_ATOMIC);
+ 		if (ret) {
+ 			err(&quot;%s: %s error in tx submit urb: %d&quot;,
+-			    priv-&gt;netdev-&gt;name, __FUNCTION__, ret);
++			    priv-&gt;netdev-&gt;name, __func__, ret);
+ 		}
+ 		kfree(txbuf);
+ 	}
+@@ -2004,28 +2004,28 @@ static void at76_handle_mgmt_timeout_scan(struct at76_priv *priv)
+ 	status = at76_get_cmd_status(priv-&gt;udev, CMD_SCAN);
+ 	if (status &lt; 0) {
+ 		err(&quot;%s: %s: at76_get_cmd_status failed with %d&quot;,
+-		    priv-&gt;netdev-&gt;name, __FUNCTION__, status);
++		    priv-&gt;netdev-&gt;name, __func__, status);
+ 		status = CMD_STATUS_IN_PROGRESS;
+ 		/* INFO: Hope it was a one off error - if not, scanning
+ 		   further down the line and stop this cycle */
+ 	}
+ 	at76_dbg(DBG_PROGRESS, &quot;%s %s:%d got cmd_status %d (istate %d, &quot;
+ 		 &quot;scan_runs %d)&quot;,
+-		 priv-&gt;netdev-&gt;name, __FUNCTION__, __LINE__, status,
++		 priv-&gt;netdev-&gt;name, __func__, __LINE__, status,
+ 		 priv-&gt;istate, priv-&gt;scan_runs);
+ 
+ 	if (status != CMD_STATUS_COMPLETE) {
+ 		if ((status != CMD_STATUS_IN_PROGRESS) &amp;&amp;
+ 		    (status != CMD_STATUS_IDLE))
+ 			err(&quot;%s: %s: Bad scan status: %s&quot;,
+-			    priv-&gt;netdev-&gt;name, __FUNCTION__,
++			    priv-&gt;netdev-&gt;name, __func__,
+ 			    at76_get_cmd_status_string(status));
+ 
+ 		/* the first cmd status after scan start is always a IDLE -&gt;
+ 		   start the timer to poll again until COMPLETED */
+ 		at76_dbg(DBG_MGMT_TIMER,
+ 			 &quot;%s:%d: starting mgmt_timer for %d ticks&quot;,
+-			 __FUNCTION__, __LINE__, SCAN_POLL_INTERVAL);
++			 __func__, __LINE__, SCAN_POLL_INTERVAL);
+ 		schedule_delayed_work(&amp;priv-&gt;dwork_mgmt, SCAN_POLL_INTERVAL);
+ 		return;
+ 	}
+@@ -2050,11 +2050,11 @@ static void at76_handle_mgmt_timeout_scan(struct at76_priv *priv)
+ 		ret = at76_start_scan(priv, 0, 1);
+ 		if (ret &lt; 0) {
+ 			err(&quot;%s: %s: start_scan (ANY) failed with %d&quot;,
+-			    priv-&gt;netdev-&gt;name, __FUNCTION__, ret);
++			    priv-&gt;netdev-&gt;name, __func__, ret);
+ 		}
+ 		at76_dbg(DBG_MGMT_TIMER,
+ 			 &quot;%s:%d: starting mgmt_timer for %d ticks&quot;,
+-			 __FUNCTION__, __LINE__, SCAN_POLL_INTERVAL);
++			 __func__, __LINE__, SCAN_POLL_INTERVAL);
+ 		schedule_delayed_work(&amp;priv-&gt;dwork_mgmt, SCAN_POLL_INTERVAL);
+ 		break;
+ 
+@@ -2062,11 +2062,11 @@ static void at76_handle_mgmt_timeout_scan(struct at76_priv *priv)
+ 		ret = at76_start_scan(priv, 1, 1);
+ 		if (ret &lt; 0) {
+ 			err(&quot;%s: %s: start_scan (SSID) failed with %d&quot;,
+-			    priv-&gt;netdev-&gt;name, __FUNCTION__, ret);
++			    priv-&gt;netdev-&gt;name, __func__, ret);
+ 		}
+ 		at76_dbg(DBG_MGMT_TIMER,
+ 			 &quot;%s:%d: starting mgmt_timer for %d ticks&quot;,
+-			 __FUNCTION__, __LINE__, SCAN_POLL_INTERVAL);
++			 __func__, __LINE__, SCAN_POLL_INTERVAL);
+ 		schedule_delayed_work(&amp;priv-&gt;dwork_mgmt, SCAN_POLL_INTERVAL);
+ 		break;
+ 
+@@ -2143,7 +2143,7 @@ static void at76_delete_device(struct at76_priv *priv)
+ 	/* signal to _stop() that the device is gone */
+ 	priv-&gt;device_unplugged = 1;
+ 
+-	at76_dbg(DBG_PROC_ENTRY, &quot;%s: ENTER&quot;, __FUNCTION__);
++	at76_dbg(DBG_PROC_ENTRY, &quot;%s: ENTER&quot;, __func__);
+ 
+ 	if (priv-&gt;netdev_registered) {
+ 		unregister_netdev(priv-&gt;netdev);
+@@ -2170,7 +2170,7 @@ static void at76_delete_device(struct at76_priv *priv)
+ 		usb_free_urb(priv-&gt;ctrl_urb);
+ 	}
+ 
+-	at76_dbg(DBG_PROC_ENTRY, &quot;%s: unlinked urbs&quot;, __FUNCTION__);
++	at76_dbg(DBG_PROC_ENTRY, &quot;%s: unlinked urbs&quot;, __func__);
+ 
+ 	if (priv-&gt;rx_skb != NULL)
+ 		kfree_skb(priv-&gt;rx_skb);
+@@ -2190,11 +2190,10 @@ static void at76_delete_device(struct at76_priv *priv)
+ 		}
+ 	usb_put_dev(priv-&gt;udev);
+ 
+-	at76_dbg(DBG_PROC_ENTRY, &quot;%s: before freeing priv/netdev&quot;,
+-		 __FUNCTION__);
++	at76_dbg(DBG_PROC_ENTRY, &quot;%s: before freeing priv/netdev&quot;, __func__);
+ 	free_netdev(priv-&gt;netdev);	/* priv is in netdev */
+ 
+-	at76_dbg(DBG_PROC_ENTRY, &quot;%s: EXIT&quot;, __FUNCTION__);
++	at76_dbg(DBG_PROC_ENTRY, &quot;%s: EXIT&quot;, __func__);
+ }
+ 
+ static int at76_alloc_urbs(struct at76_priv *priv,
+@@ -2205,9 +2204,9 @@ static int at76_alloc_urbs(struct at76_priv *priv,
+ 	int i, buffer_size;
+ 	struct usb_host_interface *iface_desc;
+ 
+-	at76_dbg(DBG_PROC_ENTRY, &quot;%s: ENTER&quot;, __FUNCTION__);
++	at76_dbg(DBG_PROC_ENTRY, &quot;%s: ENTER&quot;, __func__);
+ 
+-	at76_dbg(DBG_URB, &quot;%s: NumEndpoints %d &quot;, __FUNCTION__,
++	at76_dbg(DBG_URB, &quot;%s: NumEndpoints %d &quot;, __func__,
+ 		 interface-&gt;altsetting[0].desc.bNumEndpoints);
+ 
+ 	iface_desc = interface-&gt;cur_altsetting;
+@@ -2215,7 +2214,7 @@ static int at76_alloc_urbs(struct at76_priv *priv,
+ 		endpoint = &amp;iface_desc-&gt;endpoint[i].desc;
+ 
+ 		at76_dbg(DBG_URB, &quot;%s: %d. endpoint: addr 0x%x attr 0x%x&quot;,
+-			 __FUNCTION__,
++			 __func__,
+ 			 i, endpoint-&gt;bEndpointAddress, endpoint-&gt;bmAttributes);
+ 
+ 		if ((endpoint-&gt;bEndpointAddress &amp; 0x80) &amp;&amp;
+@@ -2267,7 +2266,7 @@ static int at76_alloc_urbs(struct at76_priv *priv,
+ 		return -ENOMEM;
+ 	}
+ 
+-	at76_dbg(DBG_PROC_ENTRY, &quot;%s: EXIT&quot;, __FUNCTION__);
++	at76_dbg(DBG_PROC_ENTRY, &quot;%s: EXIT&quot;, __func__);
+ 
+ 	return 0;
+ }
+@@ -2321,7 +2320,7 @@ static int at76_iw_handler_commit(struct net_device *netdev,
+ 	struct at76_priv *priv = netdev_priv(netdev);
+ 	unsigned long flags;
+ 	at76_dbg(DBG_IOCTL, &quot;%s %s: restarting the device&quot;, netdev-&gt;name,
+-		 __FUNCTION__);
++		 __func__);
+ 
+ 	/* TODO: stop any pending tx bulk urb */
+ 	if (priv-&gt;istate != INIT) {
+@@ -3657,7 +3656,7 @@ static int at76_tx(struct sk_buff *skb, struct net_device *netdev)
+ 
+ 	if (netif_queue_stopped(netdev)) {
+ 		err(&quot;%s: %s called while netdev is stopped&quot;, netdev-&gt;name,
+-		    __FUNCTION__);
++		    __func__);
+ 		/* skip this packet */
+ 		dev_kfree_skb(skb);
+ 		return 0;
+@@ -3665,7 +3664,7 @@ static int at76_tx(struct sk_buff *skb, struct net_device *netdev)
+ 
+ 	if (priv-&gt;write_urb-&gt;status == -EINPROGRESS) {
+ 		err(&quot;%s: %s called while priv-&gt;write_urb is pending for tx&quot;,
+-		    netdev-&gt;name, __FUNCTION__);
++		    netdev-&gt;name, __func__);
+ 		/* skip this packet */
+ 		dev_kfree_skb(skb);
+ 		return 0;
+@@ -3673,7 +3672,7 @@ static int at76_tx(struct sk_buff *skb, struct net_device *netdev)
+ 
+ 	if (skb-&gt;len &lt; 2 * ETH_ALEN) {
+ 		err(&quot;%s: %s: skb too short (%d)&quot;, priv-&gt;netdev-&gt;name,
+-		    __FUNCTION__, skb-&gt;len);
++		    __func__, skb-&gt;len);
+ 		dev_kfree_skb(skb);
+ 		return 0;
+ 	}
+@@ -3697,7 +3696,7 @@ static int at76_tx(struct sk_buff *skb, struct net_device *netdev)
+ 		} else {
+ 			err(&quot;%s: %s: no support for non-SNAP 802.2 packets &quot;
+ 			    &quot;(DSAP 0x%02x SSAP 0x%02x cntrl 0x%02x)&quot;,
+-			    priv-&gt;netdev-&gt;name, __FUNCTION__,
++			    priv-&gt;netdev-&gt;name, __func__,
+ 			    skb-&gt;data[2 * ETH_ALEN + 2],
+ 			    skb-&gt;data[2 * ETH_ALEN + 2 + 1],
+ 			    skb-&gt;data[2 * ETH_ALEN + 2 + 2]);
+@@ -3803,7 +3802,7 @@ static int at76_submit_rx_urb(struct at76_priv *priv)
+ 	struct sk_buff *skb = priv-&gt;rx_skb;
+ 
+ 	if (priv-&gt;read_urb == NULL) {
+-		err(&quot;%s: priv-&gt;read_urb is NULL&quot;, __FUNCTION__);
++		err(&quot;%s: priv-&gt;read_urb is NULL&quot;, __func__);
+ 		return -EFAULT;
+ 	}
+ 
+@@ -3860,7 +3859,7 @@ static int at76_open(struct net_device *netdev)
+ 	struct at76_priv *priv = netdev_priv(netdev);
+ 	int ret = 0;
+ 
+-	at76_dbg(DBG_PROC_ENTRY, &quot;at76_open entry&quot;);
++	at76_dbg(DBG_PROC_ENTRY, &quot;%s(): entry&quot;, __func__);
+ 
+ 	if (mutex_lock_interruptible(&amp;priv-&gt;mtx))
+ 		return -EINTR;
+@@ -3890,7 +3889,7 @@ static int at76_open(struct net_device *netdev)
+ 
+ 	schedule_delayed_work(&amp;priv-&gt;dwork_restart, 0);
+ 
+-	at76_dbg(DBG_PROC_ENTRY, &quot;at76_open end&quot;);
++	at76_dbg(DBG_PROC_ENTRY, &quot;%s(): end&quot;, __func__);
+       err:
+ 	mutex_unlock(&amp;priv-&gt;mtx);
+ 	return ret &lt; 0 ? ret : 0;
+@@ -3901,7 +3900,7 @@ static int at76_stop(struct net_device *netdev)
+ 	struct at76_priv *priv = netdev_priv(netdev);
+ 	unsigned long flags;
+ 
+-	at76_dbg(DBG_DEVSTART, &quot;%s: ENTER&quot;, __FUNCTION__);
++	at76_dbg(DBG_DEVSTART, &quot;%s: ENTER&quot;, __func__);
+ 
+ 	if (mutex_lock_interruptible(&amp;priv-&gt;mtx))
+ 		return -EINTR;
+@@ -3938,7 +3937,7 @@ static int at76_stop(struct net_device *netdev)
+ 	priv-&gt;open_count--;
+ 
+ 	mutex_unlock(&amp;priv-&gt;mtx);
+-	at76_dbg(DBG_DEVSTART, &quot;%s: EXIT&quot;, __FUNCTION__);
++	at76_dbg(DBG_DEVSTART, &quot;%s: EXIT&quot;, __func__);
+ 
+ 	return 0;
+ }
+@@ -4265,7 +4264,7 @@ static struct bss_info *at76_match_bss(struct at76_priv *priv,
+ 	/* otherwise ptr points to the struct bss_info we have chosen */
+ 
+ 	at76_dbg(DBG_BSS_TABLE, &quot;%s %s: returned %p&quot;, priv-&gt;netdev-&gt;name,
+-		 __FUNCTION__, ptr);
++		 __func__, ptr);
+ 	return ptr;
+ }
+ 
+@@ -4335,7 +4334,7 @@ static void at76_work_join(struct work_struct *work)
+ 			at76_auth_req(priv, priv-&gt;curr_bss, 1, NULL);
+ 			at76_dbg(DBG_MGMT_TIMER,
+ 				 &quot;%s:%d: starting mgmt_timer + HZ&quot;,
+-				 __FUNCTION__, __LINE__);
++				 __func__, __LINE__);
+ 			schedule_delayed_work(&amp;priv-&gt;dwork_mgmt, HZ);
+ 		}
+ 		goto end_join;
+@@ -4399,7 +4398,7 @@ static void at76_work_mgmt_timeout(struct work_struct *work)
+ 			at76_auth_req(priv, priv-&gt;curr_bss, 1, NULL);
+ 			at76_dbg(DBG_MGMT_TIMER,
+ 				 &quot;%s:%d: starting mgmt_timer + HZ&quot;,
+-				 __FUNCTION__, __LINE__);
++				 __func__, __LINE__);
+ 			schedule_delayed_work(&amp;priv-&gt;dwork_mgmt, HZ);
+ 		} else {
+ 			/* try to get next matching BSS */
+@@ -4413,7 +4412,7 @@ static void at76_work_mgmt_timeout(struct work_struct *work)
+ 			at76_assoc_req(priv, priv-&gt;curr_bss);
+ 			at76_dbg(DBG_MGMT_TIMER,
+ 				 &quot;%s:%d: starting mgmt_timer + HZ&quot;,
+-				 __FUNCTION__, __LINE__);
++				 __func__, __LINE__);
+ 			schedule_delayed_work(&amp;priv-&gt;dwork_mgmt, HZ);
+ 		} else {
+ 			/* jal: TODO: we may be authenticated to several
+@@ -4437,7 +4436,7 @@ static void at76_work_mgmt_timeout(struct work_struct *work)
+ 			at76_disassoc_req(priv, priv-&gt;curr_bss);
+ 		}
+ 		at76_dbg(DBG_MGMT_TIMER, &quot;%s:%d: starting mgmt_timer + HZ&quot;,
+-			 __FUNCTION__, __LINE__);
++			 __func__, __LINE__);
+ 		schedule_delayed_work(&amp;priv-&gt;dwork_mgmt, HZ);
+ 		break;
+ 
+@@ -4446,7 +4445,7 @@ static void at76_work_mgmt_timeout(struct work_struct *work)
+ 			at76_disassoc_req(priv, priv-&gt;curr_bss);
+ 			at76_dbg(DBG_MGMT_TIMER,
+ 				 &quot;%s:%d: starting mgmt_timer + HZ&quot;,
+-				 __FUNCTION__, __LINE__);
++				 __func__, __LINE__);
+ 			schedule_delayed_work(&amp;priv-&gt;dwork_mgmt, HZ);
+ 		} else {
+ 			/* we scan again ... */
+@@ -4668,11 +4667,11 @@ static void at76_work_scan(struct work_struct *work)
+ 	ret = at76_start_scan(priv, 0, 1);
+ 	if (ret &lt; 0) {
+ 		err(&quot;%s: %s: start_scan failed with %d&quot;,
+-		    priv-&gt;netdev-&gt;name, __FUNCTION__, ret);
++		    priv-&gt;netdev-&gt;name, __func__, ret);
+ 	} else {
+ 		at76_dbg(DBG_MGMT_TIMER,
+ 			 &quot;%s:%d: starting mgmt_timer for %d ticks&quot;,
+-			 __FUNCTION__, __LINE__, SCAN_POLL_INTERVAL);
++			 __func__, __LINE__, SCAN_POLL_INTERVAL);
+ 		schedule_delayed_work(&amp;priv-&gt;dwork_mgmt, SCAN_POLL_INTERVAL);
+ 	}
+ 
+@@ -4904,7 +4903,7 @@ static void at76_rx_mgmt_auth(struct at76_priv *priv,
+ 			at76_assoc_req(priv, priv-&gt;curr_bss);
+ 			at76_dbg(DBG_MGMT_TIMER,
+ 				 &quot;%s:%d: starting mgmt_timer + HZ&quot;,
+-				 __FUNCTION__, __LINE__);
++				 __func__, __LINE__);
+ 			schedule_delayed_work(&amp;priv-&gt;dwork_mgmt, HZ);
+ 			return;
+ 		}
+@@ -4913,7 +4912,7 @@ static void at76_rx_mgmt_auth(struct at76_priv *priv,
+ 		at76_auth_req(priv, priv-&gt;curr_bss, seq_nr + 1,
+ 			      resp-&gt;info_element);
+ 		at76_dbg(DBG_MGMT_TIMER, &quot;%s:%d: starting mgmt_timer + HZ&quot;,
+-			 __FUNCTION__, __LINE__);
++			 __func__, __LINE__);
+ 		schedule_delayed_work(&amp;priv-&gt;dwork_mgmt, HZ);
+ 	}
+ 	/* else: ignore AuthFrames to other recipients */
+@@ -5301,7 +5300,7 @@ static void at76_ieee80211_to_eth(struct sk_buff *skb, int iw_mode)
+ 
+ 	i802_11_hdr = (struct ieee80211_hdr_3addr *)skb-&gt;data;
+ 
+-	dbg(&quot;%s: ENTRY skb len %d data %s&quot;, __FUNCTION__,
++	dbg(&quot;%s: ENTRY skb len %d data %s&quot;, __func__,
+ 	    skb-&gt;len, hex2str(skb-&gt;data, 64));
+ 
+ 	skb_pull(skb, sizeof(struct ieee80211_hdr_3addr));
+@@ -5367,7 +5366,7 @@ static void at76_ieee80211_to_eth(struct sk_buff *skb, int iw_mode)
+ 	}
+ 
+ 	dbg(&quot;%s: EXIT skb da %s sa %s proto 0x%04x len %d data %s&quot;,
+-	    __FUNCTION__, mac2str(eth_hdr(skb)-&gt;h_dest),
++	    __func__, mac2str(eth_hdr(skb)-&gt;h_dest),
+ 	    mac2str(eth_hdr(skb)-&gt;h_source), ntohs(skb-&gt;protocol), skb-&gt;len,
+ 	    hex2str(skb-&gt;data, 64));
+ }
+@@ -5768,7 +5767,7 @@ static void at76_rx_tasklet(unsigned long param)
+ 		if ((urb-&gt;status != -ENOENT) &amp;&amp; (urb-&gt;status != -ECONNRESET)) {
+ 			at76_dbg(DBG_URB,
+ 				 &quot;%s %s: - nonzero read bulk status received: %d&quot;,
+-				 __FUNCTION__, netdev-&gt;name, urb-&gt;status);
++				 __func__, netdev-&gt;name, urb-&gt;status);
+ 			goto no_more_urb;
+ 		}
+ 		return;
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000163.html">[at76c503a-develop] [PATCH 09/19] Comment changes for	at76_init_new_device() and	at76_init_new_device()
+</A></li>
+	<LI>Next message: <A HREF="000164.html">[at76c503a-develop] [PATCH 11/19] Use more definitions from	net/ieee80211.h and	linux/if_ether.h
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#159">[ date ]</a>
+              <a href="thread.html#159">[ thread ]</a>
+              <a href="subject.html#159">[ subject ]</a>
+              <a href="author.html#159">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">More information about the at76c503a-develop
+mailing list</a><br>
+</body></html>

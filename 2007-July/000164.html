@@ -1,0 +1,150 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [at76c503a-develop] [PATCH 11/19] Use more definitions from	net/ieee80211.h and	linux/if_ether.h
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/at76c503a-develop/2007-July/index.html" >
+   <LINK REL="made" HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%2011/19%5D%20Use%20more%20definitions%20from%0A%09net/ieee80211.h%20and%09linux/if_ether.h&In-Reply-To=%3C20070710062120.29117.44814.stgit%40dv.roinet.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000159.html">
+   <LINK REL="Next"  HREF="000150.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[at76c503a-develop] [PATCH 11/19] Use more definitions from	net/ieee80211.h and	linux/if_ether.h</H1>
+    <B>Pavel Roskin</B> 
+    <A HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%2011/19%5D%20Use%20more%20definitions%20from%0A%09net/ieee80211.h%20and%09linux/if_ether.h&In-Reply-To=%3C20070710062120.29117.44814.stgit%40dv.roinet.com%3E"
+       TITLE="[at76c503a-develop] [PATCH 11/19] Use more definitions from	net/ieee80211.h and	linux/if_ether.h">proski at gnu.org
+       </A><BR>
+    <I>Tue Jul 10 08:21:20 CEST 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000159.html">[at76c503a-develop] [PATCH 10/19] Use __func__ in debug messages
+</A></li>
+        <LI>Next message: <A HREF="000150.html">[at76c503a-develop] [PATCH 12/19] Remove rx_copybreak,	act as if it's 0
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#164">[ date ]</a>
+              <a href="thread.html#164">[ thread ]</a>
+              <a href="subject.html#164">[ subject ]</a>
+              <a href="author.html#164">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Signed-off-by: Pavel Roskin &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">proski at gnu.org</A>&gt;
+---
+
+ at76_usb.c |   19 +++++++++----------
+ 1 files changed, 9 insertions(+), 10 deletions(-)
+
+diff --git a/at76_usb.c b/at76_usb.c
+index 98d3ebb..f7dd37c 100644
+--- a/at76_usb.c
++++ b/at76_usb.c
+@@ -3652,7 +3652,7 @@ static int at76_tx(struct sk_buff *skb, struct net_device *netdev)
+ 	struct at76_tx_buffer *tx_buffer = priv-&gt;bulk_out_buffer;
+ 	struct ieee80211_hdr_3addr *i802_11_hdr =
+ 	    (struct ieee80211_hdr_3addr *)tx_buffer-&gt;packet;
+-	u8 *payload = tx_buffer-&gt;packet + sizeof(struct ieee80211_hdr_3addr);
++	u8 *payload = i802_11_hdr-&gt;payload;
+ 
+ 	if (netif_queue_stopped(netdev)) {
+ 		err(&quot;%s: %s called while netdev is stopped&quot;, netdev-&gt;name,
+@@ -3680,8 +3680,7 @@ static int at76_tx(struct sk_buff *skb, struct net_device *netdev)
+ 	at76_ledtrig_tx_activity();	/* tell the ledtrigger we send a packet */
+ 
+ 	/* we can get rid of memcpy, if we set netdev-&gt;hard_header_len
+-	   to 8 + sizeof(struct ieee80211_hdr_3addr), because then we have
+-	   enough space
++	   to 8 + IEEE80211_3ADDR_LEN, because then we have enough space
+ 	   at76_dbg(DBG_TX, &quot;skb-&gt;data - skb-&gt;head = %d&quot;, skb-&gt;data - skb-&gt;head); */
+ 
+ 	if (ntohs(*(__be16 *)(skb-&gt;data + 2 * ETH_ALEN)) &lt;= 1518) {
+@@ -3691,7 +3690,7 @@ static int at76_tx(struct sk_buff *skb, struct net_device *netdev)
+ 			/* higher layer delivered SNAP header - keep it */
+ 			memcpy(payload, skb-&gt;data + 2 * ETH_ALEN + 2,
+ 			       skb-&gt;len - 2 * ETH_ALEN - 2);
+-			wlen = sizeof(struct ieee80211_hdr_3addr) + skb-&gt;len -
++			wlen = IEEE80211_3ADDR_LEN + skb-&gt;len -
+ 			    2 * ETH_ALEN - 2;
+ 		} else {
+ 			err(&quot;%s: %s: no support for non-SNAP 802.2 packets &quot;
+@@ -3708,7 +3707,7 @@ static int at76_tx(struct sk_buff *skb, struct net_device *netdev)
+ 		memcpy(payload, rfc1042sig, sizeof(rfc1042sig));
+ 		memcpy(payload + sizeof(rfc1042sig),
+ 		       skb-&gt;data + 2 * ETH_ALEN, skb-&gt;len - 2 * ETH_ALEN);
+-		wlen = sizeof(struct ieee80211_hdr_3addr) + sizeof(rfc1042sig) +
++		wlen = IEEE80211_3ADDR_LEN + sizeof(rfc1042sig) +
+ 		    skb-&gt;len - 2 * ETH_ALEN;
+ 	}
+ 
+@@ -5303,7 +5302,7 @@ static void at76_ieee80211_to_eth(struct sk_buff *skb, int iw_mode)
+ 	dbg(&quot;%s: ENTRY skb len %d data %s&quot;, __func__,
+ 	    skb-&gt;len, hex2str(skb-&gt;data, 64));
+ 
+-	skb_pull(skb, sizeof(struct ieee80211_hdr_3addr));
++	skb_pull(skb, IEEE80211_3ADDR_LEN);
+ 
+ 	src_addr = iw_mode == IW_MODE_ADHOC ? i802_11_hdr-&gt;addr2
+ 	    : i802_11_hdr-&gt;addr3;
+@@ -5314,7 +5313,7 @@ static void at76_ieee80211_to_eth(struct sk_buff *skb, int iw_mode)
+ 	    !compare_ether_addr(eth_hdr_p-&gt;h_dest, dest_addr)) {
+ 		/* An ethernet frame is encapsulated within the data portion.
+ 		 * Just use its header instead. */
+-		skb_pull(skb, sizeof(struct ethhdr));
++		skb_pull(skb, ETH_HLEN);
+ 		build_ethhdr = 0;
+ 	} else if (!memcmp(skb-&gt;data, snapsig, sizeof(snapsig))) {
+ 		/* SNAP frame - collapse it */
+@@ -5342,7 +5341,7 @@ static void at76_ieee80211_to_eth(struct sk_buff *skb, int iw_mode)
+ #endif				/* IEEE_STANDARD */
+ 	}
+ 
+-	skb_set_mac_header(skb, -(int)sizeof(struct ethhdr));
++	skb_set_mac_header(skb, -ETH_HLEN);
+ 	eth_hdr_p = (struct ethhdr *)skb_mac_header(skb);
+ 
+ 	if (build_ethhdr) {
+@@ -5395,10 +5394,10 @@ static struct sk_buff *at76_check_for_rx_frags(struct at76_priv *priv)
+ 	int length = le16_to_cpu(buf-&gt;wlength) - priv-&gt;rx_data_fcs_len;
+ 
+ 	/* where does the data payload start in skb-&gt;data ? */
+-	u8 *data = (u8 *)i802_11_hdr + sizeof(struct ieee80211_hdr_3addr);
++	u8 *data = i802_11_hdr-&gt;payload;
+ 
+ 	/* length of payload, excl. the trailing FCS */
+-	int data_len = length - (data - (u8 *)i802_11_hdr);
++	int data_len = length - IEEE80211_3ADDR_LEN;
+ 
+ 	int i;
+ 	struct rx_data_buf *bptr, *optr;
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000159.html">[at76c503a-develop] [PATCH 10/19] Use __func__ in debug messages
+</A></li>
+	<LI>Next message: <A HREF="000150.html">[at76c503a-develop] [PATCH 12/19] Remove rx_copybreak,	act as if it's 0
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#164">[ date ]</a>
+              <a href="thread.html#164">[ thread ]</a>
+              <a href="subject.html#164">[ subject ]</a>
+              <a href="author.html#164">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">More information about the at76c503a-develop
+mailing list</a><br>
+</body></html>

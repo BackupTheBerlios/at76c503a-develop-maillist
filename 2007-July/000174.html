@@ -1,0 +1,82 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [at76c503a-develop] [PATCH 6/6] Use is_broadcast_ether_addr() where	appropriate
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/at76c503a-develop/2007-July/index.html" >
+   <LINK REL="made" HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%206/6%5D%20Use%20is_broadcast_ether_addr%28%29%20where%0A%09appropriate&In-Reply-To=%3C20070711075607.8445.2752.stgit%40dv.roinet.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000173.html">
+   <LINK REL="Next"  HREF="000175.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[at76c503a-develop] [PATCH 6/6] Use is_broadcast_ether_addr() where	appropriate</H1>
+    <B>Pavel Roskin</B> 
+    <A HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%206/6%5D%20Use%20is_broadcast_ether_addr%28%29%20where%0A%09appropriate&In-Reply-To=%3C20070711075607.8445.2752.stgit%40dv.roinet.com%3E"
+       TITLE="[at76c503a-develop] [PATCH 6/6] Use is_broadcast_ether_addr() where	appropriate">proski at gnu.org
+       </A><BR>
+    <I>Wed Jul 11 09:56:07 CEST 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000173.html">[at76c503a-develop] [PATCH 5/6] Protect firmware loading with a	mutex
+</A></li>
+        <LI>Next message: <A HREF="000175.html">[at76c503a-develop] New git repository
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#174">[ date ]</a>
+              <a href="thread.html#174">[ thread ]</a>
+              <a href="subject.html#174">[ subject ]</a>
+              <a href="author.html#174">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Signed-off-by: Pavel Roskin &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">proski at gnu.org</A>&gt;
+---
+
+ at76_usb.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/at76_usb.c b/at76_usb.c
+index 0ec97e1..e49d0db 100644
+--- a/at76_usb.c
++++ b/at76_usb.c
+@@ -5604,7 +5604,7 @@ static void at76_rx_data(struct at76_priv *priv)
+ 	skb-&gt;dev = netdev;
+ 	skb-&gt;ip_summed = CHECKSUM_NONE;	/* TODO: should check CRC */
+ 
+-	if (i802_11_hdr-&gt;addr1[0] &amp; 1) {
++	if (is_broadcast_ether_addr(i802_11_hdr-&gt;addr1)) {
+ 		if (!compare_ether_addr(i802_11_hdr-&gt;addr1, netdev-&gt;broadcast))
+ 			skb-&gt;pkt_type = PACKET_BROADCAST;
+ 		else
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000173.html">[at76c503a-develop] [PATCH 5/6] Protect firmware loading with a	mutex
+</A></li>
+	<LI>Next message: <A HREF="000175.html">[at76c503a-develop] New git repository
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#174">[ date ]</a>
+              <a href="thread.html#174">[ thread ]</a>
+              <a href="subject.html#174">[ subject ]</a>
+              <a href="author.html#174">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">More information about the at76c503a-develop
+mailing list</a><br>
+</body></html>

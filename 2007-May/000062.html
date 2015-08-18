@@ -1,0 +1,321 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [at76c503a-develop] [PATCH 2/6] Rename at76_get_fw_info() to	at76_parse_fw(), fully rewrite
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/at76c503a-develop/2007-May/index.html" >
+   <LINK REL="made" HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%202/6%5D%20Rename%20at76_get_fw_info%28%29%20to%0A%09at76_parse_fw%28%29%2C%20fully%20rewrite&In-Reply-To=%3C20070502000046.14011.14661.stgit%40dv.roinet.com%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000069.html">
+   <LINK REL="Next"  HREF="000068.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[at76c503a-develop] [PATCH 2/6] Rename at76_get_fw_info() to	at76_parse_fw(), fully rewrite</H1>
+    <B>Pavel Roskin</B> 
+    <A HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%202/6%5D%20Rename%20at76_get_fw_info%28%29%20to%0A%09at76_parse_fw%28%29%2C%20fully%20rewrite&In-Reply-To=%3C20070502000046.14011.14661.stgit%40dv.roinet.com%3E"
+       TITLE="[at76c503a-develop] [PATCH 2/6] Rename at76_get_fw_info() to	at76_parse_fw(), fully rewrite">proski at gnu.org
+       </A><BR>
+    <I>Wed May  2 02:00:46 CEST 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000069.html">[at76c503a-develop] [PATCH 1/6] Merge at76_do_probe() into	at76_probe()
+</A></li>
+        <LI>Next message: <A HREF="000068.html">[at76c503a-develop] Request or comments: driver TODO list
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#62">[ date ]</a>
+              <a href="thread.html#62">[ thread ]</a>
+              <a href="subject.html#62">[ subject ]</a>
+              <a href="author.html#62">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Use a structure to describe the firmware header.  Don't pass any
+arguments fpr output, just pass the pointer to the private data.  Move
+some debugging output there to avoid code duplication.
+
+Parse firmware even if it doesn't need to be loaded.  Keep firmware
+version information in the private data.  It's still re-read from the
+card, but now we have a valid version earlier.
+
+Signed-off-by: Pavel Roskin &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">proski at gnu.org</A>&gt;
+---
+
+ at76_usb.c |  149 +++++++++++++++++-------------------------------------------
+ at76_usb.h |   13 +++++
+ 2 files changed, 55 insertions(+), 107 deletions(-)
+
+diff --git a/at76_usb.c b/at76_usb.c
+index 649b1ce..59d9129 100644
+--- a/at76_usb.c
++++ b/at76_usb.c
+@@ -6028,58 +6028,43 @@ static int at76_init_new_device(struct at76_priv *dev)
+ }
+ 
+ 
+-/**
+- * at76_get_fw_info - disassembles the firmware image
+- *
+- * get version, str, internal and external fw part.
+- * returns 0 on success, &lt; 0 on error
+- */
+-static int at76_get_fw_info(u8 *fw_data, int fw_size,
+-				u32 *board, u32 *version, char **str,
+-				u8 **int_fw, int *int_fw_size,
+-				u8 **ext_fw, int *ext_fw_size)
+-{
+-/* fw structure (all numbers are little_endian)
+-   offset  length  description
+-   0       4       crc 32 (seed ~0, no post, all gaps are zeros, header included)
+-   4       4       board type (see at76_usb_ids.h)
+-   8       4       version (major&lt;&lt;24|middle&lt;&lt;16|minor&lt;&lt;8|build)
+-   c       4       offset of printable string (id) area from begin of image
+-                   (must be \0 terminated !)
+-  10       4       offset of internal fw part area
+-  14       4       length of internal fw part
+-  18       4       offset of external fw part area (may be first byte _behind_
+-                   image in case we have no external part)
+-  1c       4       length of external fw part
+-*/
+-
+-	__le32 val;
++/* Parse the firmware image */
++static int at76_parse_fw(struct at76_priv *dev, u8 *fw_data, int fw_size,
++			 int board_type)
++{
++	char *str;
++	struct at76_fw_header *fw = (struct at76_fw_header *)fw_data;
+ 
+-	if (fw_size &lt; 0x21) {
+-		err(&quot;fw too short (x%x)&quot;, fw_size);
++	if (fw_size &lt;= sizeof(*fw)) {
++		err(&quot;firmware is too short (0x%x)&quot;, fw_size);
+ 		return -EFAULT;
+ 	}
+ 
+-	/* crc currently not checked */
+-
+-	memcpy(&amp;val, fw_data + 4, 4);
+-	*board = le32_to_cpu(val);
+-
+-	memcpy(&amp;val, fw_data + 8, 4);
+-	*version = le32_to_cpu(val);
+-
+-	memcpy(&amp;val, fw_data + 0xc, 4);
+-	*str = fw_data + le32_to_cpu(val);
+-
+-	memcpy(&amp;val, fw_data + 0x10, 4);
+-	*int_fw = fw_data + le32_to_cpu(val);
+-	memcpy(&amp;val, fw_data + 0x14, 4);
+-	*int_fw_size = le32_to_cpu(val);
++	/* CRC currently not checked */
++	dev-&gt;board_type = le32_to_cpu(fw-&gt;board_type);
++	dev-&gt;fw_version.major = fw-&gt;major;
++	dev-&gt;fw_version.minor = fw-&gt;minor;
++	dev-&gt;fw_version.patch = fw-&gt;patch;
++	dev-&gt;fw_version.build = fw-&gt;build;
++	str = (char *)fw_data + le32_to_cpu(fw-&gt;str_offset);
++	dev-&gt;intfw = (u8 *)fw + le32_to_cpu(fw-&gt;int_fw_offset);
++	dev-&gt;intfw_size = le32_to_cpu(fw-&gt;int_fw_len);
++	dev-&gt;extfw = (u8 *)fw + le32_to_cpu(fw-&gt;ext_fw_offset);
++	dev-&gt;extfw_size = le32_to_cpu(fw-&gt;ext_fw_len);
++
++	at76_dbg(DBG_DEVSTART, &quot;firmware board %u version %u.%u.%u#%u &quot;
++		 &quot;(int %x:%tx, ext %x:%tx)&quot;, dev-&gt;board_type,
++		 dev-&gt;fw_version.major, dev-&gt;fw_version.minor,
++		 dev-&gt;fw_version.patch, dev-&gt;fw_version.build,
++		 dev-&gt;intfw_size, dev-&gt;intfw - fw_data,
++		 dev-&gt;extfw_size, dev-&gt;extfw - fw_data);
++	at76_dbg(DBG_DEVSTART, &quot;firmware id %s&quot;, str);
+ 
+-	memcpy(&amp;val, fw_data + 0x18, 4);
+-	*ext_fw = fw_data + le32_to_cpu(val);
+-	memcpy(&amp;val, fw_data + 0x1c, 4);
+-	*ext_fw_size = le32_to_cpu(val);
++	if (dev-&gt;board_type != board_type) {
++		err(&quot;inconsistent board types %u != %u&quot;, board_type,
++		    dev-&gt;board_type);
++		return -EINVAL;
++	}
+ 
+ 	return 0;
+ }
+@@ -6094,8 +6079,6 @@ static int at76_probe(struct usb_interface *interface,
+ 	const struct firmware *fw = firmwares[board_type].fw;
+ 	struct usb_device *udev = interface_to_usbdev(interface);
+ 	int op_mode;
+-	char *id_str;
+-	u32 version;
+ 
+ 	if (fw == NULL) {
+ 		at76_dbg(DBG_FW, &quot;downloading firmware %s&quot;, fw_name);
+@@ -6115,7 +6098,7 @@ static int at76_probe(struct usb_interface *interface,
+ 
+ 	if ((dev = at76_alloc_new_device(udev, (u8) board_type)) == NULL) {
+ 		ret = -ENOMEM;
+-		goto error;
++		goto error_alloc;
+ 	}
+ 
+ 	op_mode = at76_get_op_mode(udev);
+@@ -6135,41 +6118,17 @@ static int at76_probe(struct usb_interface *interface,
+ 		goto error;
+ 	}
+ 
++	/* parse the firmware */
++	ret = at76_parse_fw(dev, fw-&gt;data, fw-&gt;size, board_type);
++	if (ret)
++		goto error;
++
+ 	if (op_mode != OPMODE_NORMAL_NIC_WITH_FLASH
+ 	    &amp;&amp; op_mode != OPMODE_NORMAL_NIC_WITHOUT_FLASH) {
+-
+-		at76_dbg(DBG_DEVSTART, &quot;need to download firmware&quot;);
+-
+-		/* parse the firmware */
+-		ret = at76_get_fw_info(fw-&gt;data, fw-&gt;size,
+-				       &amp;dev-&gt;board_type, &amp;version, &amp;id_str,
+-				       &amp;dev-&gt;intfw, &amp;dev-&gt;intfw_size,
+-				       &amp;dev-&gt;extfw, &amp;dev-&gt;extfw_size);
+-		if (ret)
+-			goto error;
+-
+-		at76_dbg(DBG_DEVSTART,
+-			 &quot;firmware board %u version %u.%u.%u#%u &quot;
+-			 &quot;(int %x:%tx, ext %x:%tx)&quot;, dev-&gt;board_type,
+-			 version &gt;&gt; 24, (version &gt;&gt; 16) &amp; 0xff,
+-			 (version &gt;&gt; 8) &amp; 0xff, version &amp; 0xff, dev-&gt;intfw_size,
+-			 dev-&gt;intfw - fw-&gt;data, dev-&gt;extfw_size,
+-			 dev-&gt;extfw - fw-&gt;data);
+-		if (*id_str)
+-			at76_dbg(DBG_DEVSTART, &quot;firmware id %s&quot;, id_str);
+-
+-		if (dev-&gt;board_type != board_type) {
+-			err(&quot;inconsistent board types %u != %u&quot;, board_type,
+-			    dev-&gt;board_type);
+-			at76_delete_device(dev);
+-			goto error;
+-		}
+-
+ 		/* download internal firmware part */
+ 		at76_dbg(DBG_DEVSTART, &quot;downloading internal firmware&quot;);
+ 		dev-&gt;istate = INTFW_DOWNLOAD;
+ 		schedule_work(&amp;dev-&gt;work_internal_fw);
+-
+ 	} else {
+ 		/* Internal firmware already inside the device.  Get firmware
+ 		 * version to test if external firmware is loaded.
+@@ -6178,17 +6137,9 @@ static int at76_probe(struct usb_interface *interface,
+ 		 * at76_get_op_mode() fail too :-( */
+ 		int force_fw_dwl = 0;
+ 
+-		/* parse the firmware */
+-		ret = at76_get_fw_info(fw-&gt;data, fw-&gt;size,
+-				       &amp;dev-&gt;board_type, &amp;version, &amp;id_str,
+-				       &amp;dev-&gt;intfw, &amp;dev-&gt;intfw_size,
+-				       &amp;dev-&gt;extfw, &amp;dev-&gt;extfw_size);
+-		if (ret)
+-			goto error;
+-
+ 		/* if version &gt;= 0.100.x.y or device with built-in flash we can
+ 		 * query the device for the fw version */
+-		if (version &gt;= ((0 &lt;&lt; 24) | (100 &lt;&lt; 16))
++		if ((dev-&gt;fw_version.major &gt; 0 || dev-&gt;fw_version.minor &gt;= 100)
+ 		    || (op_mode == OPMODE_NORMAL_NIC_WITH_FLASH)) {
+ 			ret = at76_get_mib(udev, MIB_FW_VERSION,
+ 					   &amp;dev-&gt;fw_version,
+@@ -6210,36 +6161,20 @@ static int at76_probe(struct usb_interface *interface,
+ 				at76_dbg(DBG_DEVSTART,
+ 					 &quot;cannot get firmware (ret %d) or all zeros &quot;
+ 					 &quot;- download external firmware&quot;, ret);
+-			at76_dbg(DBG_DEVSTART,
+-				 &quot;firmware board %u version %u.%u.%u#%u &quot;
+-				 &quot;(int %x:%tx, ext %x:%tx)&quot;, dev-&gt;board_type,
+-				 version &gt;&gt; 24, (version &gt;&gt; 16) &amp; 0xff,
+-				 (version &gt;&gt; 8) &amp; 0xff, version &amp; 0xff,
+-				 dev-&gt;intfw_size, dev-&gt;intfw - fw-&gt;data,
+-				 dev-&gt;extfw_size, dev-&gt;extfw - fw-&gt;data);
+-			if (*id_str)
+-				at76_dbg(DBG_DEVSTART, &quot;firmware id %s&quot;,
+-					 id_str);
+-
+-			if (dev-&gt;board_type != board_type) {
+-				err(&quot;inconsistent board types %u != %u&quot;,
+-				    board_type, dev-&gt;board_type);
+-				at76_delete_device(dev);
+-				goto error;
+-			}
+ 
+ 			dev-&gt;istate = EXTFW_DOWNLOAD;
+ 			schedule_work(&amp;dev-&gt;work_external_fw);
+ 		} else {
+ 			dev-&gt;istate = INIT;
+-			if ((ret = at76_init_new_device(dev)) &lt; 0) {
++			if ((ret = at76_init_new_device(dev)) &lt; 0)
+ 				goto error;
+-			}
+ 		}
+ 	}
+ 	return 0;
+ 
+       error:
++	at76_delete_device(dev);
++      error_alloc:
+ 	usb_put_dev(udev);
+ 	return ret;
+ }
+diff --git a/at76_usb.h b/at76_usb.h
+index a74b3c5..97f46d6 100644
+--- a/at76_usb.h
++++ b/at76_usb.h
+@@ -364,6 +364,19 @@ struct mib_mdomain {
+ 	u8 channel_list[14];	/* 0 for invalid channels */
+ } __attribute__ ((packed));
+ 
++struct at76_fw_header {
++	__le32 crc;			/* CRC32 of the whole image */
++	__le32 board_type;		/* firmware compatibility code */
++	u8 build;			/* firmware build number */
++	u8 patch;			/* firmware patch level */
++	u8 minor;			/* firmware minor version */
++	u8 major;			/* firmware major version */
++	__le32 str_offset;		/* offset of the copyright string */
++	__le32 int_fw_offset;		/* internal firmware image offset */
++	__le32 int_fw_len;		/* internal firmware image length */
++	__le32 ext_fw_offset;		/* external firmware image offset */
++	__le32 ext_fw_len;		/* external firmware image length */
++} __attribute__ ((packed));
+ 
+ /* states in infrastructure mode */
+ enum infra_state {
+
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000069.html">[at76c503a-develop] [PATCH 1/6] Merge at76_do_probe() into	at76_probe()
+</A></li>
+	<LI>Next message: <A HREF="000068.html">[at76c503a-develop] Request or comments: driver TODO list
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#62">[ date ]</a>
+              <a href="thread.html#62">[ thread ]</a>
+              <a href="subject.html#62">[ subject ]</a>
+              <a href="author.html#62">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">More information about the at76c503a-develop
+mailing list</a><br>
+</body></html>

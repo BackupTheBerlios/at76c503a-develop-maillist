@@ -1,0 +1,33 @@
+From Kalle.Valo at iki.fi  Sun Jun  1 16:32:25 2008
+From: Kalle.Valo at iki.fi (Kalle Valo)
+Date: Sun, 01 Jun 2008 17:32:25 +0300
+Subject: [at76c503a-develop] at76usb patches and where to go with them :)
+In-Reply-To: <1211822834.31921.8.camel@localhost> (Milan Plzik's message of
+	"Mon\, 26 May 2008 19\:27\:14 +0200")
+References: <1211822834.31921.8.camel@localhost>
+Message-ID: <873anxdy4m.fsf@litku.valot.fi>
+
+Milan Plzik <milan.plzik at gmail.com> writes:
+
+>   Hello,
+>
+>   it's been a while since I submitted the at76 patches, but there was
+> silence since then... .
+
+I'm really busy with other things currently and I don't have time for
+at76_usb, unfortunately. But it's great that you are working on,
+at76_usb is in need for serious bugfixing.
+
+> Is there anything I should do before I'll submit them to
+> wireless-testing mailing list (well, except for updating, if
+> something has changed:). Also, if there are any objections about
+> what should I change/add/remove, please e-mail me.
+
+If you don't hear anything from Pavel, I think you can just send the
+fixes to linux-wireless list. I'm sure John will happily accept them,
+because there has been complaints from Fedora users.
+
+-- 
+Kalle Valo
+
+

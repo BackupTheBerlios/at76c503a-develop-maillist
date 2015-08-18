@@ -1,0 +1,187 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [at76c503a-develop] [PATCH] Update of at76_usb to be in sync with	mac80211 API.
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/at76c503a-develop/2008-April/index.html" >
+   <LINK REL="made" HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%5D%20Update%20of%20at76_usb%20to%20be%20in%20sync%20with%0A%09mac80211%20API.&In-Reply-To=%3C20080422212220.12672.57437.stgit%40localhost%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   
+   <LINK REL="Next"  HREF="000227.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[at76c503a-develop] [PATCH] Update of at76_usb to be in sync with	mac80211 API.</H1>
+    <B>Milan Plzik</B> 
+    <A HREF="mailto:at76c503a-develop%40lists.berlios.de?Subject=Re%3A%20%5Bat76c503a-develop%5D%20%5BPATCH%5D%20Update%20of%20at76_usb%20to%20be%20in%20sync%20with%0A%09mac80211%20API.&In-Reply-To=%3C20080422212220.12672.57437.stgit%40localhost%3E"
+       TITLE="[at76c503a-develop] [PATCH] Update of at76_usb to be in sync with	mac80211 API.">milan.plzik at gmail.com
+       </A><BR>
+    <I>Tue Apr 22 23:22:20 CEST 2008</I>
+    <P><UL>
+        
+        <LI>Next message: <A HREF="000227.html">[at76c503a-develop] [PATCH] Update of at76_usb to be in sync	with mac80211 API.
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#226">[ date ]</a>
+              <a href="thread.html#226">[ thread ]</a>
+              <a href="subject.html#226">[ subject ]</a>
+              <a href="author.html#226">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>There were some changes in the mac80211 stack, which made at76_usb driver
+uncompilable. This patch attempts to fix it. Resulting driver loads without
+apparent problems.
+
+Signed-off-by: Milan Plzik &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">milan.plzik at gmail.com</A>&gt;
+---
+
+ drivers/net/wireless/at76_usb.c |   65 +++++++++++++++++++++++----------------
+ 1 files changed, 39 insertions(+), 26 deletions(-)
+
+diff --git a/drivers/net/wireless/at76_usb.c b/drivers/net/wireless/at76_usb.c
+index 33fa026..075e421 100644
+--- a/drivers/net/wireless/at76_usb.c
++++ b/drivers/net/wireless/at76_usb.c
+@@ -1753,7 +1753,7 @@ static int at76_mac80211_tx(struct ieee80211_hw *hw, struct sk_buff *skb,
+ 	memset(tx_buffer, 0, sizeof(*tx_buffer));
+ 	tx_buffer-&gt;padding = padding;
+ 	tx_buffer-&gt;wlength = cpu_to_le16(skb-&gt;len);
+-	tx_buffer-&gt;tx_rate = control-&gt;tx_rate-&gt;hw_value;
++	tx_buffer-&gt;tx_rate = control-&gt;tx_rate;
+ 	memset(tx_buffer-&gt;reserved, 0, sizeof(tx_buffer-&gt;reserved));
+ 	memcpy(tx_buffer-&gt;packet, skb-&gt;data, skb-&gt;len);
+ 
+@@ -1971,13 +1971,13 @@ static int at76_config(struct ieee80211_hw *hw, struct ieee80211_conf *conf)
+ 	struct at76_priv *priv = hw-&gt;priv;
+ 
+ 	at76_dbg(DBG_MAC80211, &quot;%s(): channel %d radio %d&quot;,
+-		 __func__, conf-&gt;channel-&gt;hw_value, conf-&gt;radio_enabled);
++		 __func__, conf-&gt;channel, conf-&gt;radio_enabled);
+ 	at76_dbg_dump(DBG_MAC80211, priv-&gt;essid, priv-&gt;essid_size, &quot;ssid:&quot;);
+ 	at76_dbg_dump(DBG_MAC80211, priv-&gt;bssid, ETH_ALEN, &quot;bssid:&quot;);
+ 
+ 	mutex_lock(&amp;priv-&gt;mtx);
+ 
+-	priv-&gt;channel = conf-&gt;channel-&gt;hw_value;
++	priv-&gt;channel = conf-&gt;channel;
+ 
+ 	if (is_valid_ether_addr(priv-&gt;bssid))
+ 		at76_join(priv);
+@@ -2202,34 +2202,36 @@ static int at76_alloc_urbs(struct at76_priv *priv,
+ }
+ 
+ static struct ieee80211_rate at76_rates[] = {
+-	{ .bitrate = 10, .hw_value = TX_RATE_1MBIT, },
+-	{ .bitrate = 20, .hw_value = TX_RATE_2MBIT, },
+-	{ .bitrate = 55, .hw_value = TX_RATE_5_5MBIT, },
+-	{ .bitrate = 110, .hw_value = TX_RATE_11MBIT, },
++	{ .rate = 10, .val = TX_RATE_1MBIT, },
++	{ .rate = 20, .val = TX_RATE_2MBIT, },
++	{ .rate = 55, .val = TX_RATE_5_5MBIT, },
++	{ .rate = 110, .val = TX_RATE_11MBIT, },
+ };
+ 
+ static struct ieee80211_channel at76_channels[] = {
+-	{ .center_freq = 2412, .hw_value = 1 },
+-	{ .center_freq = 2417, .hw_value = 2 },
+-	{ .center_freq = 2422, .hw_value = 3 },
+-	{ .center_freq = 2427, .hw_value = 4 },
+-	{ .center_freq = 2432, .hw_value = 5 },
+-	{ .center_freq = 2437, .hw_value = 6 },
+-	{ .center_freq = 2442, .hw_value = 7 },
+-	{ .center_freq = 2447, .hw_value = 8 },
+-	{ .center_freq = 2452, .hw_value = 9 },
+-	{ .center_freq = 2457, .hw_value = 10 },
+-	{ .center_freq = 2462, .hw_value = 11 },
+-	{ .center_freq = 2467, .hw_value = 12 },
+-	{ .center_freq = 2472, .hw_value = 13 },
+-	{ .center_freq = 2484, .hw_value = 14 }
++	{ .freq = 2412, .val = 1 },
++	{ .freq = 2417, .val = 2 },
++	{ .freq = 2422, .val = 3 },
++	{ .freq = 2427, .val = 4 },
++	{ .freq = 2432, .val = 5 },
++	{ .freq = 2437, .val = 6 },
++	{ .freq = 2442, .val = 7 },
++	{ .freq = 2447, .val = 8 },
++	{ .freq = 2452, .val = 9 },
++	{ .freq = 2457, .val = 10 },
++	{ .freq = 2462, .val = 11 },
++	{ .freq = 2467, .val = 12 },
++	{ .freq = 2472, .val = 13 },
++	{ .freq = 2484, .val = 14 }
+ };
+ 
+-static struct ieee80211_supported_band at76_supported_band = {
++static struct ieee80211_hw_mode at76_supported_hw_mode = {
+ 	.channels = at76_channels,
+-	.n_channels = ARRAY_SIZE(at76_channels),
+-	.bitrates = at76_rates,
+-	.n_bitrates = ARRAY_SIZE(at76_rates),
++	.num_channels = ARRAY_SIZE(at76_channels),
++	.rates = at76_rates,
++	.num_rates = ARRAY_SIZE(at76_rates),
++	.mode = MODE_IEEE80211B,
++	.ht_info = { .ht_supported = 0 },
+ };
+ 
+ /* Register network device and initialize the hardware */
+@@ -2272,16 +2274,27 @@ static int at76_init_new_device(struct at76_priv *priv,
+ 	priv-&gt;scan_mode = SCAN_TYPE_ACTIVE;
+ 
+ 	/* mac80211 initialisation */
+-	priv-&gt;hw-&gt;wiphy-&gt;bands[IEEE80211_BAND_2GHZ] = &amp;at76_supported_band;
++	priv-&gt;hw-&gt;conf.mode = &amp;at76_supported_hw_mode; 
+ 	priv-&gt;hw-&gt;flags = IEEE80211_HW_RX_INCLUDES_FCS;
++	priv-&gt;hw-&gt;rate_control_algorithm = NULL;
+ 
+ 	SET_IEEE80211_DEV(priv-&gt;hw, &amp;interface-&gt;dev);
+ 	SET_IEEE80211_PERM_ADDR(priv-&gt;hw, priv-&gt;mac_addr);
+ 
++	ret = ieee80211_register_hwmode(priv-&gt;hw, &amp;at76_supported_hw_mode);
++	if (ret) {
++		printk(KERN_ERR 
++			&quot;cannot register mac80211 hw_mode (status %d)!\n&quot;, 
++			ret);
++		goto exit;
++	}
++
+ 	ret = ieee80211_register_hw(priv-&gt;hw);
+ 	if (ret) {
+ 		printk(KERN_ERR &quot;cannot register mac80211 hw (status %d)!\n&quot;,
+ 		       ret);
++		/* TODO: One would possibly want to unregister hwmode, but so
++		 * far there is no API to do this */
+ 		goto exit;
+ 	}
+ 
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	
+	<LI>Next message: <A HREF="000227.html">[at76c503a-develop] [PATCH] Update of at76_usb to be in sync	with mac80211 API.
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#226">[ date ]</a>
+              <a href="thread.html#226">[ thread ]</a>
+              <a href="subject.html#226">[ subject ]</a>
+              <a href="author.html#226">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/at76c503a-develop">More information about the at76c503a-develop
+mailing list</a><br>
+</body></html>
